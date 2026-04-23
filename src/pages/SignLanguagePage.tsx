@@ -74,6 +74,15 @@ export default function SignLanguagePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  useEffect(() => {
+    // Cleanup camera strictly when component unmounts to prevent privacy leaks
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
+
   const categoryFiltered = signs.filter(s => s.category === activeCategory);
 
   const toggleSign = (sign: Sign) => {
