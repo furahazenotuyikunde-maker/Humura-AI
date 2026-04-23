@@ -9,6 +9,7 @@ import SupportCentersPage from './pages/SupportCentersPage';
 import CommunityPage from './pages/CommunityPage';
 import ProgressPage from './pages/ProgressPage';
 import EmergencyPage from './pages/EmergencyPage';
+import ProfessionalsPage from './pages/ProfessionalsPage';
 import SettingsPage from './pages/SettingsPage';
 
 const App: React.FC = () => {
@@ -20,6 +21,7 @@ const App: React.FC = () => {
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />
           <Route path="centers" element={<SupportCentersPage />} />
+          <Route path="professionals" element={<ProfessionalsPage />} />
           <Route path="community" element={<CommunityPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="sign-language" element={<SignLanguagePage />} />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone } from 'lucide-react';
+import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope } from 'lucide-react';
 
 const MOODS = [
   { id: 'great', emoji: '🤩', en: 'Great', rw: 'Neza cyane', color: 'from-amber-400 to-yellow-500', tip: { en: 'Channel that energy into creativity or helping someone today!', rw: 'Shyira imbaraga zose mu gushyiraho ikintu gishya cyangwa gufasha umuntu uyu munsi!' } },
@@ -62,6 +62,7 @@ export default function Home() {
     { path: '/chat', icon: MessageCircle, en: 'AI Therapy Chat', rw: 'Ikiganiro cya Inkingi AI', color: 'bg-primary', desc: { en: 'Talk with your AI companion', rw: 'Ganira na AI yawe' } },
     { path: '/education', icon: BookOpen, en: 'Education Hub', rw: 'Ikigo cy\'Indangamuntu', color: 'bg-blue-500', desc: { en: 'Learn about mental health', rw: 'Iga ku buzima bwo mu mutwe' } },
     { path: '/centers', icon: MapPin, en: 'Support Centres', rw: 'Amavuriro', color: 'bg-rose-500', desc: { en: '15 verified centres in Rwanda', rw: 'Ibigo 15 mu Rwanda' } },
+    { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'Shaka Inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: 'Bona abaganga n\\'inzobere' } },
     { path: '/community', icon: Users, en: 'Community Circles', rw: 'Imirimo y\'Umuryango', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
     { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'Aho Ugeze', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana imihindagurikire' } },
   ];
@@ -152,20 +153,20 @@ export default function Home() {
       </section>
 
       {/* Quick crisis banner */}
-      <motion.a
-        href="/emergency"
+      <motion.button
+        onClick={() => navigate('/emergency')}
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-2xl hover:bg-red-100 transition-colors"
+        className="w-full text-left flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-2xl hover:bg-red-100 transition-colors"
       >
         <Phone size={18} className="text-red-500 flex-shrink-0" />
-        <div className="flex-1">
+        <div className="flex-1 text-left">
           <p className="font-bold text-red-900 text-xs">{lang === 'rw' ? 'Ubufasha bwihutirwa?' : 'Need immediate support?'}</p>
           <p className="text-red-600 text-xs">114 · +250 790 003 002</p>
         </div>
         <AlertTriangle size={16} className="text-red-400" />
-      </motion.a>
+      </motion.button>
 
       {/* Sign Language highlight */}
       <motion.button

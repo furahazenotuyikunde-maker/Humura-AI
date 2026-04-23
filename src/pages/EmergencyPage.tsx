@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Phone, AlertTriangle, ShieldAlert, Heart, MessageCircle, MapPin, Clock, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Phone, AlertTriangle, ShieldAlert, Heart, MessageCircle, MapPin, Clock,CheckCircle } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -233,13 +234,13 @@ export default function EmergencyPage() {
               ? 'Inkingi AI itangirana gufotora ubuzima bwawe no kukugobotora — amasaa yose.'
               : 'Inkingi AI is always here to listen, support and guide you — no judgment, any time.'}
           </p>
-          <a
-            href="/chat"
+          <Link
+            to="/chat"
             className="inline-flex items-center gap-1.5 mt-2 text-primary font-bold text-xs hover:underline"
           >
             <MessageCircle size={13} />
             {lang === 'rw' ? 'Tangira ikiganiro' : 'Start a conversation'}
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -255,13 +256,13 @@ export default function EmergencyPage() {
               ? 'Jenda mu gice cy\'ihutirwa cy\'ibitaro bya hafi yawe buri gihe'
               : 'Walk into any hospital emergency room — they must help you regardless of payment.'}
           </p>
-          <a
-            href="/centers"
+          <Link
+            to="/centers"
             className="inline-flex items-center gap-1.5 mt-2 text-rose-500 font-bold text-xs hover:underline"
           >
             <MapPin size={13} />
             {lang === 'rw' ? 'Reba amavuriro' : 'Find centers'}
-          </a>
+          </Link>
         </div>
       </div>
     </div>
