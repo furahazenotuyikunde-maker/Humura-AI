@@ -62,7 +62,7 @@ export default function Home() {
     { path: '/chat', icon: MessageCircle, en: 'AI Therapy Chat', rw: 'Ikiganiro cya Inkingi AI', color: 'bg-primary', desc: { en: 'Talk with your AI companion', rw: 'Ganira na AI yawe' } },
     { path: '/education', icon: BookOpen, en: 'Education Hub', rw: 'Ikigo cy\'Indangamuntu', color: 'bg-blue-500', desc: { en: 'Learn about mental health', rw: 'Iga ku buzima bwo mu mutwe' } },
     { path: '/centers', icon: MapPin, en: 'Support Centres', rw: 'Amavuriro', color: 'bg-rose-500', desc: { en: '15 verified centres in Rwanda', rw: 'Ibigo 15 mu Rwanda' } },
-    { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'Shaka Inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: 'Bona abaganga n\\'inzobere' } },
+    { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'Shaka Inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "Bona abaganga n'inzobere" } },
     { path: '/community', icon: Users, en: 'Community Circles', rw: 'Imirimo y\'Umuryango', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
     { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'Aho Ugeze', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana imihindagurikire' } },
   ];
