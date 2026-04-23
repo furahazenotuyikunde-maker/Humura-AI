@@ -73,14 +73,6 @@ export const Shell: React.FC<ShellProps> = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/emergency"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors"
-          >
-            <ShieldAlert size={16} />
-            {i18n.language === 'rw' ? 'Ihutirwa' : 'Emergency'}
-          </Link>
-          
           <button 
             onClick={toggleLanguage}
             className="px-3 py-1.5 rounded-full bg-primary-50 text-primary-900 text-sm font-semibold hover:bg-primary-100 transition-colors"
