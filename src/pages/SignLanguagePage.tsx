@@ -84,6 +84,13 @@ export default function SignLanguagePage() {
     };
   }, []);
 
+  // Fix: Attach stream to video element when it naturally mounts after cameraActive state change
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraActive]);
+
   const categoryFiltered = signs.filter(s => s.category === activeCategory);
 
   const toggleSign = (sign: Sign) => {
