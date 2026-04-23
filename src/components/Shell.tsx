@@ -66,8 +66,8 @@ export const Shell: React.FC<ShellProps> = () => {
     <div className="flex flex-col min-h-screen bg-background pb-16 md:pb-0 md:pl-64">
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-50 px-4 py-3 flex justify-between items-center">
-        <button onClick={() => navigate('/')} className="flex items-center">
-          <img src="/logo.png" alt="Humura AI" className="h-8 object-contain" />
+        <button onClick={() => navigate('/')} className="flex items-center py-1">
+          <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
         </button>
 
         <div className="flex items-center gap-2">
@@ -88,8 +88,9 @@ export const Shell: React.FC<ShellProps> = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-white border-r border-primary-50 z-40 overflow-y-auto">
         <div className="p-4 border-b border-primary-50">
-          <div className="flex items-center justify-center mb-2 mt-2">
-            <img src="/logo.png" alt="Humura AI" className="h-16 object-contain" />
+          <div className="flex flex-col items-center justify-center mb-2 mt-2 space-y-1">
+            <img src="/logo.png" alt="Humura AI" className="h-24 object-contain" />
+            <p className="text-sm font-bold text-primary-600 tracking-wide text-center">mind supported, life empowered.</p>
           </div>
         </div>
 
