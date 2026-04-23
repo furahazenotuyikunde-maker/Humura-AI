@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff } from 'lucide-react';
+import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ──────────────────────────────────────────────────────────────
@@ -66,17 +66,18 @@ export default function SignLanguagePage() {
   const [aiResponse, setAiResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCrisisWarning, setShowCrisisWarning] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState('');
-  const [showInstructions, setShowInstructions] = useState(true);
+  const [autoDetectActive, setAutoDetectActive] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     // Cleanup camera strictly when component unmounts to prevent privacy leaks
     return () => {
+      if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
@@ -172,8 +173,61 @@ export default function SignLanguagePage() {
   };
 
   const stopCamera = () => {
+    setAutoDetectActive(false);
+    if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
     streamRef.current?.getTracks().forEach(t => t.stop());
     setCameraActive(false);
+  };
+
+  useEffect(() => {
+    if (autoDetectActive && cameraActive) {
+      detectIntervalRef.current = setInterval(captureAndAnalyze, 4000);
+    } else {
+      if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
+    }
+    return () => { if (detectIntervalRef.current) clearInterval(detectIntervalRef.current); };
+  }, [autoDetectActive, cameraActive, selected]);
+
+  const captureAndAnalyze = async () => {
+    if (!videoRef.current || !canvasRef.current || !GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_key') return;
+    
+    setIsDetecting(true);
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const availableIds = signs.map(s => s.id).join(', ');
+      const prompt = `You are an expert AI reading sign language, body language, and facial expressions. Look very carefully at the provided user image. Pick ONE exact keyword from this list that best matches their expression or sign: [${availableIds}]. If they look completely neutral, relaxed, or no action is clear, output "none". Do NOT output any formatting, punctuation, or other words. ONLY the exact ID string.`;
+      
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }
+      ]);
+      
+      const detectedId = result.response.text().trim().toLowerCase();
+      
+      const matchedSign = signs.find(s => s.id.toLowerCase() === detectedId);
+      if (matchedSign && !selected.find(s => s.id === matchedSign.id)) {
+        if (selected.length < 5) {
+          setSelected(prev => [...prev, matchedSign]);
+          if (matchedSign.isCrisis) setShowCrisisWarning(true);
+        }
+      }
+    } catch (e) {
+      console.error("Vision detection failed:", e);
+    } finally {
+      setIsDetecting(false);
+    }
   };
 
   const reset = () => {
@@ -234,10 +288,11 @@ export default function SignLanguagePage() {
       </AnimatePresence>
 
       {/* Optional camera panel */}
-      <div className="glass-card rounded-2xl p-4">
+      <div className="glass-card rounded-2xl p-4 overflow-hidden relative">
+        <canvas ref={canvasRef} className="hidden" />
         <div className="flex items-center justify-between mb-3">
           <p className="font-semibold text-primary-900 text-sm">
-            {lang === 'rw' ? '📸 Kamera (Inzira y\'Ibwiriza)' : '📸 Camera Panel (Optional)'}
+            {lang === 'rw' ? '📸 Kamera & AI Ikurikirana' : '📸 Camera & AI Vision'}
           </p>
           <button
             onClick={cameraActive ? stopCamera : startCamera}
@@ -248,15 +303,50 @@ export default function SignLanguagePage() {
             {cameraActive ? <><CameraOff size={13} /> {lang === 'rw' ? 'Hagarika' : 'Stop'}</> : <><Camera size={13} /> {lang === 'rw' ? 'Tangira Kamera' : 'Start Camera'}</>}
           </button>
         </div>
+        
         {cameraError && (
           <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-xl">{cameraError}</p>
         )}
+        
         {cameraActive && (
-          <video ref={videoRef} autoPlay muted playsInline className="w-full max-h-40 rounded-xl object-cover bg-black" />
+          <div className="space-y-3">
+            <div className="relative rounded-xl overflow-hidden bg-black max-h-64 flex justify-center">
+              <video ref={videoRef} autoPlay muted playsInline className="h-full max-h-64 object-cover" />
+              {isDetecting && autoDetectActive && (
+                <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/60 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-bold">
+                  <Loader2 size={12} className="animate-spin" />
+                  ANALYZING
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between bg-primary-50 p-3 rounded-xl border border-primary-100">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-primary-900">
+                  {lang === 'rw' ? 'Sikanira Byikora (AI)' : 'Auto-Detect Signs'}
+                </span>
+                <span className="text-[10px] text-primary-600 leading-tight">
+                  {lang === 'rw' ? 'Gemini 1.5 Vision isoma ibimenyetso' : 'Gemini 1.5 Vision scans your body language'}
+                </span>
+              </div>
+              <button
+                onClick={() => setAutoDetectActive(!autoDetectActive)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm ${
+                  autoDetectActive 
+                    ? 'bg-primary text-white shadow-primary/30' 
+                    : 'bg-white text-primary-700 hover:bg-primary-100'
+                }`}
+              >
+                <ScanEye size={14} className={autoDetectActive ? 'animate-pulse' : ''} />
+                {autoDetectActive ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
         )}
+        
         {!cameraActive && !cameraError && (
           <p className="text-xs text-neutral-400 text-center py-2">
-            {lang === 'rw' ? 'Kamera ntishyizwa. Ikirangiriro cya amarenga ni ingingo nkuru.' : 'Camera is optional. The symbol picker below is the primary interface.'}
+            {lang === 'rw' ? 'Kamera ifashwe kugira ngo isome amarenga byikora.' : 'Turn on the camera to let AI auto-detect your expressions.'}
           </p>
         )}
       </div>
