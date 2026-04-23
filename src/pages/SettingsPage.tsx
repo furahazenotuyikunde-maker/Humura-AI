@@ -200,7 +200,7 @@ export default function SettingsPage() {
               key={l}
               onClick={() => i18n.changeLanguage(l)}
               className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all ${
-                i18n.language === l
+                i18n.language?.startsWith(l)
                   ? 'bg-primary text-white shadow-lg shadow-primary/25'
                   : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
               }`}

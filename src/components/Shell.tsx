@@ -14,8 +14,9 @@ export const Shell: React.FC<ShellProps> = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
+  const isEnglish = i18n.language?.startsWith('en') || false;
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'rw' : 'en';
+    const newLang = isEnglish ? 'rw' : 'en';
     i18n.changeLanguage(newLang);
   };
 
@@ -77,7 +78,7 @@ export const Shell: React.FC<ShellProps> = () => {
             onClick={toggleLanguage}
             className="px-3 py-1.5 rounded-full bg-primary-50 text-primary-900 text-sm font-semibold hover:bg-primary-100 transition-colors"
           >
-            {i18n.language === 'en' ? 'Kinyarwanda' : 'English'}
+            {isEnglish ? 'Kinyarwanda' : 'English'}
           </button>
         </div>
       </header>
