@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
   HandMetal, Settings, ShieldAlert, User, AlertTriangle
@@ -73,13 +73,13 @@ export const Shell: React.FC<ShellProps> = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          <a
-            href="/emergency"
+          <Link
+            to="/emergency"
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors"
           >
             <ShieldAlert size={16} />
             {i18n.language === 'rw' ? 'Ihutirwa' : 'Emergency'}
-          </a>
+          </Link>
           
           <button 
             onClick={toggleLanguage}
