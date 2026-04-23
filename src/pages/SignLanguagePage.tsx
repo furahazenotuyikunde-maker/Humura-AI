@@ -88,6 +88,8 @@ export default function SignLanguagePage() {
   useEffect(() => {
     if (cameraActive && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
+      // Explicitly call play to bypass browser autoplay restrictions
+      videoRef.current.play().catch(e => console.error("Play error:", e));
     }
   }, [cameraActive]);
 
@@ -119,6 +121,32 @@ export default function SignLanguagePage() {
     setIsLoading(true);
     setAiResponse('');
 
+    const OFFLINE_RESPONSES = [
+      { en: "Thank you for sharing your feelings. Your emotions are completely valid, and I am here to hold space for you.", rw: "Urakoze gusangira ibyiyumviro byawe. Ibyo wumva ni ukuri, kandi ndi hano kugira ngo nkumve." },
+      { en: "It takes courage to express what you're going through. Take a deep breath, and remember you don't have to carry this alone.", rw: "Bisaba ubutwari kuvuga ibyo urimo kunyuramo. Fata umwuka wimbitse, wibuke ko udashobora kwikorera ibi wenyine." },
+      { en: "I see you and I hear you. Even on the hardest days, your resilience shines through. Let's take this one step at a time.", rw: "Ndagukubita imboni kandi ndakumva. Na mu minsi igoye cyane, ubushobozi bwawe bwo kwihangana buragaragara. Reka tubyitwaremo gake gake." },
+      { en: "Your voice matters, and I am listening carefully to what your signs are telling me. You are safe here.", rw: "Ijwi ryawe ni ingenzi, kandi ndakumva witonze ibyo amarenga yawe arikumbwira. Ufite umutekano hano." },
+      { en: "I can sense that things feel heavy right now. Please know that it is absolutely okay to feel this way, and support is always available.", rw: "Nshobora kumva ko ibintu bikuremereye ubu. Ndagusaba kumenya ko ari byiza rwose kwiyumva gutya, kandi ubufasha buhoraho." },
+      { en: "Thank you for trusting me with your thoughts. You are surrounded by a community that cares deeply about your well-being.", rw: "Urakoze kunyizera mu bitekerezo byawe. Uhanzwe n'umuryango wita cyane ku buzima bwawe." },
+      { en: "Every emotion you express is a stepping stone toward healing. I appreciate you opening up.", rw: "Buri cyiyumviro ugaragaje ni intambwe iganisha ku gukira. Ndashima ko wifunguye." },
+      { en: "You don't have to explain everything perfectly. I understand your signs and I am here to support you without judgment.", rw: "Ntugomba gusobanura buri kimwe byatunganye. Ndasobanukirwa amarenga yawe kandi ndi hano kugufasha ntagucira urubanza." },
+      { en: "It's completely normal to have days that feel overwhelming. Let me know how I can best support you in this exact moment.", rw: "Birasanzwe kugira iminsi isaba byinshi. Mbwira uko nshobora kugufasha neza muri aka kanya." },
+      { en: "I acknowledge your pain and your feelings. Remember to show yourself the same compassion you would show to a good friend.", rw: "Ndemera ububabare bwawe n'ibyiyumviro byawe. Ibuka kwiyereka impuhwe wagaragariza inshuti nziza." },
+      { en: "Whenever you feel ready, we can breathe deeply together. You have survived all of your hard days so far.", rw: "Igihe cyose witeguye, dushobora guhumekera hamwe byimbitse. Warokotse iminsi yawe yose igoye kugeza ubu." }
+    ];
+
+    const generateFallback = () => {
+      if (selected.some(s => s.isCrisis)) {
+        return lang === 'rw'
+          ? 'Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.'
+          : 'I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.';
+      }
+      const randomResponse = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
+      return lang === 'rw' 
+        ? `${randomResponse.rw} (Ibyo wasabye: ${message})`
+        : `${randomResponse.en} (You signed: ${message})`;
+    };
+
     try {
       if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -129,21 +157,10 @@ export default function SignLanguagePage() {
         const result = await model.generateContent(message);
         setAiResponse(result.response.text());
       } else {
-        // Offline fallback
-        if (selected.some(s => s.isCrisis)) {
-          setAiResponse(lang === 'rw'
-            ? 'Ndakwumva, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro. Hamagara ako kanya: 114 cyangwa +250 790 003 002.'
-            : 'I hear you, and I\'m so glad you reached out. Your life has value. Please call now: 114 or +250 790 003 002. You don\'t have to face this alone.');
-        } else {
-          setAiResponse(lang === 'rw'
-            ? `Urakoze kuvuga ibyumviro byawe — ${message}. Ibyo umva ni by'ukuri kandi bikwiye gupiganwa. Ndi hano kukugira inshuti. Ese woshaka gutumanahana byinshi?`
-            : `Thank you for sharing — ${message}. What you feel is valid and real. I'm here for you. Would you like to explore any of these feelings further?`);
-        }
+        setAiResponse(generateFallback());
       }
     } catch {
-      setAiResponse(lang === 'rw'
-        ? 'Ndakwumva. Ubufasha buri hano: Hamagara 114 cyangwa +250 790 003 002.'
-        : 'I hear you. Help is available: Call 114 or +250 790 003 002.');
+      setAiResponse(generateFallback());
     } finally {
       setIsLoading(false);
     }
