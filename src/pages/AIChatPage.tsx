@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // ──────────────────────────────────────────────────────────────
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are Inkingi AI, a compassionate mental health support assistant for people in Rwanda.
+const SYSTEM_PROMPT = `You are Humura AI, a compassionate mental health support assistant for people in Rwanda.
 
 RULES:
 1. Respond in the same language as the user (English or Kinyarwanda — detect automatically)
@@ -250,7 +250,7 @@ export default function AIChatPage() {
   const lang = i18n.language;
 
   const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem('inkingi_chat_history');
+    const saved = localStorage.getItem('Humura_chat_history');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -263,7 +263,7 @@ export default function AIChatPage() {
   });
 
   useEffect(() => {
-    localStorage.setItem('inkingi_chat_history', JSON.stringify(messages));
+    localStorage.setItem('Humura_chat_history', JSON.stringify(messages));
   }, [messages]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -276,7 +276,7 @@ export default function AIChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
-  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const thHumurantervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const offlineIndexRef = useRef<Map<string, number>>(new Map());
 
   // Auto-scroll
@@ -288,15 +288,15 @@ export default function AIChatPage() {
   useEffect(() => {
     if (isLoading) {
       let idx = 0;
-      thinkingIntervalRef.current = setInterval(() => {
+      thHumurantervalRef.current = setInterval(() => {
         idx = (idx + 1) % THINKING_MESSAGES.length;
         setThinkingText(THINKING_MESSAGES[idx]);
       }, 1500);
     } else {
-      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
+      if (thHumurantervalRef.current) clearInterval(thHumurantervalRef.current);
     }
     return () => {
-      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
+      if (thHumurantervalRef.current) clearInterval(thHumurantervalRef.current);
     };
   }, [isLoading]);
 
@@ -432,7 +432,7 @@ export default function AIChatPage() {
     setMessages([]);
     setInput('');
     offlineIndexRef.current.clear();
-    localStorage.removeItem('inkingi_chat_history');
+    localStorage.removeItem('Humura_chat_history');
   };
 
   return (
@@ -451,7 +451,7 @@ export default function AIChatPage() {
             <MessageCircle size={16} className="text-white" />
           </div>
           <div>
-            <p className="font-bold text-primary-900 text-sm">Inkingi AI</p>
+            <p className="font-bold text-primary-900 text-sm">Humura AI</p>
             <p className="text-[10px] text-primary-500">
               {tierUsed === 3 ? '📴 Offline Mode' : tierUsed === 1 ? '🌐 Gemini AI' : lang === 'rw' ? 'Haze kugira ngo tuganire' : 'Here to support you'}
             </p>
@@ -490,7 +490,7 @@ export default function AIChatPage() {
             </div>
             <div>
               <h3 className="font-extrabold text-primary-900 text-xl mb-2">
-                {lang === 'rw' ? 'Muraho! Ndi Inkingi AI' : 'Hello! I\'m Inkingi AI'}
+                {lang === 'rw' ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
               </h3>
               <p className="text-primary-600 text-sm max-w-xs leading-relaxed">
                 {lang === 'rw'
@@ -628,4 +628,5 @@ export default function AIChatPage() {
     </div>
   );
 }
+
 

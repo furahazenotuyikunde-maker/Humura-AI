@@ -16,7 +16,7 @@ const resources = {
       "nav.emergency": "Emergency",
       
       "home.greeting": "Hello, how are you feeling today?",
-      "home.greeting.sub": "Inkingi AI is here to support you.",
+      "home.greeting.sub": "Humura AI is here to support you.",
       
       "mood.great": "Great",
       "mood.good": "Good",
@@ -44,7 +44,7 @@ const resources = {
       "nav.emergency": "Ihutirwa",
       
       "home.greeting": "Muraho, umeze ute uyu munsi?",
-      "home.greeting.sub": "Inkingi AI iri hano kugufasha.",
+      "home.greeting.sub": "Humura AI iri hano kugufasha.",
       
       "mood.great": "Neza cyane",
       "mood.good": "Neza",
@@ -73,4 +73,5 @@ i18n
   });
 
 export default i18n;
+
 

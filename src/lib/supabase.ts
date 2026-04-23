@@ -9,3 +9,4 @@ if (supabaseUrl === 'https://placeholder-domain-so-app-doesnt-crash.supabase.co'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+

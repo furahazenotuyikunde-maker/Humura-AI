@@ -19,7 +19,7 @@ const centres: Centre[] = [
   { id: '1', name: 'Kigali Mental Health Referral Centre', district: 'Gasabo', phone: '+250793902059', type: 'National referral center' },
   { id: '2', name: 'Ndera Neuropsychiatric Teaching Hospital', district: 'Gasabo', phone: '+250781447928', type: 'Main psychiatric hospital' },
   { id: '3', name: 'Kigali Psycho-Medical Center', district: 'Gasabo', phone: '+250784280788', type: 'Professional mental health clinic' },
-  { id: '4', name: 'Inkingi Counseling Rwanda', district: 'Gasabo', phone: '+250790137262', type: 'Counseling & therapy services' },
+  { id: '4', name: 'Humura Counseling Rwanda', district: 'Gasabo', phone: '+250790137262', type: 'Counseling & therapy services' },
   { id: '5', name: 'AVEGA Clinic', district: 'Gasabo', phone: '+250788224864', type: 'Trauma & mental health support' },
   { id: '6', name: 'mHub Africa', district: 'Kicukiro', phone: '+250785318416', type: 'Youth mental health support' },
   { id: '7', name: 'Imanzi Counseling & Rehabilitation Center', district: 'Kicukiro', phone: '+250788436901', type: 'Counseling + rehabilitation' },
@@ -231,4 +231,5 @@ export default function SupportCentersPage() {
     </div>
   );
 }
+
 

@@ -66,11 +66,8 @@ export const Shell: React.FC<ShellProps> = () => {
     <div className="flex flex-col min-h-screen bg-background pb-16 md:pb-0 md:pl-64">
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-50 px-4 py-3 flex justify-between items-center">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold tracking-wider">
-            H
-          </div>
-          <h1 className="font-bold text-primary-900 text-lg tracking-tight">Inkingi AI</h1>
+        <button onClick={() => navigate('/')} className="flex items-center">
+          <img src="/logo.png" alt="Humura AI" className="h-8 object-contain" />
         </button>
 
         <div className="flex items-center gap-2">
@@ -91,14 +88,8 @@ export const Shell: React.FC<ShellProps> = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-white border-r border-primary-50 z-40 overflow-y-auto">
         <div className="p-4 border-b border-primary-50">
-          <div className="flex items-center gap-2 mb-2 mt-2">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xl shadow-md shadow-primary/20">
-              H
-            </div>
-            <div>
-              <h1 className="font-bold text-primary-900 leading-tight">Inkingi AI</h1>
-              <p className="text-xs text-primary-500">mind supported, life empowered</p>
-            </div>
+          <div className="flex items-center justify-center mb-2 mt-2">
+            <img src="/logo.png" alt="Humura AI" className="h-16 object-contain" />
           </div>
         </div>
 
@@ -174,4 +165,5 @@ export const Shell: React.FC<ShellProps> = () => {
     </div>
   );
 };
+
 

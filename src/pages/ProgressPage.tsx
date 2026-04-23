@@ -118,9 +118,9 @@ export default function ProgressPage() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('Inkingi_moods');
+    const stored = localStorage.getItem('Humura_moods');
     if (stored) setMoodEntries(JSON.parse(stored));
-    const storedJournal = localStorage.getItem('Inkingi_journal');
+    const storedJournal = localStorage.getItem('Humura_journal');
     if (storedJournal) setJournalEntries(JSON.parse(storedJournal));
   }, []);
 
@@ -166,7 +166,7 @@ export default function ProgressPage() {
     // Save to localStorage first (offline-first)
     const updated = [...moodEntries.filter(e => e.date !== today), entry];
     setMoodEntries(updated);
-    localStorage.setItem('Inkingi_moods', JSON.stringify(updated));
+    localStorage.setItem('Humura_moods', JSON.stringify(updated));
 
     // Non-blocking sync to Supabase
     supabase.from('mood_metrics').upsert({ mood_level: mood.id, created_at: new Date().toISOString() }).then(() => {});
@@ -182,7 +182,7 @@ export default function ProgressPage() {
     };
     const updated = [entry, ...journalEntries];
     setJournalEntries(updated);
-    localStorage.setItem('Inkingi_journal', JSON.stringify(updated));
+    localStorage.setItem('Humura_journal', JSON.stringify(updated));
     setJournalText('');
     setJournalSaved(true);
     setTimeout(() => setJournalSaved(false), 3000);
@@ -543,4 +543,5 @@ export default function ProgressPage() {
     </div>
   );
 }
+
 

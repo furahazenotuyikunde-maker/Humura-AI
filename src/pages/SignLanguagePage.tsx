@@ -107,7 +107,7 @@ export default function SignLanguagePage() {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({
           model: 'gemini-1.5-flash',
-          systemInstruction: `You are Inkingi AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
+          systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
         });
         const result = await model.generateContent(message);
         setAiResponse(result.response.text());
@@ -386,7 +386,7 @@ export default function SignLanguagePage() {
           >
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm">🤟</div>
-              <p className="font-bold text-primary-900 text-sm">Inkingi AI</p>
+              <p className="font-bold text-primary-900 text-sm">Humura AI</p>
             </div>
             <p className="text-sm text-primary-800 leading-relaxed">{aiResponse}</p>
             <div className="flex gap-2">
@@ -413,4 +413,5 @@ export default function SignLanguagePage() {
     </div>
   );
 }
+
 

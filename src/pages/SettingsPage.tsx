@@ -25,14 +25,14 @@ export default function SettingsPage() {
 
   // Load settings from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('Inkingi_settings');
+    const stored = localStorage.getItem('Humura_settings');
     if (stored) setSettings(JSON.parse(stored));
   }, []);
 
   const updateSetting = (key: keyof SettingsState, value: boolean) => {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
-    localStorage.setItem('Inkingi_settings', JSON.stringify(updated));
+    localStorage.setItem('Humura_settings', JSON.stringify(updated));
 
     if (key === 'simpleView') {
       document.documentElement.style.fontSize = value ? '18px' : '';
@@ -253,7 +253,7 @@ export default function SettingsPage() {
       <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-2xl">
         <Info size={16} className="text-primary flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-xs font-semibold text-primary-900">Inkingi AI v1.0</p>
+          <p className="text-xs font-semibold text-primary-900">Humura AI v1.0</p>
           <p className="text-xs text-primary-600 mt-0.5">
             {lang === 'rw'
               ? 'Gufasha ubuzima bwo mu mutwe mu Rwanda · Nta makuru y\'umwirondoro abikwa nta mvano yawe'
@@ -264,4 +264,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 

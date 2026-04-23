@@ -227,12 +227,12 @@ export default function EmergencyPage() {
         <MessageCircle size={20} className="text-primary flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-primary-900 text-sm">
-            {lang === 'rw' ? 'Vuga na Inkingi AI' : 'Talk to Inkingi AI'}
+            {lang === 'rw' ? 'Vuga na Humura AI' : 'Talk to Humura AI'}
           </p>
           <p className="text-xs text-neutral-500 mt-0.5">
             {lang === 'rw'
-              ? 'Inkingi AI itangirana gufotora ubuzima bwawe no kukugobotora — amasaa yose.'
-              : 'Inkingi AI is always here to listen, support and guide you — no judgment, any time.'}
+              ? 'Humura AI itangirana gufotora ubuzima bwawe no kukugobotora — amasaa yose.'
+              : 'Humura AI is always here to listen, support and guide you — no judgment, any time.'}
           </p>
           <Link
             to="/chat"
@@ -268,4 +268,5 @@ export default function EmergencyPage() {
     </div>
   );
 }
+
 

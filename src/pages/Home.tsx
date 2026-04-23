@@ -20,7 +20,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
     const today = new Date().toISOString().split('T')[0];
-    const stored = localStorage.getItem('Inkingi_moods');
+    const stored = localStorage.getItem('Humura_moods');
     if (stored) {
       const entries = JSON.parse(stored);
       const todayEntry = entries.find((e: any) => e.date === today);
@@ -34,7 +34,7 @@ export default function Home() {
   // 7-day mood strip
   const weekMoods: (any | null)[] = (() => {
     const today = new Date();
-    const stored = localStorage.getItem('Inkingi_moods');
+    const stored = localStorage.getItem('Humura_moods');
     const entries = stored ? JSON.parse(stored) : [];
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(today);
@@ -52,14 +52,14 @@ export default function Home() {
 
     const today = new Date().toISOString().split('T')[0];
     const entry = { date: today, mood: mood.id, emoji: mood.emoji, score: MOODS.indexOf(mood) === 0 ? 5 : MOODS.length - MOODS.indexOf(mood) };
-    const stored = localStorage.getItem('Inkingi_moods');
+    const stored = localStorage.getItem('Humura_moods');
     const entries = stored ? JSON.parse(stored) : [];
     const updated = [...entries.filter((e: any) => e.date !== today), entry];
-    localStorage.setItem('Inkingi_moods', JSON.stringify(updated));
+    localStorage.setItem('Humura_moods', JSON.stringify(updated));
   };
 
   const navCards = [
-    { path: '/chat', icon: MessageCircle, en: 'AI Therapy Chat', rw: 'Ikiganiro cya Inkingi AI', color: 'bg-primary', desc: { en: 'Talk with your AI companion', rw: 'Ganira na AI yawe' } },
+    { path: '/chat', icon: MessageCircle, en: 'AI Therapy Chat', rw: 'Ikiganiro cya Humura AI', color: 'bg-primary', desc: { en: 'Talk with your AI companion', rw: 'Ganira na AI yawe' } },
     { path: '/education', icon: BookOpen, en: 'Education Hub', rw: 'Ikigo cy\'Indangamuntu', color: 'bg-blue-500', desc: { en: 'Learn about mental health', rw: 'Iga ku buzima bwo mu mutwe' } },
     { path: '/centers', icon: MapPin, en: 'Support Centres', rw: 'Amavuriro', color: 'bg-rose-500', desc: { en: '15 verified centres in Rwanda', rw: 'Ibigo 15 mu Rwanda' } },
     { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'Shaka Inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "Bona abaganga n'inzobere" } },
@@ -85,8 +85,8 @@ export default function Home() {
           className="text-primary-600 mt-1 text-sm"
         >
           {lang === 'rw'
-            ? 'Inkingi AI iri hano kugufasha. Umeze ute uyu munsi?'
-            : 'Inkingi AI is here to support you. How are you feeling today?'}
+            ? 'Humura AI iri hano kugufasha. Umeze ute uyu munsi?'
+            : 'Humura AI is here to support you. How are you feeling today?'}
         </motion.p>
       </section>
 
@@ -193,7 +193,7 @@ export default function Home() {
       {/* Nav grid */}
       <section>
         <h2 className="font-bold text-primary-900 mb-3">
-          {lang === 'rw' ? 'Shakisha Inkingi AI' : 'Explore Inkingi AI'}
+          {lang === 'rw' ? 'Shakisha Humura AI' : 'Explore Humura AI'}
         </h2>
         <div className="grid grid-cols-2 gap-3">
           {navCards.map((card, idx) => (
@@ -236,4 +236,5 @@ export default function Home() {
     </div>
   );
 }
+
 
