@@ -62,6 +62,7 @@ const THINKING_MESSAGES = [
 // CRISIS OVERLAY COMPONENT
 // ──────────────────────────────────────────────────────────────
 function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: string }) {
+  const isRw = lang.startsWith('rw');
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -79,10 +80,10 @@ function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: strin
           <AlertTriangle size={48} className="text-white animate-pulse" />
         </div>
         <h2 className="text-3xl font-extrabold text-white mb-2">
-          {lang === 'rw' ? 'Uri mubukiro bwacu' : 'You Are Not Alone'}
+          {isRw ? 'Uri mubukiro bwacu' : 'You Are Not Alone'}
         </h2>
         <p className="text-red-200 mb-8 leading-relaxed">
-          {lang === 'rw'
+          {isRw
             ? 'Ndakwumva, kandi nishimye ko ugihari. Hamagara ubu — inzobere ziri hano zigufasha.'
             : 'We hear you, and we\'re glad you\'re still here. Please reach out to someone who can help right now.'}
         </p>
@@ -92,7 +93,7 @@ function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: strin
             href="tel:114"
             className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
           >
-            <span>🆘 {lang === 'rw' ? 'Hotline y\'Ubuzima bwo mu Mutwe' : 'Mental Health Crisis Hotline'}</span>
+            <span>🆘 {isRw ? 'Hotline y\'Ubuzima bwo mu Mutwe' : 'Mental Health Crisis Hotline'}</span>
             <span className="text-red-600 font-black">114</span>
           </a>
           <a
@@ -113,7 +114,7 @@ function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: strin
             href="tel:112"
             className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
           >
-            <span>🚨 {lang === 'rw' ? 'Polisi/Imbangukiragutabara' : 'Police/Ambulance'}</span>
+            <span>🚨 {isRw ? 'Polisi/Imbangukiragutabara' : 'Police/Ambulance'}</span>
             <span className="text-red-600 font-black">112</span>
           </a>
         </div>
@@ -123,7 +124,7 @@ function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: strin
           className="text-white/70 hover:text-white flex items-center gap-2 mx-auto transition-colors"
         >
           <X size={18} />
-          <span className="text-sm">{lang === 'rw' ? 'Ndabona neza, garuka ku kiganiro' : 'I\'m okay, return to chat'}</span>
+          <span className="text-sm">{isRw ? 'Ndabona neza, garuka ku kiganiro' : 'I\'m okay, return to chat'}</span>
         </button>
       </motion.div>
     </motion.div>

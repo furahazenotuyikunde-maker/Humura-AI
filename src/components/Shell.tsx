@@ -14,10 +14,9 @@ export const Shell: React.FC<ShellProps> = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const isEnglish = i18n.language?.startsWith('en') || false;
+  const isRw = i18n.language?.startsWith('rw') || false;
   const toggleLanguage = () => {
-    const newLang = isEnglish ? 'rw' : 'en';
-    i18n.changeLanguage(newLang);
+    i18n.changeLanguage(isRw ? 'en' : 'rw');
   };
 
   // Bottom mobile nav (primary 4)
@@ -31,7 +30,7 @@ export const Shell: React.FC<ShellProps> = () => {
   // Full sidebar nav
   const sidebarSections = [
     {
-      title: !isEnglish ? 'Ibihingwa' : 'Core',
+      title: isRw ? 'Ibihingwa' : 'Core',
       items: [
         { to: '/', icon: Home, label: t('nav.home') },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
@@ -40,7 +39,7 @@ export const Shell: React.FC<ShellProps> = () => {
       ],
     },
     {
-      title: !isEnglish ? 'Amakuru & Ubufasha' : 'Resources',
+      title: isRw ? 'Amakuru & Ubufasha' : 'Resources',
       items: [
         { to: '/education', icon: BookOpen, label: t('nav.education') },
         { to: '/centers', icon: MapPin, label: t('nav.centers') },
@@ -49,7 +48,7 @@ export const Shell: React.FC<ShellProps> = () => {
       ],
     },
     {
-      title: !isEnglish ? 'Ihutirwa' : 'Emergency',
+      title: isRw ? 'Ihutirwa' : 'Emergency',
       items: [
         { to: '/emergency', icon: AlertTriangle, label: t('nav.emergency'), danger: true },
       ],
@@ -75,7 +74,7 @@ export const Shell: React.FC<ShellProps> = () => {
             onClick={toggleLanguage}
             className="px-3 py-1.5 rounded-full bg-primary-50 text-primary-900 text-sm font-semibold hover:bg-primary-100 transition-colors"
           >
-            {isEnglish ? 'Kinyarwanda' : 'English'}
+            {isRw ? 'English' : 'Kinyarwanda'}
           </button>
         </div>
       </header>
@@ -136,7 +135,7 @@ export const Shell: React.FC<ShellProps> = () => {
             className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-neutral-100 text-neutral-600 text-sm font-semibold hover:bg-neutral-200 transition-colors"
           >
             <ShieldAlert size={16} />
-            {!isEnglish ? 'Sohoka Vuba' : 'Quick Exit'}
+            {isRw ? 'Sohoka Vuba' : 'Quick Exit'}
           </a>
         </div>
       </aside>

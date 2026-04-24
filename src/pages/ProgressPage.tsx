@@ -393,7 +393,7 @@ export default function ProgressPage() {
           ) : (
             <div className="glass-card rounded-3xl p-5 space-y-4">
               <h3 className="font-bold text-primary-900">
-                {lang === 'rw' ? 'Umeze ute uyu munsi?' : 'How are you feeling today?'}
+                {isRw ? 'Umeze ute uyu munsi?' : 'How are you feeling today?'}
               </h3>
               <div className="flex justify-between gap-2">
                 {MOODS.map(mood => (
@@ -405,7 +405,7 @@ export default function ProgressPage() {
                         ? 'bg-primary scale-105 shadow-lg shadow-primary/20'
                         : 'bg-primary-50 hover:bg-primary-100 hover:scale-105'
                     }`}
-                    aria-label={lang === 'rw' ? mood.rw : mood.en}
+                    aria-label={isRw ? mood.rw : mood.en}
                   >
                     <span className="text-2xl">{mood.emoji}</span>
                     <span className={`text-[10px] font-bold ${selectedMood === mood.id ? 'text-white' : 'text-primary-700'}`}>
@@ -489,7 +489,7 @@ export default function ProgressPage() {
             <textarea
               value={journalText}
               onChange={e => setJournalText(e.target.value)}
-              placeholder={lang === 'rw' ? 'Andika ibibereye mu mutima wawe...' : 'Write freely — this is your safe space...'}
+              placeholder={isRw ? 'Andika ibibereye mu mutima wawe...' : 'Write freely — this is your safe space...'}
               className="w-full p-4 text-sm bg-primary-50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none placeholder:text-neutral-400 leading-relaxed min-h-[180px]"
             />
 
