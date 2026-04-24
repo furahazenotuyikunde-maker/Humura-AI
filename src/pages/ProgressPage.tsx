@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart2, Flame, Smile, Calendar, BookOpen, Brain, PlusCircle, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ──────────────────────────────────────────────────────────────

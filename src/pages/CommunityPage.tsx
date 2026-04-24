@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Lock, Send, Edit2, Trash2, Check, X, Shield } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
 // CIRCLES DATA — 4 peer support groups

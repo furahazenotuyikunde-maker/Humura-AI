@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Volume2, VolumeX, RotateCcw, Phone } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
 // 3-TIER AI CONFIGURATION
