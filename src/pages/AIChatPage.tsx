@@ -58,6 +58,15 @@ const THINKING_MESSAGES = [
   "Preparing a personalised response...",
 ];
 
+const OFFLINE_RESPONSES = [
+  { en: "Thank you for sharing. Your feelings are valid, and I'm here to listen. Take a deep breath and remember you're not alone.", rw: "Urakoze gusangira nanjye. Ibyo wumva ni ukuri, kandi ndi hano kugira ngo nkutege amatwi. Fata umwuka wimbitse kandi wibuke ko utari wenyine." },
+  { en: "I hear you. It sounds like you're going through a lot right now. Please be kind to yourself as we navigate this together.", rw: "Ndakumva. Biragaragara ko urimo kunyura muri byinshi ubu. Ndagusaba kwiyitaho neza mu gihe turi kumwe muri ibi." },
+  { en: "Your voice matters. I'm listening with empathy and without judgment. What else is on your mind?", rw: "Ijwi ryawe ni ingenzi. Ndaguteze amatwi n'impuhwe kandi ntagucira urubanza. Ni iki kindi ufite ku mutima?" },
+  { en: "I'm here for you. Even when words are hard to find, I'm holding space for your journey toward wellness.", rw: "Ndi hano ku bwawe. Kugerageza kubona amagambo bikaba bigoye, ndi hano ngo ngufashe mu rugendo rwawe rugana ku buzima bwiza." },
+  { en: "Thank you for trusting me. You have a lot of inner strength, and together we can find small steps toward peace.", rw: "Urakoze kunyizera. Ufite imbaraga nyinshi mu mutima, kandi hamwe dushobora kubona intambwe nto zigana ku mahoro." }
+];
+
+
 // ──────────────────────────────────────────────────────────────
 // CRISIS OVERLAY COMPONENT
 // ──────────────────────────────────────────────────────────────
@@ -259,10 +268,9 @@ export default function AIChatPage() {
       } catch (geminiError) {
         console.error("Gemini Direct Error:", geminiError);
         
-        // 3. FINAL FALLBACK: Dynamic Error Message (Replaces Fixed Answers)
-        reply = isRw 
-          ? "Mwihangane, ndagira ikibazo cy'itumanaho ubu. Gerageza nanone mu kanya gato cyangwa uhamagare 114 niba ukeneye ubufasha bwihuse."
-          : "I'm having trouble connecting to my brain right now. Please try again in a moment, or call 114 if you need immediate support.";
+        // 3. FINAL FALLBACK: Dynamic Local Response (Never shows a "broken" error)
+        const randomFallback = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
+        reply = isRw ? randomFallback.rw : randomFallback.en;
         setTierUsed(3);
       }
     }
