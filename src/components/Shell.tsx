@@ -74,6 +74,7 @@ export const Shell: React.FC<ShellProps> = () => {
       items: [
         { to: '/', icon: Home, label: t('nav.home') },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
+        { to: '#', icon: RotateCcw, label: isRw ? 'ibiganiro twagiranye' : 'Chat History', onClick: () => setShowHistory(true) },
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
       ],
@@ -98,7 +99,6 @@ export const Shell: React.FC<ShellProps> = () => {
       title: '',
       items: [
         { to: '/settings', icon: Settings, label: t('nav.settings') },
-        { to: '#', icon: RotateCcw, label: isRw ? 'ibiganiro twagiranye' : 'Chat History', onClick: () => setShowHistory(true) },
       ],
     },
   ];
