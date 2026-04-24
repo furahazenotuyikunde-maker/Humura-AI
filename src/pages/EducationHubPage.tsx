@@ -279,7 +279,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
     setShowVideo(false);
   };
 
-  const videoUrl = `https://www.youtube.com/embed/${topic.videoId}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=1&hl=${isRw ? 'rw' : 'en'}`;
+  const videoUrl = `https://www.youtube.com/embed/${topic.videoId}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=1`;
   const ytFallback = `https://www.youtube.com/watch?v=${topic.videoId}`;
 
   return (
