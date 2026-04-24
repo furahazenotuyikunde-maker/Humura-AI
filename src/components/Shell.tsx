@@ -224,10 +224,10 @@ export const Shell: React.FC<ShellProps> = () => {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-white border-r border-primary-50 z-40 overflow-y-auto">
-        <div className="p-4 border-b border-primary-50">
-          <div className="flex flex-col items-center justify-center mb-2 mt-2 space-y-1">
-            <img src="/logo.png" alt="Humura AI" className="h-24 object-contain" />
-            <p className="text-sm font-bold text-primary-600 tracking-wide text-center">mind supported, life empowered.</p>
+        <div className="p-3 border-b border-primary-50">
+          <div className="flex flex-col items-center justify-center space-y-1">
+            <img src="/logo.png" alt="Humura AI" className="h-14 object-contain" />
+            <p className="text-[10px] font-bold text-primary-600 tracking-tight text-center uppercase">mind supported, life empowered.</p>
           </div>
         </div>
 
