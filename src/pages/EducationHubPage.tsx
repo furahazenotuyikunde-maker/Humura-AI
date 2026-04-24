@@ -543,8 +543,8 @@ export default function EducationHubPage() {
                 </p>
                 <p className="text-xs text-primary-600 mt-0.5">
                   {isRw
-                    ? 'Kanda "Wumva" kuri buri nyigisho kugira ngo uyumve mu rurimi rwawe'
-                    : 'Tap "Listen" on any topic to have the full article read aloud in your language.'}
+                    ? 'Kanda "Wumva", "Reba" cyangwa "Soma" kuri buri nyigisho kugira ngo uyikurikire mu rurimi rwawe'
+                    : 'Tap "Listen", "Watch" or "Read" on any topic to follow the content in your preferred way.'}
                 </p>
               </div>
             </div>
