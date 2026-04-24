@@ -159,6 +159,22 @@ export default function ProfessionalsPage() {
   const lang = i18n.language;
   const [selected, setSelected] = useState<Professional | null>(null);
   const [booked, setBooked] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+
+  const specialties = useMemo(() => {
+    const set = new Set<string>();
+    professionals.forEach(p => {
+      (lang === 'rw' ? p.specialtiesRw : p.specialties).forEach(s => set.add(s));
+    });
+    return ['all', ...Array.from(set)];
+  }, [lang]);
+
+  const filteredProfessionals = useMemo(() => {
+    if (activeFilter === 'all') return professionals;
+    return professionals.filter(p => 
+      (lang === 'rw' ? p.specialtiesRw : p.specialties).includes(activeFilter)
+    );
+  }, [activeFilter, lang]);
 
   const handleBook = (id: string) => {
     setBooked(id);
@@ -181,6 +197,23 @@ export default function ProfessionalsPage() {
             : 'Book a session with a qualified mental health professional in Rwanda'}
         </p>
       </motion.div>
+
+      {/* Filters */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+        {specialties.map(spec => (
+          <button
+            key={spec}
+            onClick={() => setActiveFilter(spec)}
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+              activeFilter === spec
+                ? 'bg-primary text-white shadow-md shadow-primary/25'
+                : 'bg-white border border-primary-100 text-primary-700 hover:bg-primary-50'
+            }`}
+          >
+            {spec === 'all' ? (lang === 'rw' ? 'Byose' : 'All') : spec}
+          </button>
+        ))}
+      </div>
 
       {/* Booking success toast */}
       <AnimatePresence>

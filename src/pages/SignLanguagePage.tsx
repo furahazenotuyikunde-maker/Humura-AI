@@ -69,6 +69,11 @@ export default function SignLanguagePage() {
   const [autoDetectActive, setAutoDetectActive] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
 
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
