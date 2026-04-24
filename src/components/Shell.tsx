@@ -74,9 +74,11 @@ export const Shell: React.FC<ShellProps> = () => {
       items: [
         { to: '/', icon: Home, label: t('nav.home') },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
+        { to: '#', icon: RotateCcw, label: isRw ? 'Amateka' : 'Chat History', onClick: () => setShowHistory(true) },
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
       ],
+
     },
     {
       title: isRw ? 'Amakuru & Ubufasha' : 'Resources',
@@ -106,18 +108,11 @@ export const Shell: React.FC<ShellProps> = () => {
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-50 px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary-50 rounded-xl transition-colors text-primary font-bold text-xs"
-            aria-label="View history"
-          >
-            <RotateCcw size={16} />
-            <span>{isRw ? 'Amateka' : 'History'}</span>
-          </button>
           <button onClick={() => navigate('/')} className="flex items-center py-1">
             <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
           </button>
         </div>
+
 
 
         <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm">
@@ -164,26 +159,38 @@ export const Shell: React.FC<ShellProps> = () => {
               )}
               <div className="space-y-0.5">
                 {section.items.map((item: any) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm ${
-                        isActive
-                          ? item.danger
-                            ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
-                            : 'bg-primary text-white shadow-md shadow-primary/20'
-                          : item.danger
-                          ? 'text-red-500 hover:bg-red-50'
-                          : 'text-neutral-500 hover:bg-primary-50 hover:text-primary-900'
-                      }`
-                    }
-                  >
-                    <item.icon size={18} />
-                    {item.label}
-                  </NavLink>
+                  item.onClick ? (
+                    <button
+                      key={item.label}
+                      onClick={item.onClick}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm text-neutral-500 hover:bg-primary-50 hover:text-primary-900"
+                    >
+                      <item.icon size={18} />
+                      {item.label}
+                    </button>
+                  ) : (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/'}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm ${
+                          isActive
+                            ? item.danger
+                              ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
+                              : 'bg-primary text-white shadow-md shadow-primary/20'
+                            : item.danger
+                            ? 'text-red-500 hover:bg-red-50'
+                            : 'text-neutral-500 hover:bg-primary-50 hover:text-primary-900'
+                        }`
+                      }
+                    >
+                      <item.icon size={18} />
+                      {item.label}
+                    </NavLink>
+                  )
                 ))}
+
               </div>
             </div>
           ))}
