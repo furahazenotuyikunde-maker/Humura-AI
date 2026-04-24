@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone
 } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
@@ -136,9 +136,81 @@ export const Shell: React.FC<ShellProps> = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 animate-in fade-in duration-500">
-        <Outlet />
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 animate-in fade-in duration-500 flex flex-col">
+        <div className="flex-1">
+          <Outlet />
+        </div>
+
+        {/* Premium Footer */}
+        <footer className="mt-12 pt-10 pb-6 border-t border-primary-50 bg-white/50 backdrop-blur-sm rounded-t-[3rem]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
+            {/* About */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="Humura AI" className="h-8 object-contain" />
+                <span className="font-bold text-primary-900 tracking-tight">Humura AI</span>
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                {isRw 
+                  ? "Humura AI ni urubuga rw'ikoranabuhanga rurimo indimi ebyiri rugamije gutanga ubufasha mu buzima bwo mu mutwe, rwifashishije ikoranabuhanga rya AI, amarenga, n'uburyo bwo gufasha mu bibazo byihutirwa mu muryango nyarwanda."
+                  : "Humura AI is a bilingual mental health platform providing empathetic AI therapy, sign language support, and crisis intervention for the Rwandan community."}
+              </p>
+            </div>
+
+            {/* Tech Stack */}
+            <div className="space-y-4">
+              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
+                {isRw ? "Ikoranabuhanga" : "Technology"}
+              </h4>
+              <ul className="text-xs text-neutral-500 space-y-2">
+                <li>• React & Vite</li>
+                <li>• Google Gemini 1.5 Flash</li>
+                <li>• Supabase Edge Functions</li>
+                <li>• Tailwind CSS & Framer Motion</li>
+              </ul>
+            </div>
+
+            {/* Testimonials */}
+            <div className="space-y-4">
+              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
+                {isRw ? "Ubuhamya" : "Testimonies"}
+              </h4>
+              <div className="space-y-3">
+                <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2">
+                  "{isRw ? "Ubu rubuga rwamfashije mu bihe bikomeye. AI ya Humura irumva cyane." : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+                </div>
+                <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2">
+                  "{isRw ? "Uburyo bw'amarenga ni bwo nategerezaga. Urakoze Humura AI!" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className="space-y-4">
+              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
+                {isRw ? "Twandikire" : "Contact"}
+              </h4>
+              <div className="text-xs text-neutral-500 space-y-2">
+                <p className="flex items-center gap-2">
+                  <Phone size={14} className="text-primary-400" />
+                  +250 790 723 406
+                </p>
+                <p className="flex items-center gap-2">
+                  <ShieldAlert size={14} className="text-primary-400" />
+                  tuyikundefzeno@gmail.com
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-primary-50 text-center">
+            <p className="text-[10px] text-neutral-400 font-medium tracking-widest uppercase">
+              &copy; {new Date().getFullYear()} Humura AI · Mind Supported, Life Empowered.
+            </p>
+          </div>
+        </footer>
       </main>
+
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-white border-r border-primary-50 z-40 overflow-y-auto">
