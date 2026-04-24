@@ -108,10 +108,11 @@ export const Shell: React.FC<ShellProps> = () => {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setShowHistory(true)}
-            className="p-2 hover:bg-primary-50 rounded-xl transition-colors text-primary"
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary-50 rounded-xl transition-colors text-primary font-bold text-xs"
             aria-label="View history"
           >
-            <RotateCcw size={20} />
+            <RotateCcw size={16} />
+            <span>{isRw ? 'Amateka' : 'History'}</span>
           </button>
           <button onClick={() => navigate('/')} className="flex items-center py-1">
             <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
