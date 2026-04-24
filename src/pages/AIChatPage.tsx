@@ -289,7 +289,8 @@ export default function AIChatPage() {
         body: { 
           message: userText,
           history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-          lang: lang
+          lang: lang,
+          apiKey: GEMINI_API_KEY // Optional: If edge function is configured to take it
         }
       });
 
@@ -303,8 +304,8 @@ export default function AIChatPage() {
       
       // 2. FALLBACK TO DIRECT GEMINI (If key exists in .env)
       try {
-        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
-          // Inline Gemini call logic to remove the separate function
+        if (GEMINI_API_KEY && GEMINI_API_KEY.length > 10) {
+          // Direct client-side call if Edge Function fails
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
           const model = genAI.getGenerativeModel({
@@ -312,7 +313,8 @@ export default function AIChatPage() {
             systemInstruction: SYSTEM_PROMPT,
           });
 
-          const formattedHistory = messages.map(m => ({
+          // Convert messages to Gemini format
+          const formattedHistory = messages.slice(-10).map(m => ({
             role: m.role === 'user' ? 'user' : 'model',
             parts: [{ text: m.content }],
           }));
@@ -322,7 +324,7 @@ export default function AIChatPage() {
           reply = result.response.text();
           setTierUsed(1);
         } else {
-          throw new Error('No API keys provided');
+          throw new Error('Valid Gemini API key missing or invalid format (should start with AIza)');
         }
       } catch (geminiError) {
         console.error("Gemini Direct Error:", geminiError);
