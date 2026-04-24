@@ -307,6 +307,7 @@ export default function SignLanguagePage() {
             onClick={reset}
             className="p-2 bg-primary-50 rounded-xl text-primary-400 hover:bg-primary-100 transition-colors"
             aria-label="Reset"
+            title={isRw ? 'Kanda inshuri 3 kugirango usubire ibyuma' : 'Click to reset'}
           >
             <RotateCcw size={18} />
           </button>

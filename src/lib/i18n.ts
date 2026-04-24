@@ -44,6 +44,7 @@ const resources = {
       "nav.professionals": "hura ni inzobere",
       "nav.emergency": "ubufasha bw’ihutirwa",
       "nav.settings": "Igenamiterere",
+      "history.title": "ibiganiro twagiranye",
 
       
       "home.greeting": "Muraho, umeze ute uyu munsi?",

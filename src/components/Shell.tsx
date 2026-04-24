@@ -74,7 +74,7 @@ export const Shell: React.FC<ShellProps> = () => {
       items: [
         { to: '/', icon: Home, label: t('nav.home') },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
-        { to: '#', icon: RotateCcw, label: isRw ? 'Amateka' : 'Chat History', onClick: () => setShowHistory(true) },
+        { to: '#', icon: RotateCcw, label: isRw ? 'ibiganiro twagiranye' : 'Chat History', onClick: () => setShowHistory(true) },
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
       ],
@@ -332,7 +332,7 @@ export const Shell: React.FC<ShellProps> = () => {
               <div className="p-4 border-b border-primary-50 flex items-center justify-between bg-primary-50/50">
                 <div className="flex items-center gap-2">
                   <RotateCcw size={18} className="text-primary" />
-                  <h3 className="font-bold text-primary-900">{isRw ? 'Amateka y\'ibiganiro' : 'Chat History'}</h3>
+                  <h3 className="font-bold text-primary-900">{isRw ? 'ibiganiro twagiranye' : 'Chat History'}</h3>
                 </div>
                 <button onClick={() => setShowHistory(false)} className="p-1.5 hover:bg-primary-100 rounded-lg text-neutral-400 transition-colors">
                   <X size={20} />
