@@ -210,7 +210,7 @@ export const Shell: React.FC<ShellProps> = () => {
               className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all border border-red-100 shadow-sm"
             >
               <ShieldAlert size={16} />
-              {isRw ? 'Sohoka Vuba (Quick Exit)' : 'Quick Exit (Sohoka Vuba)'}
+              {isRw ? 'Gusohoka (Quick Exit)' : 'Quick Exit (Gusohoka)'}
             </a>
 
             <p className="text-[10px] text-neutral-400 font-medium tracking-widest uppercase">
