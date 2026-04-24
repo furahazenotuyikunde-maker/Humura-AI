@@ -135,7 +135,8 @@ function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: strin
 // ──────────────────────────────────────────────────────────────
 export default function AIChatPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
 
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('Humura_chat_history');
@@ -258,7 +259,7 @@ export default function AIChatPage() {
         console.error("Gemini Direct Error:", geminiError);
         
         // 3. FINAL FALLBACK: Dynamic Error Message (Replaces Fixed Answers)
-        reply = lang === 'rw' 
+        reply = isRw 
           ? "Mwihangane, ndagira ikibazo cy'itumanaho ubu. Gerageza nanone mu kanya gato cyangwa uhamagare 114 niba ukeneye ubufasha bwihuse."
           : "I'm having trouble connecting to my brain right now. Please try again in a moment, or call 114 if you need immediate support.";
         setTierUsed(3);
@@ -283,12 +284,12 @@ export default function AIChatPage() {
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setMicError(lang === 'rw' ? 'Porogaramu ntishobora guha ijwi muri iyi porogaramu' : 'Speech recognition is not supported in this browser.');
+      setMicError(isRw ? 'Porogaramu ntishobora guha ijwi muri iyi porogaramu' : 'Speech recognition is not supported in this browser.');
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = lang === 'rw' ? 'rw-RW' : 'en-US';
+    recognition.lang = isRw ? 'rw-RW' : 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 
@@ -300,9 +301,9 @@ export default function AIChatPage() {
     recognition.onerror = (e: any) => {
       setIsListening(false);
       if (e.error === 'not-allowed') {
-        setMicError(lang === 'rw' ? 'Uburenganzira bwa mikoro ntibwahawe. Reka uburenganzira bwa mikoro mu igenamiterere rya porogaramu.' : 'Microphone permission denied. Please allow microphone access in your browser settings.');
+        setMicError(isRw ? 'Uburenganzira bwa mikoro ntibwahawe. Reka uburenganzira bwa mikoro mu igenamiterere rya porogaramu.' : 'Microphone permission denied. Please allow microphone access in your browser settings.');
       } else {
-        setMicError(lang === 'rw' ? 'Ikibazo cy\'ijwi: ' + e.error : 'Voice error: ' + e.error);
+        setMicError(isRw ? 'Ikibazo cy\'ijwi: ' + e.error : 'Voice error: ' + e.error);
       }
     };
     recognition.onend = () => setIsListening(false);
@@ -321,7 +322,7 @@ export default function AIChatPage() {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'rw' ? 'rw-RW' : 'en-US';
+    utterance.lang = isRw ? 'rw-RW' : 'en-US';
     utterance.rate = 0.95;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -359,7 +360,7 @@ export default function AIChatPage() {
           <div>
             <p className="font-bold text-primary-900 text-sm">Humura AI</p>
             <p className="text-[10px] text-primary-500">
-              {tierUsed === 3 ? '📴 Offline Mode' : tierUsed === 1 ? '🌐 Gemini AI' : lang === 'rw' ? 'Haze kugira ngo tuganire' : 'Here to support you'}
+              {tierUsed === 3 ? '📴 Offline Mode' : tierUsed === 1 ? '🌐 Gemini AI' : isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}
             </p>
           </div>
         </div>
@@ -396,19 +397,19 @@ export default function AIChatPage() {
             </div>
             <div>
               <h3 className="font-extrabold text-primary-900 text-xl mb-2">
-                {lang === 'rw' ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
+                {isRw ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
               </h3>
               <p className="text-primary-600 text-sm max-w-xs leading-relaxed">
-                {lang === 'rw'
+                {isRw
                   ? 'Ndi inshuti yawe yo gufasha mu buzima bwo mu mutwe. Vuga ibyo umva mu mutima — sinya icyo gishaka.'
                   : 'Your compassionate mental wellness companion. Share what\'s on your mind — I\'m here to listen without judgment.'}
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 max-w-sm">
               {[
-                lang === 'rw' ? 'Ndi nababaye' : 'I feel anxious',
-                lang === 'rw' ? 'Sikuryama neza' : 'I can\'t sleep well',
-                lang === 'rw' ? 'Ndi ingorane nyinshi' : 'I\'m feeling overwhelmed',
+                isRw ? 'Ndi nababaye' : 'I feel anxious',
+                isRw ? 'Sikuryama neza' : 'I can\'t sleep well',
+                isRw ? 'Ndi ingorane nyinshi' : 'I\'m feeling overwhelmed',
               ].map(suggestion => (
                 <button
                   key={suggestion}
@@ -518,7 +519,7 @@ export default function AIChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder={lang === 'rw' ? 'Andika ubutumwa cyangwa kanda mikoro...' : 'Type your message or tap the mic...'}
+          placeholder={isRw ? 'Andika ubutumwa cyangwa kanda mikoro...' : 'Type your message or tap the mic...'}
           className="flex-1 px-4 py-3 bg-white border border-primary-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-neutral-400 font-medium text-sm"
         />
 

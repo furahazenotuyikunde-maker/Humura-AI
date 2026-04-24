@@ -249,7 +249,8 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
   const [activeTab, setActiveTab] = useState<'article' | 'tips'>('article');
   const utteranceRef = React.useRef<SpeechSynthesisUtterance | null>(null);
 
-  const article = lang === 'rw' ? topic.articleRw : topic.articleEn;
+  const isRw = lang.startsWith('rw');
+  const article = isRw ? topic.articleRw : topic.articleEn;
 
   const handleListen = () => {
     if (!('speechSynthesis' in window)) return;
@@ -259,7 +260,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
     } else {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(article);
-      utterance.lang = lang === 'rw' ? 'rw-RW' : 'en-US';
+      utterance.lang = isRw ? 'rw-RW' : 'en-US';
       utterance.rate = 0.95;
       utterance.onend = () => setIsPlaying(false);
       utterance.onerror = () => setIsPlaying(false);
@@ -298,15 +299,15 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
           <ChevronLeft size={20} />
         </button>
         <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${topic.bg} text-white`}>
-          {topic.iconEmoji} {lang === 'rw' ? topic.titleRw : topic.titleEn}
+          {topic.iconEmoji} {isRw ? topic.titleRw : topic.titleEn}
         </span>
       </div>
 
       {/* Hero */}
       <div className={`rounded-3xl bg-gradient-to-br ${topic.bg} p-6 text-white`}>
         <div className="text-5xl mb-3">{topic.iconEmoji}</div>
-        <h1 className="text-2xl font-extrabold mb-1">{lang === 'rw' ? topic.titleRw : topic.titleEn}</h1>
-        <p className="text-white/80 text-sm leading-relaxed">{lang === 'rw' ? topic.descRw : topic.descEn}</p>
+        <h1 className="text-2xl font-extrabold mb-1">{isRw ? topic.titleRw : topic.titleEn}</h1>
+        <p className="text-white/80 text-sm leading-relaxed">{isRw ? topic.descRw : topic.descEn}</p>
 
         {/* Listen + Watch buttons */}
         <div className="flex gap-3 mt-4">
@@ -327,12 +328,12 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
                   <span className="audio-bar h-4" />
                   <span className="audio-bar h-4" />
                 </span>
-                {lang === 'rw' ? 'Hagarika' : 'Stop'}
+                {isRw ? 'Hagarika' : 'Stop'}
               </>
             ) : (
               <>
                 <Headphones size={16} />
-                {lang === 'rw' ? 'Wumva' : 'Listen'}
+                {isRw ? 'Wumva' : 'Listen'}
               </>
             )}
           </button>
@@ -346,7 +347,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
             }`}
           >
             {showVideo ? <VolumeX size={16} /> : <PlayCircle size={16} />}
-            {showVideo ? (lang === 'rw' ? 'Hagarika Amashusho' : 'Stop Video') : (lang === 'rw' ? 'Reba' : 'Watch')}
+            {showVideo ? (isRw ? 'Hagarika Amashusho' : 'Stop Video') : (isRw ? 'Reba' : 'Watch')}
           </button>
         </div>
       </div>
@@ -364,7 +365,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
               <iframe
                 className="w-full aspect-video"
                 src={videoUrl}
-                title={lang === 'rw' ? topic.titleRw : topic.titleEn}
+                title={isRw ? topic.titleRw : topic.titleEn}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 onError={() => setVideoError(true)}
@@ -372,7 +373,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
             ) : (
               <div className="aspect-video flex flex-col items-center justify-center bg-neutral-900 text-white p-8 text-center">
                 <PlayCircle size={48} className="mb-3 opacity-50" />
-                <p className="text-sm mb-3">{lang === 'rw' ? 'Amashusho ntashobora gutangira' : 'Video failed to load'}</p>
+                <p className="text-sm mb-3">{isRw ? 'Amashusho ntashobora gutangira' : 'Video failed to load'}</p>
                 <a
                   href={ytFallback}
                   target="_blank"
@@ -380,7 +381,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors"
                 >
                   <ExternalLink size={14} />
-                  {lang === 'rw' ? 'Reba kuri YouTube' : 'Watch on YouTube'}
+                  {isRw ? 'Reba kuri YouTube' : 'Watch on YouTube'}
                 </a>
               </div>
             )}
@@ -392,7 +393,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
                 className="flex items-center gap-1.5 text-white/70 text-xs hover:text-white transition-colors"
               >
                 <ExternalLink size={12} />
-                {lang === 'rw' ? 'Reba kuri YouTube ↗' : 'Watch on YouTube ↗'}
+                {isRw ? 'Reba kuri YouTube ↗' : 'Watch on YouTube ↗'}
               </a>
               <button onClick={stopVideo} className="text-white/50 hover:text-white text-xs transition-colors">
                 <X size={14} />
@@ -413,8 +414,8 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
             }`}
           >
             {tab === 'article'
-              ? (lang === 'rw' ? '📖 Inyandiko' : '📖 Article')
-              : (lang === 'rw' ? '💡 Inama' : '💡 Tips')}
+              ? (isRw ? '📖 Inyandiko' : '📖 Article')
+              : (isRw ? '💡 Inama' : '💡 Tips')}
           </button>
         ))}
       </div>
@@ -441,7 +442,7 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
             >
               <Lightbulb size={18} className="text-accent flex-shrink-0 mt-0.5" />
               <p className="text-sm text-primary-800 font-medium leading-relaxed">
-                {lang === 'rw' ? tip.rw : tip.en}
+                {isRw ? tip.rw : tip.en}
               </p>
             </motion.div>
           ))}
@@ -456,7 +457,8 @@ function TopicDetail({ topic, lang, onBack }: { topic: Topic; lang: string; onBa
 // ──────────────────────────────────────────────────────────────
 export default function EducationHubPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const [selected, setSelected] = useState<Topic | null>(null);
 
   return (
@@ -482,11 +484,11 @@ export default function EducationHubPage() {
               <div className="flex items-center gap-2 mb-1">
                 <BookOpen className="text-primary" size={28} />
                 <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-                  {lang === 'rw' ? 'Igicumbi cy\'ubumenyi' : 'Education Hub'}
+                  {isRw ? 'Igicumbi cy\'ubumenyi' : 'Education Hub'}
                 </h1>
               </div>
               <p className="text-primary-600 text-sm">
-                {lang === 'rw'
+                {isRw
                   ? 'Inyigisho, amashusho n\'amajwi ku buzima bwo mu mutwe'
                   : 'Psychoeducation articles, guided audio & curated videos for mental wellness'}
               </p>
@@ -507,24 +509,24 @@ export default function EducationHubPage() {
                     <div className="text-4xl">{topic.iconEmoji}</div>
                     <div>
                       <h3 className="font-bold text-white text-sm leading-tight">
-                        {lang === 'rw' ? topic.titleRw : topic.titleEn}
+                        {isRw ? topic.titleRw : topic.titleEn}
                       </h3>
                       <p className="text-white/70 text-xs mt-1 leading-snug line-clamp-2">
-                        {lang === 'rw' ? topic.descRw : topic.descEn}
+                        {isRw ? topic.descRw : topic.descEn}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 text-white/80 text-xs">
                       <span className="flex items-center gap-1">
                         <Headphones size={11} />
-                        {lang === 'rw' ? 'Wumva' : 'Audio'}
+                        {isRw ? 'Wumva' : 'Audio'}
                       </span>
                       <span className="flex items-center gap-1">
                         <PlayCircle size={11} />
-                        {lang === 'rw' ? 'Reba' : 'Video'}
+                        {isRw ? 'Reba' : 'Video'}
                       </span>
                       <span className="flex items-center gap-1">
                         <ChevronRight size={11} />
-                        {lang === 'rw' ? 'Soma' : 'Read'}
+                        {isRw ? 'Soma' : 'Read'}
                       </span>
                     </div>
                   </div>
@@ -537,10 +539,10 @@ export default function EducationHubPage() {
               <Headphones size={20} className="text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-primary-900">
-                  {lang === 'rw' ? 'Inyigisho zose zishobora kumvwa amajwi' : 'All articles available as audio'}
+                  {isRw ? 'Inyigisho zose zishobora kumvwa amajwi' : 'All articles available as audio'}
                 </p>
                 <p className="text-xs text-primary-600 mt-0.5">
-                  {lang === 'rw'
+                  {isRw
                     ? 'Kanda "Wumva" kuri buri nyigisho kugira ngo uyumve mu rurimi rwawe'
                     : 'Tap "Listen" on any topic to have the full article read aloud in your language.'}
                 </p>

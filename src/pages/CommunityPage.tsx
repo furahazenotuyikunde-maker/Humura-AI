@@ -212,31 +212,31 @@ function CircleChat({ circle, lang, onBack, userName }: { circle: Circle; lang: 
               <div className="flex items-center gap-2">
                 <span className="text-xl">{circle.icon}</span>
                 <h2 className="font-extrabold text-white text-base">
-                  {lang === 'rw' ? circle.nameRw : circle.nameEn}
+                  {isRw ? circle.nameRw : circle.nameEn}
                 </h2>
               </div>
               <p className="text-white/75 text-xs">
                 <Shield size={10} className="inline mr-1" />
-                {lang === 'rw' ? `Moderator: ${circle.moderator}` : `Moderated by ${circle.moderator} · ${circle.moderatorRole}`}
+                {isRw ? `Moderator: ${circle.moderator}` : `Moderated by ${circle.moderator} · ${circle.moderatorRole}`}
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-white/80 text-xs font-medium">{circle.members} {lang === 'rw' ? 'abanyamuryango' : 'members'}</p>
+            <p className="text-white/80 text-xs font-medium">{circle.members} {isRw ? 'abanyamuryango' : 'members'}</p>
           </div>
         </div>
         {/* Safety notice */}
         <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 flex items-center gap-2">
           <Lock size={12} className="text-white/80 flex-shrink-0" />
           <p className="text-white/80 text-xs">
-            {lang === 'rw'
+            {isRw
               ? 'Ahantu hizewe kandi hagendeshwa — nta makuru y\'umwirondoro asangirwa'
               : 'Safe moderated space — no personal info shared'}
           </p>
         </div>
         {/* Current topic */}
         <div className="mt-2 text-white/70 text-xs">
-          📌 {lang === 'rw' ? circle.topicRw : circle.topicEn}
+          📌 {isRw ? circle.topicRw : circle.topicEn}
         </div>
       </div>
 
@@ -331,11 +331,11 @@ function CircleChat({ circle, lang, onBack, userName }: { circle: Circle; lang: 
           >
             <Lock size={12} />
             {isAnon
-              ? (lang === 'rw' ? 'Ntazigaragazwa' : 'Anonymous')
-              : (lang === 'rw' ? `${userName} — Garagaza izina` : `${userName} — Show Name`)}
+              ? (isRw ? 'Ntazigaragazwa' : 'Anonymous')
+              : (isRw ? `${userName} — Garagaza izina` : `${userName} — Show Name`)}
           </button>
           <p className="text-[10px] text-neutral-400">
-            {lang === 'rw' ? 'Amazina yawe arinda buri gihe' : 'Your identity is always protected'}
+            {isRw ? 'Amazina yawe arinda buri gihe' : 'Your identity is always protected'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -343,7 +343,7 @@ function CircleChat({ circle, lang, onBack, userName }: { circle: Circle; lang: 
             value={newMsg}
             onChange={e => setNewMsg(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder={lang === 'rw' ? 'Andika hano...' : 'Share with the circle...'}
+            placeholder={isRw ? 'Andika hano...' : 'Share with the circle...'}
             className="flex-1 px-4 py-3 bg-primary-50 rounded-2xl border border-primary-100 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-neutral-400"
           />
           <button
@@ -365,7 +365,8 @@ function CircleChat({ circle, lang, onBack, userName }: { circle: Circle; lang: 
 // ──────────────────────────────────────────────────────────────
 export default function CommunityPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const userName = 'Member #' + Math.floor(Math.random() * 900 + 100).toString();
 
@@ -393,11 +394,11 @@ export default function CommunityPage() {
               <div className="flex items-center gap-2 mb-1">
                 <Users className="text-primary" size={28} />
                 <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-                  {lang === 'rw' ? 'Imirimo y\'Umuryango' : 'Community Circles'}
+                  {isRw ? 'Imirimo y\'Umuryango' : 'Community Circles'}
                 </h1>
               </div>
               <p className="text-primary-600 text-sm">
-                {lang === 'rw'
+                {isRw
                   ? 'Ikiganiro cy\'ibanga — kumva, gufasha no gutumanahana'
                   : 'Anonymous, judgment-free peer support spaces'}
               </p>
@@ -407,7 +408,7 @@ export default function CommunityPage() {
             <div className="flex items-center gap-2 px-4 py-3 bg-primary-50 rounded-2xl">
               <Lock size={14} className="text-primary flex-shrink-0" />
               <p className="text-xs text-primary-700 font-medium">
-                {lang === 'rw'
+                {isRw
                   ? 'Amazina yawe ahishwa buri gihe. Ibiganiro byose bifite ibanga.'
                   : 'Your identity is always protected. All posts are anonymous by default.'}
               </p>
@@ -427,15 +428,15 @@ export default function CommunityPage() {
                   <div className={`bg-gradient-to-br ${circle.color} p-6`}>
                     <div className="text-4xl mb-3">{circle.icon}</div>
                     <h3 className="font-extrabold text-white text-lg leading-tight">
-                      {lang === 'rw' ? circle.nameRw : circle.nameEn}
+                      {isRw ? circle.nameRw : circle.nameEn}
                     </h3>
                     <p className="text-white/75 text-sm mt-1 leading-snug">
-                      {lang === 'rw' ? circle.descRw : circle.descEn}
+                      {isRw ? circle.descRw : circle.descEn}
                     </p>
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-1 text-white/80 text-xs font-medium">
                         <Users size={13} />
-                        <span>{circle.members} {lang === 'rw' ? 'abanyamuryango' : 'members'}</span>
+                        <span>{circle.members} {isRw ? 'abanyamuryango' : 'members'}</span>
                       </div>
                       <div className="flex items-center gap-1 text-white/70 text-xs">
                         <Shield size={11} />
@@ -444,7 +445,7 @@ export default function CommunityPage() {
                     </div>
                     <div className="mt-3 bg-white/10 rounded-xl px-3 py-2">
                       <p className="text-white/80 text-xs">
-                        📌 {lang === 'rw' ? circle.topicRw : circle.topicEn}
+                        📌 {isRw ? circle.topicRw : circle.topicEn}
                       </p>
                     </div>
                   </div>

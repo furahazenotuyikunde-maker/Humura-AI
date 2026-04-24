@@ -102,7 +102,8 @@ const safetySteps = [
 
 export default function EmergencyPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const [called, setCalled] = useState<string | null>(null);
 
   return (
@@ -116,18 +117,18 @@ export default function EmergencyPage() {
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle size={28} className="animate-pulse" />
           <h1 className="text-2xl font-extrabold tracking-tight">
-            {lang === 'rw' ? 'Ubufasha Bwihutirwa' : 'Emergency & Crisis'}
+            {isRw ? 'Ubufasha Bwihutirwa' : 'Emergency & Crisis'}
           </h1>
         </div>
         <p className="text-white/85 text-sm leading-relaxed">
-          {lang === 'rw'
+          {isRw
             ? 'Niba uri mu kaga cyangwa uri hafi yo kwigirira nabi — ntutindeho guhamagara. Ubuzima bwawe bufite agaciro.'
             : 'If you are in crisis or thinking about harming yourself — please call now. Your life has value and you matter.'}
         </p>
         <div className="mt-4 flex items-center gap-2 bg-white/15 rounded-2xl px-4 py-2">
           <ShieldAlert size={16} />
           <span className="text-sm font-semibold">
-            {lang === 'rw' ? 'Ikiganiro cyose gifite ibanga' : 'All calls are confidential and judgment-free'}
+            {isRw ? 'Ikiganiro cyose gifite ibanga' : 'All calls are confidential and judgment-free'}
           </span>
         </div>
       </motion.div>
@@ -138,14 +139,14 @@ export default function EmergencyPage() {
         className="flex items-center justify-center gap-2 w-full py-3.5 bg-neutral-800 text-white text-sm font-bold rounded-2xl hover:bg-black transition-colors"
       >
         <ShieldAlert size={16} />
-        {lang === 'rw' ? 'Sohoka Vuba (Hisha Gahunda)' : 'Quick Exit (Hide Page Immediately)'}
+        {isRw ? 'Sohoka Vuba (Hisha Gahunda)' : 'Quick Exit (Hide Page Immediately)'}
       </a>
 
       {/* Emergency Contacts */}
       <div className="space-y-3">
         <h2 className="font-bold text-primary-900 text-lg flex items-center gap-2">
           <Phone size={18} className="text-red-500" />
-          {lang === 'rw' ? 'Hamagara Ubu' : 'Call Right Now'}
+          {isRw ? 'Hamagara Ubu' : 'Call Right Now'}
         </h2>
 
         {contacts.map((c, idx) => (
@@ -160,11 +161,11 @@ export default function EmergencyPage() {
               {c.emoji}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-primary-900 text-sm">
-                {lang === 'rw' ? c.nameRw : c.nameEn}
+               <h3 className="font-bold text-primary-900 text-sm">
+                {isRw ? c.nameRw : c.nameEn}
               </h3>
               <p className="text-xs text-neutral-500 mt-0.5 leading-snug">
-                {lang === 'rw' ? c.descRw : c.descEn}
+                {isRw ? c.descRw : c.descEn}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
                 <Clock size={11} className="text-neutral-400" />
@@ -183,7 +184,7 @@ export default function EmergencyPage() {
               {called === c.id && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1 text-emerald-600 text-[10px] font-semibold">
                   <CheckCircle size={11} />
-                  {lang === 'rw' ? 'Urahamagara...' : 'Calling...'}
+                  {isRw ? 'Urahamagara...' : 'Calling...'}
                 </motion.div>
               )}
             </div>
@@ -195,10 +196,10 @@ export default function EmergencyPage() {
       <div className="glass-card rounded-2xl p-5 space-y-4">
         <h2 className="font-bold text-primary-900 flex items-center gap-2">
           <Heart size={18} className="text-rose-500" />
-          {lang === 'rw' ? 'Gahunda y\'Umutekano' : 'Safety Plan'}
+          {isRw ? 'Gahunda y\'Umutekano' : 'Safety Plan'}
         </h2>
         <p className="text-xs text-neutral-500">
-          {lang === 'rw'
+          {isRw
             ? 'Ibyo wakora ubu niba uri mu kaga:'
             : 'Steps to take right now if you are in crisis:'}
         </p>
@@ -215,7 +216,7 @@ export default function EmergencyPage() {
                 {i + 1}
               </div>
               <p className="text-sm font-medium text-primary-900 leading-snug">
-                {lang === 'rw' ? step.rw : step.en}
+                {isRw ? step.rw : step.en}
               </p>
             </motion.div>
           ))}
@@ -227,10 +228,10 @@ export default function EmergencyPage() {
         <MessageCircle size={20} className="text-primary flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-primary-900 text-sm">
-            {lang === 'rw' ? 'Vuga na Humura AI' : 'Talk to Humura AI'}
+            {isRw ? 'Vuga na Humura AI' : 'Talk to Humura AI'}
           </p>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {lang === 'rw'
+            {isRw
               ? 'Humura AI itangirana gufotora ubuzima bwawe no kukugobotora — amasaa yose.'
               : 'Humura AI is always here to listen, support and guide you — no judgment, any time.'}
           </p>
@@ -239,7 +240,7 @@ export default function EmergencyPage() {
             className="inline-flex items-center gap-1.5 mt-2 text-primary font-bold text-xs hover:underline"
           >
             <MessageCircle size={13} />
-            {lang === 'rw' ? 'Tangira ikiganiro' : 'Start a conversation'}
+            {isRw ? 'Tangira ikiganiro' : 'Start a conversation'}
           </Link>
         </div>
       </div>
@@ -249,10 +250,10 @@ export default function EmergencyPage() {
         <MapPin size={20} className="text-rose-500 flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-primary-900 text-sm">
-            {lang === 'rw' ? 'Ibitaro bya Hafi Yawe' : 'Nearest Hospital'}
+            {isRw ? 'Ibitaro bya Hafi Yawe' : 'Nearest Hospital'}
           </p>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {lang === 'rw'
+            {isRw
               ? 'Jenda mu gice cy\'ihutirwa cy\'ibitaro bya hafi yawe buri gihe'
               : 'Walk into any hospital emergency room — they must help you regardless of payment.'}
           </p>
@@ -261,7 +262,7 @@ export default function EmergencyPage() {
             className="inline-flex items-center gap-1.5 mt-2 text-rose-500 font-bold text-xs hover:underline"
           >
             <MapPin size={13} />
-            {lang === 'rw' ? 'Reba amavuriro' : 'Find centers'}
+            {isRw ? 'Reba amavuriro' : 'Find centers'}
           </Link>
         </div>
       </div>

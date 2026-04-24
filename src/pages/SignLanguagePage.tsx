@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2 } from 'lucide-react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
 // 22-SIGN DATA ACROSS 4 CATEGORIES
@@ -59,7 +59,8 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 // ──────────────────────────────────────────────────────────────
 export default function SignLanguagePage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
 
   const [activeCategory, setActiveCategory] = useState<'feelings' | 'ineed' | 'body' | 'crisis'>('feelings');
   const [selected, setSelected] = useState<Sign[]>([]);
@@ -142,30 +143,52 @@ export default function SignLanguagePage() {
 
     const generateFallback = () => {
       if (selected.some(s => s.isCrisis)) {
-        return lang === 'rw'
+        return isRw
           ? 'Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.'
           : 'I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.';
       }
       const randomResponse = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
-      return lang === 'rw' 
+      return isRw 
         ? `${randomResponse.rw} (Ibyo wasabye: ${message})`
         : `${randomResponse.en} (You signed: ${message})`;
     };
 
     try {
-      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-1.5-flash',
-          systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
-        });
-        const result = await model.generateContent(message);
-        setAiResponse(result.response.text());
-      } else {
+      // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      const { data, error } = await supabase.functions.invoke('bright-worker', {
+        body: { 
+          message: `User is communicating via sign language. Selected signs: ${message}`,
+          history: [],
+          lang: lang,
+          isSignLanguage: true
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.reply) throw new Error('No reply from Edge Function');
+      
+      setAiResponse(data.reply);
+    } catch (edgeError) {
+      console.error("Edge Function Sign Error:", edgeError);
+      
+      // 2. FALLBACK TO DIRECT GEMINI (Dynamic Import)
+      try {
+        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const model = genAI.getGenerativeModel({
+            model: 'gemini-1.5-flash',
+            systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
+          });
+          const result = await model.generateContent(message);
+          setAiResponse(result.response.text());
+        } else {
+          setAiResponse(generateFallback());
+        }
+      } catch (geminiError) {
+        console.error("Gemini Direct Sign Error:", geminiError);
         setAiResponse(generateFallback());
       }
-    } catch {
-      setAiResponse(generateFallback());
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +202,7 @@ export default function SignLanguagePage() {
       return;
     }
     const utterance = new SpeechSynthesisUtterance(aiResponse);
-    utterance.lang = lang === 'rw' ? 'rw-RW' : 'en-US';
+    utterance.lang = isRw ? 'rw-RW' : 'en-US';
     utterance.onend = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utterance);
     setIsSpeaking(true);
@@ -232,6 +255,7 @@ export default function SignLanguagePage() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
@@ -275,7 +299,7 @@ export default function SignLanguagePage() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🤟</span>
             <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-              {lang === 'rw' ? 'Amarenga' : 'Sign Language Support'}
+              {isRw ? 'Amarenga' : 'Sign Language Support'}
             </h1>
           </div>
           <button
@@ -287,7 +311,7 @@ export default function SignLanguagePage() {
           </button>
         </div>
         <p className="text-primary-600 text-sm">
-          {lang === 'rw' ? 'Koresha amarenga gutanga ubutumwa bwawe ku AI' : 'Use symbol signs to compose your message to AI'}
+          {isRw ? 'Koresha amarenga gutanga ubutumwa bwawe ku AI' : 'Use symbol signs to compose your message to AI'}
         </p>
       </motion.div>
 
@@ -304,13 +328,13 @@ export default function SignLanguagePage() {
               <X size={16} />
             </button>
             <p className="font-bold text-primary-900 text-sm">
-              {lang === 'rw' ? 'Uburyo bwo Gukoresha' : 'How to Use'}
+              {isRw ? 'Uburyo bwo Gukoresha' : 'How to Use'}
             </p>
             <ol className="text-xs text-primary-700 space-y-1 list-decimal list-inside">
-              <li>{lang === 'rw' ? 'Hitamo amarenga (nk\'imara 5) kuvuga ibyo umva' : 'Tap signs (up to 5) to express how you feel'}</li>
-              <li>{lang === 'rw' ? 'Reba ubutumwa bwawe bwubatswe hepfo' : 'See your composed message below'}</li>
-              <li>{lang === 'rw' ? 'Kanda "Ohereza" kugira ngo AI igusubize' : 'Tap "Send" for an AI response'}</li>
-              <li>{lang === 'rw' ? 'Kanda "Wumva" kugira ngo igisubizo ciyumvike' : 'Tap "Listen" to hear the response aloud'}</li>
+              <li>{isRw ? 'Hitamo amarenga (nk\'imara 5) kuvuga ibyo umva' : 'Tap signs (up to 5) to express how you feel'}</li>
+              <li>{isRw ? 'Reba ubutumwa bwawe bwubatswe hepfo' : 'See your composed message below'}</li>
+              <li>{isRw ? 'Kanda "Ohereza" kugira ngo AI igusubize' : 'Tap "Send" for an AI response'}</li>
+              <li>{isRw ? 'Kanda "Wumva" kugira ngo igisubizo ciyumvike' : 'Tap "Listen" to hear the response aloud'}</li>
             </ol>
           </motion.div>
         )}
@@ -321,7 +345,7 @@ export default function SignLanguagePage() {
         <canvas ref={canvasRef} className="hidden" />
         <div className="flex items-center justify-between mb-3">
           <p className="font-semibold text-primary-900 text-sm">
-            {lang === 'rw' ? '📸 Kamera & AI Ikurikirana' : '📸 Camera & AI Vision'}
+            {isRw ? '📸 Kamera & AI Ikurikirana' : '📸 Camera & AI Vision'}
           </p>
           <button
             onClick={cameraActive ? stopCamera : startCamera}
@@ -329,7 +353,7 @@ export default function SignLanguagePage() {
               cameraActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-primary-50 text-primary hover:bg-primary-100'
             }`}
           >
-            {cameraActive ? <><CameraOff size={13} /> {lang === 'rw' ? 'Hagarika' : 'Stop'}</> : <><Camera size={13} /> {lang === 'rw' ? 'Tangira Kamera' : 'Start Camera'}</>}
+            {cameraActive ? <><CameraOff size={13} /> {isRw ? 'Hagarika' : 'Stop'}</> : <><Camera size={13} /> {isRw ? 'Tangira Kamera' : 'Start Camera'}</>}
           </button>
         </div>
         
@@ -375,7 +399,7 @@ export default function SignLanguagePage() {
         
         {!cameraActive && !cameraError && (
           <p className="text-xs text-neutral-400 text-center py-2">
-            {lang === 'rw' ? 'Kamera ifashwe kugira ngo isome amarenga byikora.' : 'Turn on the camera to let AI auto-detect your expressions.'}
+            {isRw ? 'Kamera ifashwe kugira ngo isome amarenga byikora.' : 'Turn on the camera to let AI auto-detect your expressions.'}
           </p>
         )}
       </div>

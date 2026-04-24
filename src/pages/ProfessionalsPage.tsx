@@ -156,7 +156,8 @@ const modeLabels = {
 
 export default function ProfessionalsPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const [selected, setSelected] = useState<Professional | null>(null);
   const [booked, setBooked] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -164,17 +165,17 @@ export default function ProfessionalsPage() {
   const specialties = useMemo(() => {
     const set = new Set<string>();
     professionals.forEach(p => {
-      (lang === 'rw' ? p.specialtiesRw : p.specialties).forEach(s => set.add(s));
+      (isRw ? p.specialtiesRw : p.specialties).forEach(s => set.add(s));
     });
     return ['all', ...Array.from(set)];
-  }, [lang]);
+  }, [isRw]);
 
   const filteredProfessionals = useMemo(() => {
     if (activeFilter === 'all') return professionals;
     return professionals.filter(p => 
-      (lang === 'rw' ? p.specialtiesRw : p.specialties).includes(activeFilter)
+      (isRw ? p.specialtiesRw : p.specialties).includes(activeFilter)
     );
-  }, [activeFilter, lang]);
+  }, [activeFilter, isRw]);
 
   const handleBook = (id: string) => {
     setBooked(id);
@@ -188,11 +189,11 @@ export default function ProfessionalsPage() {
         <div className="flex items-center gap-2 mb-1">
           <User className="text-primary" size={28} />
           <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-            {lang === 'rw' ? 'Inzobere z\'Ubuzima bwo mu Mutwe' : 'Meet Professionals'}
+            {isRw ? 'Inzobere z\'Ubuzima bwo mu Mutwe' : 'Meet Professionals'}
           </h1>
         </div>
         <p className="text-primary-600 text-sm">
-          {lang === 'rw'
+          {isRw
             ? 'Buka ikiganiro n\'umuganga cyangwa umuvuzi mu Rwanda'
             : 'Book a session with a qualified mental health professional in Rwanda'}
         </p>
@@ -210,7 +211,7 @@ export default function ProfessionalsPage() {
                 : 'bg-white border border-primary-100 text-primary-700 hover:bg-primary-50'
             }`}
           >
-            {spec === 'all' ? (lang === 'rw' ? 'Byose' : 'All') : spec}
+            {spec === 'all' ? (isRw ? 'Byose' : 'All') : spec}
           </button>
         ))}
       </div>
@@ -223,7 +224,7 @@ export default function ProfessionalsPage() {
             className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-2 font-semibold text-sm"
           >
             <CheckCircle size={18} />
-            {lang === 'rw' ? 'Icyifuzo cyo gutumanahana cyoherejwe!' : 'Session request sent! They\'ll contact you soon.'}
+            {isRw ? 'Icyifuzo cyo gutumanahana cyoherejwe!' : 'Session request sent! They\'ll contact you soon.'}
           </motion.div>
         )}
       </AnimatePresence>
@@ -246,12 +247,12 @@ export default function ProfessionalsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-bold text-primary-900 text-sm">{pro.name}</h3>
-                  <p className="text-xs text-primary-600">{lang === 'rw' ? pro.titleRw : pro.title}</p>
+                  <p className="text-xs text-primary-600">{isRw ? pro.titleRw : pro.title}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <div className={`w-2 h-2 rounded-full ${pro.available ? 'bg-emerald-400' : 'bg-neutral-300'}`} />
                   <span className="text-[10px] font-medium text-neutral-400">
-                    {pro.available ? (lang === 'rw' ? 'Ahari' : 'Available') : (lang === 'rw' ? 'Arahuriwe' : 'Busy')}
+                    {pro.available ? (isRw ? 'Ahari' : 'Available') : (isRw ? 'Arahuriwe' : 'Busy')}
                   </span>
                 </div>
               </div>
@@ -261,7 +262,7 @@ export default function ProfessionalsPage() {
                   <Star size={11} className="text-amber-400 fill-amber-400" />
                   <span className="text-xs font-bold text-primary-800">{pro.rating}</span>
                 </div>
-                <span className="text-xs text-neutral-400">{pro.sessions} {lang === 'rw' ? 'ibiganiro' : 'sessions'}</span>
+                <span className="text-xs text-neutral-400">{pro.sessions} {isRw ? 'ibiganiro' : 'sessions'}</span>
                 <div className="flex gap-1">
                   {pro.mode.map(m => (
                     <span key={m} className="text-sm" title={modeLabels[m].label}>{modeLabels[m].emoji}</span>
@@ -308,7 +309,7 @@ export default function ProfessionalsPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-extrabold text-white">{selected.name}</h2>
-                    <p className="text-white/80 text-sm">{lang === 'rw' ? selected.titleRw : selected.title}</p>
+                    <p className="text-white/80 text-sm">{isRw ? selected.titleRw : selected.title}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center gap-1">
                         <Star size={13} className="text-yellow-300 fill-yellow-300" />
@@ -317,7 +318,7 @@ export default function ProfessionalsPage() {
                       <span className="text-white/60 text-xs">• {selected.sessions} sessions</span>
                       <div className={`ml-1 flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${selected.available ? 'bg-emerald-400/30 text-emerald-100' : 'bg-white/20 text-white/60'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${selected.available ? 'bg-emerald-300' : 'bg-white/40'}`} />
-                        {selected.available ? (lang === 'rw' ? 'Ahari' : 'Available') : (lang === 'rw' ? 'Arahuriwe' : 'Busy')}
+                        {selected.available ? (isRw ? 'Ahari' : 'Available') : (isRw ? 'Arahuriwe' : 'Busy')}
                       </div>
                     </div>
                   </div>
@@ -328,20 +329,20 @@ export default function ProfessionalsPage() {
                 {/* About */}
                 <div>
                   <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
-                    {lang === 'rw' ? 'Ibisobanuro' : 'About'}
+                    {isRw ? 'Ibisobanuro' : 'About'}
                   </h3>
                   <p className="text-sm text-primary-800 leading-relaxed">
-                    {lang === 'rw' ? selected.aboutRw : selected.about}
+                    {isRw ? selected.aboutRw : selected.about}
                   </p>
                 </div>
 
                 {/* Specialties */}
                 <div>
                   <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
-                    {lang === 'rw' ? 'Ubunararibonye' : 'Specialties'}
+                    {isRw ? 'Ubunararibonye' : 'Specialties'}
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {(lang === 'rw' ? selected.specialtiesRw : selected.specialties).map(s => (
+                    {(isRw ? selected.specialtiesRw : selected.specialties).map(s => (
                       <span key={s} className="text-xs bg-primary-50 text-primary-700 font-medium px-3 py-1 rounded-full">{s}</span>
                     ))}
                   </div>
@@ -350,10 +351,10 @@ export default function ProfessionalsPage() {
                 {/* Details */}
                 <div className="space-y-3">
                   {[
-                    { icon: Globe, label: lang === 'rw' ? 'Indimi' : 'Languages', value: selected.languages.join(', ') },
-                    { icon: MessageCircle, label: lang === 'rw' ? 'Uburyo' : 'Session mode', value: selected.mode.map(m => `${modeLabels[m].emoji} ${lang === 'rw' ? modeLabels[m].labelRw : modeLabels[m].label}`).join('  ') },
-                    { icon: Clock, label: lang === 'rw' ? 'Aho biherereye' : 'Location', value: lang === 'rw' ? selected.locationRw : selected.location },
-                    { icon: Phone, label: lang === 'rw' ? 'Telefoni' : 'Contact', value: selected.phone, href: `tel:${selected.phone}` },
+                    { icon: Globe, label: isRw ? 'Indimi' : 'Languages', value: selected.languages.join(', ') },
+                    { icon: MessageCircle, label: isRw ? 'Uburyo' : 'Session mode', value: selected.mode.map(m => `${modeLabels[m].emoji} ${isRw ? modeLabels[m].labelRw : modeLabels[m].label}`).join('  ') },
+                    { icon: Clock, label: isRw ? 'Aho biherereye' : 'Location', value: isRw ? selected.locationRw : selected.location },
+                    { icon: Phone, label: isRw ? 'Telefoni' : 'Contact', value: selected.phone, href: `tel:${selected.phone}` },
                   ].map(({ icon: Icon, label, value, href }) => (
                     <div key={label} className="flex gap-3 items-start">
                       <div className="w-8 h-8 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -379,14 +380,14 @@ export default function ProfessionalsPage() {
                     className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Calendar size={18} />
-                    {lang === 'rw' ? 'Buka' : 'Book Session'}
+                    {isRw ? 'Buka' : 'Book Session'}
                   </button>
                   <a
                     href={`tel:${selected.phone}`}
                     className="flex items-center justify-center gap-2 py-3.5 bg-primary-50 text-primary-800 font-bold rounded-2xl hover:bg-primary-100 transition-colors"
                   >
                     <Phone size={18} />
-                    {lang === 'rw' ? 'Hamagara' : 'Call'}
+                    {isRw ? 'Hamagara' : 'Call'}
                   </a>
                 </div>
               </div>

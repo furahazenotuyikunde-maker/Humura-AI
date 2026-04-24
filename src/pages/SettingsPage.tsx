@@ -11,7 +11,8 @@ interface SettingsState {
 
 export default function SettingsPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
 
   const [settings, setSettings] = useState<SettingsState>({
     simpleView: false,
@@ -84,7 +85,7 @@ export default function SettingsPage() {
                 ))}
               </div>
               <p className="mt-12 text-xs opacity-40">
-                {lang === 'rw' ? 'Kanda inshuro 3 gusubira' : 'Triple-tap anywhere to exit'}
+                {isRw ? 'Kanda inshuro 3 gusubira' : 'Triple-tap anywhere to exit'}
               </p>
             </div>
           </motion.div>
@@ -95,14 +96,14 @@ export default function SettingsPage() {
       <div className="flex items-center gap-2">
         <Settings className="text-primary" size={28} />
         <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-          {lang === 'rw' ? 'Igenamiterere' : 'Settings'}
+          {isRw ? 'Igenamiterere' : 'Settings'}
         </h1>
       </div>
 
       {/* Accessibility Settings */}
       <div className="space-y-3">
         <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {lang === 'rw' ? 'Ubugari bwo Gukoresha' : 'Accessibility'}
+          {isRw ? 'Ubugari bwo Gukoresha' : 'Accessibility'}
         </h2>
 
         {/* Simple View */}
@@ -113,10 +114,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="font-semibold text-primary-900 text-sm">
-                {lang === 'rw' ? 'Igitekerezo Cyoroshye' : 'Simple View'}
+                {isRw ? 'Igitekerezo Cyoroshye' : 'Simple View'}
               </p>
               <p className="text-xs text-neutral-400">
-                {lang === 'rw' ? 'Ibinyandiko binini na buto' : 'Larger text and buttons'}
+                {isRw ? 'Ibinyandiko binini na buto' : 'Larger text and buttons'}
               </p>
             </div>
           </div>
@@ -139,10 +140,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="font-semibold text-primary-900 text-sm">
-                {lang === 'rw' ? 'Ibara Rikomeye' : 'High Contrast Mode'}
+                {isRw ? 'Ibara Rikomeye' : 'High Contrast Mode'}
               </p>
               <p className="text-xs text-neutral-400">
-                {lang === 'rw' ? 'WCAG 2.1 AA gukurikira' : 'WCAG 2.1 AA compliant colors'}
+                {isRw ? 'WCAG 2.1 AA gukurikira' : 'WCAG 2.1 AA compliant colors'}
               </p>
             </div>
           </div>
@@ -166,10 +167,10 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="font-semibold text-primary-900 text-sm">
-                  {lang === 'rw' ? 'Uburyo bwo Kwihisha' : 'Discreet Mode'}
+                  {isRw ? 'Uburyo bwo Kwihisha' : 'Discreet Mode'}
                 </p>
                 <p className="text-xs text-neutral-400">
-                  {lang === 'rw' ? 'Hisha gahunda nk\'igihe cy\'ikirere' : 'Disguise app as a weather app'}
+                  {isRw ? 'Hisha gahunda nk\'igihe cy\'ikirere' : 'Disguise app as a weather app'}
                 </p>
               </div>
             </div>
@@ -184,7 +185,7 @@ export default function SettingsPage() {
             </button>
           </div>
           <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-xl ml-12">
-            ☀️ {lang === 'rw' ? 'Porogaramu izagaragara nk\'"28°C Kigali, Mostly Sunny". Kanda inshuro 3 cyangwa kande buto ruhishe kugira ngo usubire.' : 'App appears as "28°C Kigali, Mostly Sunny". Triple-tap anywhere or use the hidden button to return.'}
+            ☀️ {isRw ? 'Porogaramu izagaragara nk\'"28°C Kigali, Mostly Sunny". Kanda inshuro 3 cyangwa kande buto ruhishe kugira ngo usubire.' : 'App appears as "28°C Kigali, Mostly Sunny". Triple-tap anywhere or use the hidden button to return.'}
           </p>
         </div>
       </div>
@@ -192,7 +193,7 @@ export default function SettingsPage() {
       {/* Language */}
       <div className="space-y-3">
         <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {lang === 'rw' ? 'Ururimi' : 'Language'}
+          {isRw ? 'Ururimi' : 'Language'}
         </h2>
         <div className="glass-card rounded-2xl p-4 flex gap-3">
           {['en', 'rw'].map(l => (
@@ -214,7 +215,7 @@ export default function SettingsPage() {
       {/* Emergency contacts */}
       <div className="space-y-3">
         <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {lang === 'rw' ? 'Nimero z\'Ihutirwa' : 'Emergency Numbers'}
+          {isRw ? 'Nimero z\'Ihutirwa' : 'Emergency Numbers'}
         </h2>
         <div className="glass-card rounded-2xl p-4 space-y-3">
           {[
@@ -234,7 +235,7 @@ export default function SettingsPage() {
       {/* Quick Exit */}
       <div>
         <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400 mb-3">
-          {lang === 'rw' ? 'Gusohoka ' : 'Safety'}
+          {isRw ? 'Gusohoka ' : 'Safety'}
         </h2>
         <a
           href="https://google.com"
@@ -242,10 +243,10 @@ export default function SettingsPage() {
           aria-label="Quick exit to Google"
         >
           <Shield size={18} />
-          {lang === 'rw' ? 'Sohoka  — Jya kuri Google' : 'Quick Exit — Go to Google'}
+          {isRw ? 'Sohoka  — Jya kuri Google' : 'Quick Exit — Go to Google'}
         </a>
         <p className="text-xs text-neutral-400 text-center mt-2">
-          {lang === 'rw' ? 'Kanda hano kugira ngo uhite usohoka muri porogaramu' : 'Instantly leaves the app and goes to Google for safety'}
+          {isRw ? 'Kanda hano kugira ngo uhite usohoka muri porogaramu' : 'Instantly leaves the app and goes to Google for safety'}
         </p>
       </div>
 
@@ -255,7 +256,7 @@ export default function SettingsPage() {
         <div>
           <p className="text-xs font-semibold text-primary-900">Humura AI v1.0</p>
           <p className="text-xs text-primary-600 mt-0.5">
-            {lang === 'rw'
+            {isRw
               ? 'Gufasha ubuzima bwo mu mutwe mu Rwanda · Nta makuru y\'umwirondoro abikwa nta mvano yawe'
               : 'Mental wellness support for Rwanda · No personal data stored without your consent'}
           </p>

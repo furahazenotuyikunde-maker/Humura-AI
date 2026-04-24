@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart2, Flame, Smile, Calendar, BookOpen, Brain, PlusCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ──────────────────────────────────────────────────────────────
 // TYPES & CONSTANTS
@@ -59,7 +58,8 @@ function getWeek(): string[] {
 // ──────────────────────────────────────────────────────────────
 function MoodBarChart({ entries, lang }: { entries: MoodEntry[]; lang: string }) {
   const week = getWeek();
-  const weekDays = lang === 'rw' ? WEEK_DAYS_RW : WEEK_DAYS_EN;
+  const isRw = lang.startsWith('rw');
+  const weekDays = isRw ? WEEK_DAYS_RW : WEEK_DAYS_EN;
 
   return (
     <div className="flex justify-between items-end gap-1 h-20 px-1">
@@ -96,8 +96,9 @@ function MoodBarChart({ entries, lang }: { entries: MoodEntry[]; lang: string })
 }
 
 function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
+  const isRw = lang.startsWith('rw');
   if (moodEntries.length === 0) {
-    return lang === 'rw'
+    return isRw
       ? "Nta makuru ahagije dufite yo kuguha inama. Gerageza kwandika uko umeze mu buryo buhoraho."
       : "We don't have enough data to give you an insight yet. Try logging your mood for a few days!";
   }
@@ -137,7 +138,7 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
 
   const isMixed = Object.keys(counts).length > 2;
   const result = isMixed ? insights.mixed : (insights[dominantMood] || insights.neutral);
-  return lang === 'rw' ? result.rw : result.en;
+  return lang.startsWith('rw') ? result.rw : result.en;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -145,7 +146,8 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
 // ──────────────────────────────────────────────────────────────
 export default function ProgressPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
 
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
   const [selectedMood, setSelectedMood] = useState<MoodLevel | null>(null);
@@ -201,7 +203,7 @@ export default function ProgressPage() {
   const handleMoodSelect = async (mood: typeof MOODS[0]) => {
     if (todayEntry) return; // Already logged today
     setSelectedMood(mood.id);
-    setMoodTip(lang === 'rw' ? mood.tip.rw : mood.tip.en);
+    setMoodTip(isRw ? mood.tip.rw : mood.tip.en);
 
     const entry: MoodEntry = {
       date: today,
@@ -251,28 +253,44 @@ export default function ProgressPage() {
     setInsightText(''); // Clear previous
 
     try {
-      const hasValidKey = GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key' && GEMINI_API_KEY.length > 10;
+      // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
+      
+      const { data, error } = await supabase.functions.invoke('bright-worker', {
+        body: { 
+          message: `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`,
+          history: [],
+          lang: lang
+        }
+      });
 
-      if (hasValidKey) {
-        const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
-        const prompt = `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`;
-        
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const result = await model.generateContent(prompt);
-        setInsightText(result.response.text());
-      } else {
-        // Use quality offline generator if no key
-        setTimeout(() => {
-          setInsightText(getOfflineInsight(moodEntries, lang));
-          setInsightLoading(false);
-        }, 800); // Artificial delay for "thinking" feel
-        return;
+      if (error) throw error;
+      if (!data?.reply) throw new Error('No reply from Edge Function');
+      
+      setInsightText(data.reply);
+    } catch (edgeError) {
+      console.error("Edge Function Insight Error:", edgeError);
+      
+      // 2. FALLBACK TO DIRECT GEMINI (Dynamic Import)
+      try {
+        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key' && GEMINI_API_KEY.length > 10) {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          
+          const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
+          const prompt = `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`;
+          
+          const result = await model.generateContent(prompt);
+          setInsightText(result.response.text());
+        } else {
+          throw new Error('No valid API keys');
+        }
+      } catch (geminiError) {
+        console.error("Gemini Direct Insight Error:", geminiError);
+        // 3. FINAL FALLBACK: Offline Generator
+        setInsightText(getOfflineInsight(moodEntries, lang));
       }
-    } catch (err) {
-      console.error("AI Insight Error:", err);
-      // Fallback to offline on error
-      setInsightText(getOfflineInsight(moodEntries, lang));
     } finally {
       setInsightLoading(false);
     }
@@ -286,20 +304,20 @@ export default function ProgressPage() {
         <div className="flex items-center gap-2 mb-1">
           <BarChart2 className="text-primary" size={28} />
           <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-            {lang === 'rw' ? 'Aho Ugeze' : 'My Progress'}
+            {isRw ? 'Aho Ugeze' : 'My Progress'}
           </h1>
         </div>
         <p className="text-primary-600 text-sm">
-          {lang === 'rw' ? 'Kurikirana ubuzima bwawe bwo mu mutwe buri munsi' : 'Track your mental wellness day by day'}
+          {isRw ? 'Kurikirana ubuzima bwawe bwo mu mutwe buri munsi' : 'Track your mental wellness day by day'}
         </p>
       </motion.div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: lang === 'rw' ? 'Imihigo' : 'Streak', value: `${streak}d`, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
-          { label: lang === 'rw' ? 'Amanota' : 'Avg Mood', value: `${avgScore}/5`, icon: Smile, color: 'text-primary', bg: 'bg-primary-50' },
-          { label: lang === 'rw' ? 'Ibintu Byiza' : 'Top Mood', value: topMood, icon: Calendar, color: 'text-violet-600', bg: 'bg-violet-50' },
+          { label: isRw ? 'Imihigo' : 'Streak', value: `${streak}d`, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
+          { label: isRw ? 'Amanota' : 'Avg Mood', value: `${avgScore}/5`, icon: Smile, color: 'text-primary', bg: 'bg-primary-50' },
+          { label: isRw ? 'Ibintu Byiza' : 'Top Mood', value: topMood, icon: Calendar, color: 'text-violet-600', bg: 'bg-violet-50' },
         ].map(s => (
           <div key={s.label} className="glass-card rounded-2xl p-3 flex flex-col items-center gap-1">
             <div className={`w-8 h-8 rounded-xl ${s.bg} flex items-center justify-center`}>
@@ -315,7 +333,7 @@ export default function ProgressPage() {
       <div className="glass-card rounded-2xl p-4">
         <h2 className="font-bold text-primary-900 mb-3 flex items-center gap-2 text-sm">
           <Calendar size={15} className="text-primary" />
-          {lang === 'rw' ? 'Umwaka w\'Iki Cyumweru' : 'This Week\'s Mood'}
+          {isRw ? 'Umwaka w\'Iki Cyumweru' : 'This Week\'s Mood'}
         </h2>
         <MoodBarChart entries={moodEntries} lang={lang} />
       </div>
@@ -323,7 +341,7 @@ export default function ProgressPage() {
       {/* 7-day emoji history strip */}
       {moodEntries.length > 0 && (
         <div className="glass-card rounded-2xl p-4">
-          <p className="text-xs text-neutral-400 font-medium mb-2">{lang === 'rw' ? 'Amateka ya Buri Munsi' : '7-Day History'}</p>
+          <p className="text-xs text-neutral-400 font-medium mb-2">{isRw ? 'Amateka ya Buri Munsi' : '7-Day History'}</p>
           <div className="flex gap-2 overflow-x-auto scrollbar-none">
             {moodEntries.slice(-7).reverse().map(e => (
               <div key={e.date} className="flex flex-col items-center gap-1 flex-shrink-0">
@@ -346,10 +364,10 @@ export default function ProgressPage() {
             }`}
           >
             {t === 'mood'
-              ? (lang === 'rw' ? '😊 Buri Munsi' : '😊 Daily Mood')
+              ? (isRw ? '😊 Buri Munsi' : '😊 Daily Mood')
               : t === 'journal'
-              ? (lang === 'rw' ? '📓 Inkuru' : '📓 Journal')
-              : (lang === 'rw' ? '🧠 Inama ya AI' : '🧠 AI Insight')}
+              ? (isRw ? '📓 Inkuru' : '📓 Journal')
+              : (isRw ? '🧠 Inama ya AI' : '🧠 AI Insight')}
           </button>
         ))}
       </div>
@@ -362,13 +380,13 @@ export default function ProgressPage() {
               <span className="text-5xl">{todayEntry.emoji}</span>
               <div>
                 <p className="font-bold text-primary-900">
-                  {lang === 'rw' ? 'Uyu munsi wakorewe!' : 'Today logged!'}
+                  {isRw ? 'Uyu munsi wakorewe!' : 'Today logged!'}
                 </p>
                 <p className="text-sm text-neutral-500">
-                  {MOODS.find(m => m.id === todayEntry.mood)?.[lang === 'rw' ? 'rw' : 'en']}
+                  {MOODS.find(m => m.id === todayEntry.mood)?.[isRw ? 'rw' : 'en']}
                 </p>
                 <p className="text-xs text-primary-500 mt-1">
-                  {lang === 'rw' ? 'Subira ejo kugira ngo ukomeze imihigo yawe' : 'Come back tomorrow to keep your streak!'}
+                  {isRw ? 'Subira ejo kugira ngo ukomeze imihigo yawe' : 'Come back tomorrow to keep your streak!'}
                 </p>
               </div>
             </div>
@@ -391,7 +409,7 @@ export default function ProgressPage() {
                   >
                     <span className="text-2xl">{mood.emoji}</span>
                     <span className={`text-[10px] font-bold ${selectedMood === mood.id ? 'text-white' : 'text-primary-700'}`}>
-                      {lang === 'rw' ? mood.rw : mood.en}
+                      {isRw ? mood.rw : mood.en}
                     </span>
                   </button>
                 ))}
@@ -415,17 +433,17 @@ export default function ProgressPage() {
             <div className="space-y-2">
               <h3 className="font-bold text-primary-900 flex items-center gap-2 text-sm">
                 <BookOpen size={15} className="text-primary" />
-                {lang === 'rw' ? 'Amateka' : 'Mood History'}
+                {isRw ? 'Amateka' : 'Mood History'}
               </h3>
               {[...moodEntries].reverse().map(e => (
                 <div key={e.date} className="glass-card rounded-xl px-4 py-3 flex items-center gap-3">
                   <span className="text-2xl">{e.emoji}</span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-primary-900">
-                      {new Date(e.date + 'T12:00:00').toLocaleDateString(lang === 'rw' ? 'fr-FR' : 'en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(e.date + 'T12:00:00').toLocaleDateString(isRw ? 'fr-FR' : 'en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                     <p className="text-xs text-neutral-400">
-                      {MOODS.find(m => m.id === e.mood)?.[lang === 'rw' ? 'rw' : 'en']}
+                      {MOODS.find(m => m.id === e.mood)?.[isRw ? 'rw' : 'en']}
                     </p>
                   </div>
                   <div className="flex gap-0.5">
@@ -446,7 +464,7 @@ export default function ProgressPage() {
           <div className="glass-card rounded-3xl p-5 space-y-3">
             <h3 className="font-bold text-primary-900 flex items-center gap-2">
               <BookOpen size={16} className="text-primary" />
-              {lang === 'rw'
+              {isRw
                 ? `Inkuru ya ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
                 : `Today's Journal — ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
             </h3>
@@ -460,10 +478,10 @@ export default function ProgressPage() {
               ].map(p => (
                 <button
                   key={p.en}
-                  onClick={() => setJournalText(prev => prev ? `${prev}\n\n${lang === 'rw' ? p.rw : p.en}` : (lang === 'rw' ? p.rw : p.en))}
+                  onClick={() => setJournalText(prev => prev ? `${prev}\n\n${isRw ? p.rw : p.en}` : (isRw ? p.rw : p.en))}
                   className="text-xs bg-accent-50 text-amber-700 border border-accent/30 px-3 py-1.5 rounded-full font-medium hover:bg-accent-100 transition-colors"
                 >
-                  {lang === 'rw' ? p.rw : p.en}
+                  {isRw ? p.rw : p.en}
                 </button>
               ))}
             </div>
@@ -485,8 +503,8 @@ export default function ProgressPage() {
               }`}
             >
               {journalSaved
-                ? (lang === 'rw' ? '✓ Byabitswe!' : '✓ Entry Saved!')
-                : (lang === 'rw' ? 'Bika Inkuru' : 'Save Entry')}
+                ? (isRw ? '✓ Byabitswe!' : '✓ Entry Saved!')
+                : (isRw ? 'Bika Inkuru' : 'Save Entry')}
             </button>
           </div>
 
@@ -495,7 +513,7 @@ export default function ProgressPage() {
             <div className="space-y-2">
               <h3 className="font-bold text-primary-900 text-sm flex items-center gap-2">
                 <BookOpen size={14} className="text-primary" />
-                {lang === 'rw' ? 'Inkuru Zashize' : 'Past Entries'}
+                {isRw ? 'Inkuru Zashize' : 'Past Entries'}
               </h3>
               {journalEntries.map(entry => (
                 <div key={entry.id} className="glass-card rounded-2xl overflow-hidden">
@@ -506,7 +524,7 @@ export default function ProgressPage() {
                     <div className="flex items-center gap-2">
                       {entry.mood && <span className="text-lg">{entry.mood}</span>}
                       <span className="text-sm font-semibold text-primary-900">
-                        {new Date(parseInt(entry.id)).toLocaleDateString(lang === 'rw' ? 'fr-FR' : 'en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {new Date(parseInt(entry.id)).toLocaleDateString(isRw ? 'fr-FR' : 'en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     <span className="text-xs text-neutral-400">{expandedJournalId === entry.id ? '▲' : '▼'}</span>
@@ -531,7 +549,7 @@ export default function ProgressPage() {
           <div className="flex gap-3 px-4 py-3 bg-accent-50 rounded-2xl border border-accent/20">
             <PlusCircle size={16} className="text-accent flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-800">
-              {lang === 'rw'
+              {isRw
                 ? 'Kwandika iminota 5 buri munsi bigabanya ibimenyetso by\'agahinda n\'ubwoba ku rugero rw\'umuzinga.'
                 : 'Just 5 minutes of daily journaling significantly reduces symptoms of anxiety and depression.'}
             </p>
@@ -549,10 +567,10 @@ export default function ProgressPage() {
               </div>
               <div>
                 <h3 className="font-bold text-primary-900">
-                  {lang === 'rw' ? 'Inama ya AI y\'Ubuzima' : 'AI Wellness Insight'}
+                  {isRw ? 'Inama ya AI y\'Ubuzima' : 'AI Wellness Insight'}
                 </h3>
                 <p className="text-xs text-neutral-500">
-                  {lang === 'rw' ? 'Ikoze ku makuru yawe ya 7 y\'imihindagurikire' : 'Personalized from your last 7 mood entries'}
+                  {isRw ? 'Ikoze ku makuru yawe ya 7 y\'imihindagurikire' : 'Personalized from your last 7 mood entries'}
                 </p>
               </div>
             </div>
@@ -563,9 +581,9 @@ export default function ProgressPage() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold rounded-2xl hover:bg-primary-900 disabled:opacity-60 transition-colors shadow-lg shadow-primary/20"
             >
               {insightLoading ? (
-                <><Loader2 size={18} className="animate-spin" /> {lang === 'rw' ? 'AI iratekereza...' : 'AI is thinking...'}</>
+                <><Loader2 size={18} className="animate-spin" /> {isRw ? 'AI iratekereza...' : 'AI is thinking...'}</>
               ) : (
-                <><Brain size={18} /> {lang === 'rw' ? 'Bona Inama y\'Ubuzima' : 'Get Wellness Insight'}</>
+                <><Brain size={18} /> {isRw ? 'Bona Inama y\'Ubuzima' : 'Get Wellness Insight'}</>
               )}
             </button>
 
@@ -584,7 +602,7 @@ export default function ProgressPage() {
 
           <div className="glass-card rounded-2xl p-4 space-y-2">
             <p className="font-semibold text-primary-900 text-sm">
-              {lang === 'rw' ? '📊 Iporogaramu y\'Imihindagurikire (Iminsi 30)' : '📊 30-Day Mood Distribution'}
+              {isRw ? '📊 Iporogaramu y\'Imihindagurikire (Iminsi 30)' : '📊 30-Day Mood Distribution'}
             </p>
             {MOODS.map(mood => {
               const count = moodEntries.filter(e => e.mood === mood.id).length;

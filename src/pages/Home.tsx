@@ -16,7 +16,8 @@ const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const navigate = useNavigate();
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -47,7 +48,7 @@ export default function Home() {
   const handleMoodSelect = (mood: typeof MOODS[0]) => {
     if (selectedMood) return; // Already logged today
     setSelectedMood(mood.id);
-    setMoodTip(lang === 'rw' ? mood.tip.rw : mood.tip.en);
+    setMoodTip(isRw ? mood.tip.rw : mood.tip.en);
     setShowTip(true);
 
     const today = new Date().toISOString().split('T')[0];
@@ -76,7 +77,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl font-extrabold text-primary-900 tracking-tight"
         >
-          {lang === 'rw' ? 'Muraho! 👋' : 'Hello! 👋'}
+          {isRw ? 'Muraho! 👋' : 'Hello! 👋'}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -84,7 +85,7 @@ export default function Home() {
           transition={{ delay: 0.1 }}
           className="text-primary-600 mt-1 text-sm"
         >
-          {lang === 'rw'
+          {isRw
             ? 'Humura AI iri hano kugufasha. Umeze ute uyu munsi?'
             : 'Humura AI is here to support you. How are you feeling today?'}
         </motion.p>
@@ -94,10 +95,10 @@ export default function Home() {
       <section className="glass-card rounded-3xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-primary-900">
-            {lang === 'rw' ? 'Umeze ute uyu munsi?' : 'How are you right now?'}
+            {isRw ? 'Umeze ute uyu munsi?' : 'How are you right now?'}
           </h2>
           {selectedMood && (
-            <span className="text-xs text-primary-500">{lang === 'rw' ? '✓ Wakorewe' : '✓ Logged'}</span>
+            <span className="text-xs text-primary-500">{isRw ? '✓ Wakorewe' : '✓ Logged'}</span>
           )}
         </div>
 
@@ -114,11 +115,11 @@ export default function Home() {
                     ? 'bg-primary-50 opacity-50 cursor-not-allowed'
                     : 'bg-primary-50 hover:bg-primary-100 hover:scale-105'
                 }`}
-              aria-label={lang === 'rw' ? mood.rw : mood.en}
+              aria-label={isRw ? mood.rw : mood.en}
             >
               <span className="text-2xl">{mood.emoji}</span>
               <span className={`text-[10px] font-bold ${selectedMood === mood.id ? 'text-white' : 'text-primary-700'}`}>
-                {lang === 'rw' ? mood.rw : mood.en}
+                {isRw ? mood.rw : mood.en}
               </span>
             </motion.button>
           ))}
@@ -140,7 +141,7 @@ export default function Home() {
 
         {/* 7-day strip */}
         <div className="mt-4 pt-4 border-t border-primary-50">
-          <p className="text-xs text-neutral-400 mb-2 font-medium">{lang === 'rw' ? 'Iminsi 7' : '7-day history'}</p>
+          <p className="text-xs text-neutral-400 mb-2 font-medium">{isRw ? 'Iminsi 7' : '7-day history'}</p>
           <div className="flex justify-between gap-1">
             {weekMoods.map((entry, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5 flex-1">
@@ -162,7 +163,7 @@ export default function Home() {
       >
         <Phone size={18} className="text-red-500 flex-shrink-0" />
         <div className="flex-1 text-left">
-          <p className="font-bold text-red-900 text-xs">{lang === 'rw' ? 'Ubufasha bwihutirwa?' : 'Need immediate support?'}</p>
+          <p className="font-bold text-red-900 text-xs">{isRw ? 'Ubufasha bwihutirwa?' : 'Need immediate support?'}</p>
           <p className="text-red-600 text-xs">114 · +250 790 003 002</p>
         </div>
         <AlertTriangle size={16} className="text-red-400" />
@@ -181,10 +182,10 @@ export default function Home() {
         </div>
         <div className="flex-1">
           <h3 className="font-bold text-primary-900">
-            {lang === 'rw' ? 'Amarenga' : 'Sign Language Support'}
+            {isRw ? 'Amarenga' : 'Sign Language Support'}
           </h3>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {lang === 'rw' ? 'Koresha amarenga gutangira ikiganiro cya AI' : 'Use sign symbols to start an AI conversation'}
+            {isRw ? 'Koresha amarenga gutangira ikiganiro cya AI' : 'Use sign symbols to start an AI conversation'}
           </p>
         </div>
         <HandMetal size={20} className="text-primary-400" />
@@ -193,7 +194,7 @@ export default function Home() {
       {/* Nav grid */}
       <section>
         <h2 className="font-bold text-primary-900 mb-3">
-          {lang === 'rw' ? 'Shakisha Humura AI' : 'Explore Humura AI'}
+          {isRw ? 'Shakisha Humura AI' : 'Explore Humura AI'}
         </h2>
         <div className="grid grid-cols-2 gap-3">
           {navCards.map((card, idx) => (
@@ -210,10 +211,10 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-bold text-primary-900 text-sm leading-tight">
-                  {lang === 'rw' ? card.rw : card.en}
+                  {isRw ? card.rw : card.en}
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  {lang === 'rw' ? card.desc.rw : card.desc.en}
+                  {isRw ? card.desc.rw : card.desc.en}
                 </p>
               </div>
             </motion.button>
@@ -226,10 +227,10 @@ export default function Home() {
         <span className="text-xl">📱</span>
         <div>
           <p className="text-sm font-bold text-primary-900">
-            {lang === 'rw' ? 'Koresha USSD — Nta murandasi ukenewe' : 'USSD Access — No internet needed'}
+            {isRw ? 'Koresha USSD — Nta murandasi ukenewe' : 'USSD Access — No internet needed'}
           </p>
           <p className="text-xs text-primary-600 mt-0.5">
-            {lang === 'rw' ? 'Kanda *789# kuri telefoni yawe kugira ngo ubone ubufasha' : 'Dial *789# on any phone for mental health support'}
+            {isRw ? 'Kanda *789# kuri telefoni yawe kugira ngo ubone ubufasha' : 'Dial *789# on any phone for mental health support'}
           </p>
         </div>
       </div>

@@ -31,7 +31,7 @@ export const Shell: React.FC<ShellProps> = () => {
   // Full sidebar nav
   const sidebarSections = [
     {
-      title: i18n.language === 'rw' ? 'Ibihingwa' : 'Core',
+      title: !isEnglish ? 'Ibihingwa' : 'Core',
       items: [
         { to: '/', icon: Home, label: t('nav.home') },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
@@ -40,7 +40,7 @@ export const Shell: React.FC<ShellProps> = () => {
       ],
     },
     {
-      title: i18n.language === 'rw' ? 'Amakuru & Ubufasha' : 'Resources',
+      title: !isEnglish ? 'Amakuru & Ubufasha' : 'Resources',
       items: [
         { to: '/education', icon: BookOpen, label: t('nav.education') },
         { to: '/centers', icon: MapPin, label: t('nav.centers') },
@@ -49,7 +49,7 @@ export const Shell: React.FC<ShellProps> = () => {
       ],
     },
     {
-      title: i18n.language === 'rw' ? 'Ihutirwa' : 'Emergency',
+      title: !isEnglish ? 'Ihutirwa' : 'Emergency',
       items: [
         { to: '/emergency', icon: AlertTriangle, label: t('nav.emergency'), danger: true },
       ],
@@ -136,7 +136,7 @@ export const Shell: React.FC<ShellProps> = () => {
             className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-neutral-100 text-neutral-600 text-sm font-semibold hover:bg-neutral-200 transition-colors"
           >
             <ShieldAlert size={16} />
-            {i18n.language === 'rw' ? 'Sohoka Vuba' : 'Quick Exit'}
+            {!isEnglish ? 'Sohoka Vuba' : 'Quick Exit'}
           </a>
         </div>
       </aside>

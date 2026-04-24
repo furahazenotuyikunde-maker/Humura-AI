@@ -35,7 +35,8 @@ const centres: Centre[] = [
 
 export default function SupportCentersPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = i18n.language || 'en';
+  const isRw = lang.startsWith('rw');
   const [search, setSearch] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,11 +73,11 @@ export default function SupportCentersPage() {
         <div className="flex items-center gap-2 mb-1">
           <MapPin className="text-primary" size={28} />
           <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-            {lang === 'rw' ? 'Indangururamuntu y\'Ubufasha' : 'Support Centre Directory'}
+            {isRw ? 'Indangururamuntu y\'Ubufasha' : 'Support Centre Directory'}
           </h1>
         </div>
         <p className="text-primary-600 text-sm">
-          {lang === 'rw'
+          {isRw
             ? 'Ibigo 15 by\'ubuzima bwo mu mutwe mu Rwanda'
             : '15 verified mental health centres across Rwanda'}
         </p>
@@ -91,9 +92,9 @@ export default function SupportCentersPage() {
       >
         <Phone size={22} className="flex-shrink-0 animate-pulse" />
         <div className="flex-1">
-          <p className="font-bold text-sm">{lang === 'rw' ? 'Ubufasha bwihutirwa?' : 'In crisis right now?'}</p>
+          <p className="font-bold text-sm">{isRw ? 'Ubufasha bwihutirwa?' : 'In crisis right now?'}</p>
           <p className="text-white/80 text-xs">
-            {lang === 'rw' ? 'Hamagara 114 ubu — ubuntu, 24/7' : 'Call 114 now — free, 24/7 mental health crisis line'}
+            {isRw ? 'Hamagara 114 ubu — ubuntu, 24/7' : 'Call 114 now — free, 24/7 mental health crisis line'}
           </p>
         </div>
         <span className="font-black text-xl">114</span>
@@ -111,7 +112,7 @@ export default function SupportCentersPage() {
               setActiveSearch(e.target.value); // live filter
             }}
             onKeyDown={handleKeyDown}
-            placeholder={lang === 'rw' ? 'Shakisha ikigo...' : 'Search by name, district, or type...'}
+            placeholder={isRw ? 'Shakisha ikigo...' : 'Search by name, district, or type...'}
             className="w-full pl-9 pr-8 py-3 rounded-2xl bg-white border border-primary-100 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium placeholder:text-neutral-400"
             aria-label="Search centres"
           />
@@ -130,7 +131,7 @@ export default function SupportCentersPage() {
           className="px-4 py-3 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary-900 transition-colors flex-shrink-0"
           aria-label="Search"
         >
-          {lang === 'rw' ? 'Shakisha' : 'Search'}
+          {isRw ? 'Shakisha' : 'Search'}
         </button>
       </div>
 
@@ -143,7 +144,7 @@ export default function SupportCentersPage() {
             exit={{ opacity: 0, height: 0 }}
             className="text-sm text-primary-600 font-medium"
           >
-            {filtered.length} {lang === 'rw' ? 'ibisubizo bya' : 'results for'} "{activeSearch}"
+            {filtered.length} {isRw ? 'ibisubizo bya' : 'results for'} "{activeSearch}"
           </motion.p>
         )}
       </AnimatePresence>
@@ -203,7 +204,7 @@ export default function SupportCentersPage() {
               aria-label={`Call ${c.name}`}
             >
               <Phone size={14} />
-              <span className="text-xs">{lang === 'rw' ? 'Hamagara' : 'Call'}</span>
+              <span className="text-xs">{isRw ? 'Hamagara' : 'Call'}</span>
             </a>
           </motion.div>
         ))}
@@ -218,13 +219,13 @@ export default function SupportCentersPage() {
         >
           <MapPin size={48} className="mx-auto text-primary-200" />
           <p className="text-primary-400 font-medium">
-            {lang === 'rw' ? 'Nta bigo byabonetse' : 'No centres found'}
+            {isRw ? 'Nta bigo byabonetse' : 'No centres found'}
           </p>
           <button
             onClick={handleClear}
             className="px-4 py-2 bg-primary-50 text-primary font-semibold rounded-xl text-sm hover:bg-primary-100 transition-colors"
           >
-            {lang === 'rw' ? 'Siba Gushakisha' : 'Clear Search'}
+            {isRw ? 'Siba Gushakisha' : 'Clear Search'}
           </button>
         </motion.div>
       )}
