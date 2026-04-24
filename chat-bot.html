@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humura AI - Standalone Chat</title>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 500px; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 600px; }
+        .header { background: #0ea5e9; color: white; padding: 20px; font-weight: 800; font-size: 20px; text-align: center; }
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #fdfdfd; }
+        .message { padding: 12px 16px; border-radius: 18px; max-width: 80%; font-size: 14px; line-height: 1.5; }
+        .user { align-self: flex-end; background: #0ea5e9; color: white; border-bottom-right-radius: 4px; }
+        .ai { align-self: flex-start; background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; }
+        .input-area { padding: 20px; background: white; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 12px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: #0ea5e9; }
+        button { background: #0ea5e9; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+        button:disabled { opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="header">Humura AI Chat</div>
+    <div id="chat-box">
+        <div class="message ai">Hello! I am Humura AI. How are you feeling today?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    
+    // Conversation history to "keep chats"
+    let history = [];
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Add user message to UI
+        addMessage(text, 'user');
+        input.value = '';
+        input.disabled = true;
+        sendBtn.disabled = true;
+
+        try {
+            const response = await fetch('https://acetkeyzhbgfsetwkfuo.supabase.co/functions/v1/bright-worker', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message: text,
+                    history: history 
+                })
+            });
+
+            const data = await response.json();
+            const reply = data.reply || data.error || "No response received.";
+
+            // Add AI response to UI
+            addMessage(reply, 'ai');
+
+            // Update history for next turn
+            history.push({ role: 'user', content: text });
+            history.push({ role: 'assistant', content: reply });
+            if (history.length > 10) history = history.slice(-10);
+
+        } catch (error) {
+            addMessage("Error: " + error.message, 'ai');
+        } finally {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    function addMessage(text, role) {
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
