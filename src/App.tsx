@@ -11,13 +11,11 @@ import ProgressPage from './pages/ProgressPage';
 import EmergencyPage from './pages/EmergencyPage';
 import ProfessionalsPage from './pages/ProfessionalsPage';
 import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/LoginPage';
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Shell />}>
           <Route index element={<Home />} />
           <Route path="chat" element={<AIChatPage />} />
