@@ -5,12 +5,15 @@ export default defineConfig({
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor',
+              test: /node_modules/,
+            },
+          ],
         },
       },
     },
