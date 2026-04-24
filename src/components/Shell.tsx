@@ -1,9 +1,11 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X
 } from 'lucide-react';
+
 import { useTranslation } from 'react-i18next';
 
 interface ShellProps {
@@ -15,9 +17,47 @@ export const Shell: React.FC<ShellProps> = () => {
   const navigate = useNavigate();
 
   const isRw = i18n.language?.startsWith('rw') || false;
-  const toggleLanguage = () => {
-    i18n.changeLanguage(isRw ? 'en' : 'rw');
+
+  // History state
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<any[]>(() => {
+    const saved = localStorage.getItem('Humura_chat_sessions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((s: any) => ({
+          ...s,
+          lastUpdated: new Date(s.lastUpdated)
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // Refresh history whenever it's opened
+  useEffect(() => {
+    if (showHistory) {
+      const saved = localStorage.getItem('Humura_chat_sessions');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setSessions(parsed.map((s: any) => ({
+            ...s,
+            lastUpdated: new Date(s.lastUpdated)
+          })));
+        } catch (e) {}
+      }
+    }
+  }, [showHistory]);
+
+  const startNewChat = () => {
+    const id = Date.now().toString();
+    navigate(`/chat?session=${id}`);
+    setShowHistory(false);
   };
+
 
   // Bottom mobile nav (primary 4)
   const mobileNavItems = [
@@ -65,9 +105,19 @@ export const Shell: React.FC<ShellProps> = () => {
     <div className="flex flex-col min-h-screen bg-background pb-16 md:pb-0 md:pl-64">
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-50 px-4 py-3 flex justify-between items-center">
-        <button onClick={() => navigate('/')} className="flex items-center py-1">
-          <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowHistory(true)}
+            className="p-2 hover:bg-primary-50 rounded-xl transition-colors text-primary"
+            aria-label="View history"
+          >
+            <RotateCcw size={20} />
+          </button>
+          <button onClick={() => navigate('/')} className="flex items-center py-1">
+            <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
+          </button>
+        </div>
+
 
         <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm">
           <button 
@@ -172,8 +222,93 @@ export const Shell: React.FC<ShellProps> = () => {
           ))}
         </div>
       </nav>
+
+      {/* Global History Sidebar */}
+      <AnimatePresence>
+        {showHistory && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistory(false)}
+              className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-[2px]"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              className="fixed inset-y-0 left-0 w-72 bg-white z-[110] shadow-2xl border-r border-primary-50 flex flex-col"
+            >
+              <div className="p-4 border-b border-primary-50 flex items-center justify-between bg-primary-50/50">
+                <div className="flex items-center gap-2">
+                  <RotateCcw size={18} className="text-primary" />
+                  <h3 className="font-bold text-primary-900">{isRw ? 'Amateka y\'ibiganiro' : 'Chat History'}</h3>
+                </div>
+                <button onClick={() => setShowHistory(false)} className="p-1.5 hover:bg-primary-100 rounded-lg text-neutral-400 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-3">
+                <button
+                  onClick={startNewChat}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary-600 transition-all shadow-md shadow-primary/20"
+                >
+                  <MessageCircle size={18} />
+                  {isRw ? 'Ikiganiro Gishya' : 'New Chat'}
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {sessions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                    <MessageCircle size={32} className="text-neutral-200 mb-2" />
+                    <p className="text-xs text-neutral-400">
+                      {isRw ? 'Nta mateka y\'ibiganiro arahari.' : 'No chat history yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  sessions.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        navigate(`/chat?session=${s.id}`);
+                        setShowHistory(false);
+                      }}
+                      className="w-full text-left px-4 py-3.5 rounded-2xl text-sm transition-all flex items-start gap-3 hover:bg-primary-50 group border border-transparent hover:border-primary-100"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary flex-shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+                        <MessageCircle size={16} />
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <p className="font-bold text-primary-900 truncate mb-0.5">{s.title}</p>
+                        <p className="text-[10px] text-neutral-400">
+                          {s.lastUpdated.toLocaleDateString()} · {s.messages.length} {isRw ? 'Ubutumwa' : 'messages'}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <div className="p-4 border-t border-primary-50 bg-neutral-50/50">
+                <Link 
+                  to="/progress" 
+                  onClick={() => setShowHistory(false)}
+                  className="flex items-center gap-2 text-xs font-bold text-primary-600 hover:text-primary-800 transition-colors"
+                >
+                  <BarChart2 size={14} />
+                  {isRw ? 'Reba aho ugeze' : 'View full progress'}
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
+
 
 

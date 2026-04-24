@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Volume2, VolumeX, RotateCcw, Phone } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Volume2, VolumeX, RotateCcw, Phone, Plus } from 'lucide-react';
+
 import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
@@ -156,6 +158,9 @@ export default function AIChatPage() {
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sessionUrlId = searchParams.get('session');
+
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem('Humura_chat_sessions');
     if (saved) {
@@ -173,11 +178,14 @@ export default function AIChatPage() {
     return [];
   });
 
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
-    return localStorage.getItem('Humura_current_session_id');
-  });
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionUrlId);
 
-  const [showHistory, setShowHistory] = useState(false);
+  // Sync with URL
+  useEffect(() => {
+    if (sessionUrlId && sessionUrlId !== currentSessionId) {
+      setCurrentSessionId(sessionUrlId);
+    }
+  }, [sessionUrlId]);
 
   // Derived current session
   const currentSession = sessions.find(s => s.id === currentSessionId) || null;
@@ -187,8 +195,13 @@ export default function AIChatPage() {
     localStorage.setItem('Humura_chat_sessions', JSON.stringify(sessions));
     if (currentSessionId) {
       localStorage.setItem('Humura_current_session_id', currentSessionId);
+      // Keep URL in sync
+      if (searchParams.get('session') !== currentSessionId) {
+        setSearchParams({ session: currentSessionId });
+      }
     }
   }, [sessions, currentSessionId]);
+
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -208,7 +221,6 @@ export default function AIChatPage() {
     };
     setSessions(prev => [newSession, ...prev]);
     setCurrentSessionId(newSession.id);
-    setShowHistory(false);
   };
 
   // Initialize first chat if none exists
@@ -427,35 +439,23 @@ export default function AIChatPage() {
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-primary-50 bg-white/60 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowHistory(!showHistory)}
-            className="p-2 hover:bg-primary-50 rounded-xl transition-colors text-primary"
-          >
-            <RotateCcw size={20} />
-          </button>
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <MessageCircle size={16} className="text-white" />
+          </div>
           <div>
-            <p className="font-bold text-primary-900 text-sm">{currentSession?.title || 'Humura AI'}</p>
+            <p className="font-bold text-primary-900 text-sm truncate max-w-[120px]">{currentSession?.title || 'Humura AI'}</p>
             <p className="text-[10px] text-primary-500">
-              {tierUsed === 3 ? '📴 Offline Mode' : tierUsed === 1 ? '🌐 Gemini AI' : isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}
+              {tierUsed === 3 ? '📴 Offline Mode' : isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {isSpeaking ? (
-            <button onClick={stopSpeaking} className="p-2 bg-primary-50 rounded-xl text-primary hover:bg-primary-100 transition-colors">
-              <VolumeX size={16} />
-            </button>
-          ) : (
-            <button onClick={() => messages.length > 0 && speakText(messages[messages.length - 1]?.content || '')} className="p-2 bg-primary-50 rounded-xl text-primary-400 hover:bg-primary-100 transition-colors">
-              <Volume2 size={16} />
-            </button>
-          )}
           <button 
             onClick={startNewChat}
-            className="p-2 bg-primary text-white rounded-xl hover:bg-primary-600 transition-colors shadow-sm"
+            className="p-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors"
           >
-            <MessageCircle size={16} />
+            <Plus size={18} />
           </button>
           <a href="/emergency" className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors">
             <Phone size={13} />
@@ -463,76 +463,6 @@ export default function AIChatPage() {
           </a>
         </div>
       </div>
-
-      {/* History Sidebar/Drawer */}
-      <AnimatePresence>
-        {showHistory && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowHistory(false)}
-              className="absolute inset-0 bg-black/20 z-[100] backdrop-blur-[2px]"
-            />
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              className="absolute inset-y-0 left-0 w-64 bg-white z-[110] shadow-2xl border-r border-primary-50 flex flex-col"
-            >
-              <div className="p-4 border-b border-primary-50 flex items-center justify-between">
-                <h3 className="font-bold text-primary-900">{isRw ? 'Amateka' : 'History'}</h3>
-                <button onClick={() => setShowHistory(false)} className="p-1 text-neutral-400">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                <button
-                  onClick={startNewChat}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl font-bold text-sm hover:bg-primary-100 transition-colors mb-4"
-                >
-                  <MessageCircle size={16} />
-                  {isRw ? 'Ikiganiro Gishya' : 'New Chat'}
-                </button>
-                {sessions.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      setCurrentSessionId(s.id);
-                      setShowHistory(false);
-                    }}
-                    className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-start gap-3 ${
-                      s.id === currentSessionId
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-neutral-600 hover:bg-primary-50'
-                    }`}
-                  >
-                    <MessageCircle size={16} className={s.id === currentSessionId ? 'text-white' : 'text-primary-300'} />
-                    <div className="flex-1 overflow-hidden">
-                      <p className="font-bold truncate">{s.title}</p>
-                      <p className={`text-[10px] ${s.id === currentSessionId ? 'text-white/70' : 'text-neutral-400'}`}>
-                        {s.lastUpdated.toLocaleDateString()}
-                      </p>
-                    </div>
-                    {s.id === currentSessionId && (
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           clearChat();
-                         }}
-                         className="p-1 hover:bg-white/20 rounded"
-                       >
-                         <X size={14} />
-                       </button>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
 
       {/* Messages */}
