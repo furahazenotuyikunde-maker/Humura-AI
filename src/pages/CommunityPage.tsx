@@ -127,6 +127,7 @@ function formatTime(date: Date): string {
 // CIRCLE CHAT COMPONENT
 // ──────────────────────────────────────────────────────────────
 function CircleChat({ circle, lang, onBack, userName }: { circle: Circle; lang: string; onBack: () => void; userName: string }) {
+  const isRw = lang.startsWith('rw');
   const [messages, setMessages] = useState<Message[]>(seedMessages[circle.id] || []);
   const [newMsg, setNewMsg] = useState('');
   const [isAnon, setIsAnon] = useState(true);
