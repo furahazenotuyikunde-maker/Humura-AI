@@ -63,10 +63,11 @@ export default function Home() {
     { path: '/chat', icon: MessageCircle, en: 'AI Therapy Chat', rw: 'Ikiganiro cya Humura AI', color: 'bg-primary', desc: { en: 'Talk with your AI companion', rw: 'Ganira na AI yawe' } },
     { path: '/education', icon: BookOpen, en: 'Education Hub', rw: 'Ikigo cy\'Indangamuntu', color: 'bg-blue-500', desc: { en: 'Learn about mental health', rw: 'Iga ku buzima bwo mu mutwe' } },
     { path: '/centers', icon: MapPin, en: 'Support Centres', rw: 'Amavuriro', color: 'bg-rose-500', desc: { en: '15 verified centres in Rwanda', rw: 'Ibigo 15 mu Rwanda' } },
-    { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'Shaka Inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "Bona abaganga n'inzobere" } },
-    { path: '/community', icon: Users, en: 'Community Circles', rw: 'Imirimo y\'Umuryango', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
-    { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'Aho Ugeze', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana imihindagurikire' } },
+    { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'hura ni inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "hura nabaganga b’inzobere ku buzima bwo mu mutwe" } },
+    { path: '/community', icon: Users, en: 'Community Circles', rw: 'urubuga rwo kugirana inama', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
+    { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'impinduka', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana impinduka ku buzimo bwawe bwo mu mutwe buri cyumweru.' } },
   ];
+
 
   return (
     <div className="space-y-6 pb-10">
@@ -98,8 +99,9 @@ export default function Home() {
             {isRw ? 'Umeze ute uyu munsi?' : 'How are you right now?'}
           </h2>
           {selectedMood && (
-            <span className="text-xs text-primary-500">{isRw ? '✓ Wakorewe' : '✓ Logged'}</span>
+            <span className="text-xs text-primary-500">{isRw ? '✓ uko wiyumva byabitswe' : '✓ Logged'}</span>
           )}
+
         </div>
 
         <div className="flex justify-between gap-2">
@@ -163,9 +165,10 @@ export default function Home() {
       >
         <Phone size={18} className="text-red-500 flex-shrink-0" />
         <div className="flex-1 text-left">
-          <p className="font-bold text-red-900 text-xs">{isRw ? 'Ubufasha bwihutirwa?' : 'Need immediate support?'}</p>
+          <p className="font-bold text-red-900 text-xs">{isRw ? 'ubufasha bw’ihutirwa?' : 'Need immediate support?'}</p>
           <p className="text-red-600 text-xs">114 · +250 790 003 002</p>
         </div>
+
         <AlertTriangle size={16} className="text-red-400" />
       </motion.button>
 
@@ -185,9 +188,10 @@ export default function Home() {
             {isRw ? 'Amarenga' : 'Sign Language Support'}
           </h3>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {isRw ? 'Koresha amarenga gutangira ikiganiro cya AI' : 'Use sign symbols to start an AI conversation'}
+            {isRw ? 'Koresha amarenga utangira ikiganiro na AI' : 'Use sign symbols to start an AI conversation'}
           </p>
         </div>
+
         <HandMetal size={20} className="text-primary-400" />
       </motion.button>
 

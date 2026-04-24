@@ -36,14 +36,15 @@ const resources = {
     translation: {
       "nav.home": "Ahabanza",
       "nav.chat": "Ikiganiro AI",
-      "nav.community": "Umuryango",
-      "nav.progress": "Aho ugeze",
+      "nav.community": "urubuga rwo kugirana inama",
+      "nav.progress": "impinduka",
       "nav.education": "Kwigisha",
       "nav.centers": "Amavuriro",
       "nav.sign": "Amarenga",
-      "nav.professionals": "Inzobere",
-      "nav.emergency": "Ihutirwa",
+      "nav.professionals": "hura ni inzobere",
+      "nav.emergency": "ubufasha bw’ihutirwa",
       "nav.settings": "Igenamiterere",
+
       
       "home.greeting": "Muraho, umeze ute uyu munsi?",
       "home.greeting.sub": "Humura AI iri hano kugufasha.",
@@ -55,10 +56,11 @@ const resources = {
       "mood.sad": "Nababaye",
       
       "chat.placeholder": "Andika ubutumwa cyangwa kanda mikoro...",
-      "chat.crisis.alert": "Ubufasha bwihutirwa",
+      "chat.crisis.alert": "ubufasha bw’ihutirwa",
       "chat.crisis.hotline": "Nomero y'ubutabazi: 114",
       "chat.crisis.healthminds": "Healthy Minds Rwanda: +250 790 003 002",
       "chat.crisis.police": "Polisi/Imbangukiragutabara: 112"
+
     }
   }
 };

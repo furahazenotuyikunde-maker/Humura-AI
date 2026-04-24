@@ -78,7 +78,6 @@ export const Shell: React.FC<ShellProps> = () => {
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
       ],
-
     },
     {
       title: isRw ? 'Amakuru & Ubufasha' : 'Resources',
@@ -90,11 +89,12 @@ export const Shell: React.FC<ShellProps> = () => {
       ],
     },
     {
-      title: isRw ? 'Ihutirwa' : 'Emergency',
+      title: isRw ? 'ubufasha bw’ihutirwa' : 'Emergency',
       items: [
         { to: '/emergency', icon: AlertTriangle, label: t('nav.emergency'), danger: true },
       ],
     },
+
     {
       title: '',
       items: [
@@ -176,14 +176,21 @@ export const Shell: React.FC<ShellProps> = () => {
                 {isRw ? "Ubuhamya" : "Testimonies"}
               </h4>
               <div className="space-y-3">
-                <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2">
-                  "{isRw ? "Ubu rubuga rwamfashije mu bihe bikomeye. AI ya Humura irumva cyane." : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+                <div className="space-y-1">
+                  <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2 leading-relaxed">
+                    "{isRw ? "uru rubuga rwamfashije mu bihe bikomeye. AI ya humura irumva cyane" : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+                  </div>
+                  <p className="text-[9px] font-bold text-primary-600 pl-2">— {isRw ? "Kamana john" : "Kamana John"}</p>
                 </div>
-                <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2">
-                  "{isRw ? "Uburyo bw'amarenga ni bwo nategerezaga. Urakoze Humura AI!" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
+                <div className="space-y-1">
+                  <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2 leading-relaxed">
+                    "{isRw ? "Uburyo bw’amarenga nibwo nshobora gukoresha kuko ntumva si ntavuge. Urakoze humura AI" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
+                  </div>
+                  <p className="text-[9px] font-bold text-primary-600 pl-2">— {isRw ? "Kanyange ancilla" : "Kanyange Ancilla"}</p>
                 </div>
               </div>
             </div>
+
 
             {/* Contact */}
             <div className="space-y-4">

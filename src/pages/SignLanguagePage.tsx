@@ -46,11 +46,12 @@ const signs: Sign[] = [
 ];
 
 const CATEGORY_CONFIG = {
-  feelings: { emoji: '💭', en: 'Feelings', rw: 'Ibyumviro' },
+  feelings: { emoji: '💭', en: 'Feelings', rw: 'ibyiyumviro' },
   ineed: { emoji: '🙏', en: 'I Need', rw: 'Nkeneye' },
-  body: { emoji: '❤️', en: 'Body & Health', rw: 'Umubiri & Amagara' },
-  crisis: { emoji: '🚨', en: 'Crisis', rw: 'Ihutirwa' },
+  body: { emoji: '❤️', en: 'Body & Health', rw: 'ibijyanye n’umubiri ndetse n’ubuzima' },
+  crisis: { emoji: '🚨', en: 'Crisis', rw: 'ubufasha bw’ihutirwa' },
 };
+
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
@@ -298,8 +299,8 @@ export default function SignLanguagePage() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🤟</span>
-            <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-              {isRw ? 'Amarenga' : 'Sign Language Support'}
+            <h1 className="text-xl font-extrabold text-primary-900 leading-tight">
+              {isRw ? 'Amarenga' : 'Sign Language UI'}
             </h1>
           </div>
           <button
@@ -310,8 +311,8 @@ export default function SignLanguagePage() {
             <RotateCcw size={18} />
           </button>
         </div>
-        <p className="text-primary-600 text-sm">
-          {isRw ? 'Koresha amarenga gutanga ubutumwa bwawe ku AI' : 'Use symbol signs to compose your message to AI'}
+        <p className="text-[10px] text-primary-600 mt-1 uppercase font-bold tracking-wider">
+            {isRw ? 'Koresha amarenga utangira ikiganiro na AI' : 'Inclusive Mental Health Support'}
         </p>
       </motion.div>
 
@@ -327,15 +328,15 @@ export default function SignLanguagePage() {
             <button onClick={() => setShowInstructions(false)} className="absolute top-3 right-3 text-neutral-400 hover:text-neutral-600">
               <X size={16} />
             </button>
-            <p className="font-bold text-primary-900 text-sm">
-              {isRw ? 'Uburyo bwo Gukoresha' : 'How to Use'}
-            </p>
-            <ol className="text-xs text-primary-700 space-y-1 list-decimal list-inside">
-              <li>{isRw ? 'Hitamo amarenga (nk\'imara 5) kuvuga ibyo umva' : 'Tap signs (up to 5) to express how you feel'}</li>
-              <li>{isRw ? 'Reba ubutumwa bwawe bwubatswe hepfo' : 'See your composed message below'}</li>
-              <li>{isRw ? 'Kanda "Ohereza" kugira ngo AI igusubize' : 'Tap "Send" for an AI response'}</li>
-              <li>{isRw ? 'Kanda "Wumva" kugira ngo igisubizo ciyumvike' : 'Tap "Listen" to hear the response aloud'}</li>
-            </ol>
+            <h4 className="font-bold text-primary-900 text-sm mb-1">
+              {isRw ? 'Uburyo bwo gukoresha amarenga' : 'How to use'}
+            </h4>
+            <ul className="text-xs text-primary-700 space-y-1.5 list-decimal pl-4">
+              <li>{isRw ? 'hitama amarenga by’ibura 5 avuga ibyo wumva' : 'Select up to 5 signs describing your state'}</li>
+              <li>{isRw ? 'Kanda ohereza kugirango AI igusubize' : 'Tap "Send to AI" to get a therapeutic response'}</li>
+              <li>{isRw ? 'Reba ubutumwa bwawe burubakwa hepfo nyuma yuko AI ifashe ibimenyetso ikanatekereza' : 'Watch your message build as AI processes the intent'}</li>
+              <li>{isRw ? 'Kandi umva kugirango igisubizo cy’umvikane' : 'Use the speaker icon to hear the response aloud'}</li>
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>
@@ -371,6 +372,17 @@ export default function SignLanguagePage() {
                   ANALYZING
                 </div>
               )}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white z-10">
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-4">
+                  <ScanEye size={32} />
+                </div>
+                <p className="font-bold mb-2">
+                  {isRw ? 'kamera ifashwe kugirango isome amarenga yibyo ukora.' : 'Multimodal Vision Ready'}
+                </p>
+                <p className="text-xs text-white/70 max-w-[200px]">
+                  {isRw ? 'AI iri kugufasha kumenya amarenga ukoresha byikora.' : 'AI will automatically detect your signs as you make them.'}
+                </p>
+              </div>
             </div>
             
             <div className="flex items-center justify-between bg-primary-50 p-3 rounded-xl border border-primary-100">
