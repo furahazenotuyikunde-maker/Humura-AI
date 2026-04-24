@@ -163,10 +163,12 @@ export const Shell: React.FC<ShellProps> = () => {
                 {isRw ? "Ikoranabuhanga" : "Technology"}
               </h4>
               <ul className="text-xs text-neutral-500 space-y-2">
+                <li className="font-bold text-primary-600">
+                  {isRw ? "• Porogaramu igendanwa (Mobile-First)" : "• Mobile-First Web App"}
+                </li>
                 <li>• React & Vite</li>
                 <li>• Google Gemini 1.5 Flash</li>
                 <li>• Supabase Edge Functions</li>
-                <li>• Tailwind CSS & Framer Motion</li>
               </ul>
             </div>
 
