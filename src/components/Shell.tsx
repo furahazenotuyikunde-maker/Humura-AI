@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, UserCircle
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -134,12 +134,6 @@ export const Shell: React.FC<ShellProps> = () => {
             >
               Kinyarwanda
             </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary border border-primary-200 shadow-inner">
-              <UserCircle size={24} />
-            </div>
           </div>
         </div>
       </header>
