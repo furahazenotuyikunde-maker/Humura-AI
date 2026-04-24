@@ -172,7 +172,6 @@ export const Shell: React.FC<ShellProps> = () => {
                 <li>• React & Vite</li>
                 <li>• Google Gemini 1.5 Flash</li>
                 <li>• Supabase Edge Functions</li>
-                <li>• Supabase Authentication</li>
               </ul>
             </div>
 
