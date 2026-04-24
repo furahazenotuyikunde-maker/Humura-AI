@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Volume2, VolumeX, RotateCcw, Phone } from 'lucide-react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
@@ -25,7 +24,7 @@ RULES:
 10. Temperature: 0.85 — varied, not repetitive`;
 
 // ──────────────────────────────────────────────────────────────
-// CRISIS KEYWORDS
+// CRISIS DETECTION
 // ──────────────────────────────────────────────────────────────
 const CRISIS_KEYWORDS_EN = [
   'suicide', 'kill myself', 'end my life', 'want to die', 'hurt myself',
@@ -40,118 +39,6 @@ const CRISIS_KEYWORDS_RW = [
 function detectCrisis(text: string): boolean {
   const lower = text.toLowerCase();
   return [...CRISIS_KEYWORDS_EN, ...CRISIS_KEYWORDS_RW].some(k => lower.includes(k));
-}
-
-// ──────────────────────────────────────────────────────────────
-// TIER 3: LOCAL OFFLINE ENGINE
-// ──────────────────────────────────────────────────────────────
-const OFFLINE_RESPONSES: Record<string, { en: string[]; rw: string[] }> = {
-  anxiety: {
-    en: [
-      "What you're experiencing sounds really exhausting — anxiety can feel overwhelming. Try the 4-7-8 breathing technique: inhale for 4 counts, hold for 7, exhale for 8. It activates your parasympathetic nervous system and calms the body quickly.",
-      "Anxiety often lies to us, making dangers feel bigger than they are. I want you to notice: are you safe right now, in this moment? Ground yourself with 5 things you can see around you. That's the 5-4-3-2-1 technique, and it works.",
-      "Your feelings are completely valid — anxiety is your body's protection system working overtime. Let's slow things down: breathe in slowly for 4 counts, out for 6. Research shows extended exhaling triggers the calm response.",
-    ],
-    rw: [
-      "Ibyo uri guhurana nazo birumvikana ko biraruhanya — ubwoba bushobora kumvikana nk'umutwaro. Gerageza ubuhumekero bwa 4-7-8: humeka amasekunida 4, komeza 7, sohora 8. Bitera umubiri guhinduka.",
-      "Ubwoba bukunze kuduhisha ibintu nk'ibibi kuruta uko biri. Baza ikibazo: ese uri mubukiro ubu? Reba ibintu 5 ubona imbere yawe. Ni uburyo bwa 5-4-3-2-1, kandi bufasha cyane.",
-    ]
-  },
-  depression: {
-    en: [
-      "Depression isn't weakness — it's an illness, and one that improves with the right support. One small act today can make a difference: step outside for 5 minutes, or text one person you trust. Behavioral Activation starts small.",
-      "It makes complete sense that you feel this way. Depression lies to us, telling us nothing will help. But small actions compound — what's one tiny thing you could do right now, even if it feels pointless?",
-      "You're carrying something really heavy, and I want you to know that's okay. Depression affects 280 million people worldwide. You are not alone and you are not broken. Have you been able to talk to anyone you trust lately?",
-    ],
-    rw: [
-      "Agahinda si ubusaza — ni indwara, kandi ishobora gukira hamwe n'ubufasha bwiza. Igikorwa kimwe gito uyu munsi gishobora gutandukana: sohoka iminota 5, cyangwa andika ubutumwa ku muntu uizeye.",
-      "Bisobanurika gufata agahinda. Agahinda gatuhesha ibinyoma — ko nta kintu gishobora gufasha. Ariko ibikorwa bito byiyongera. Ni iki kimwe gito wokora ubu?",
-    ]
-  },
-  stress: {
-    en: [
-      "Stress is a signal that you care deeply about something — but your body needs relief. Try progressive muscle relaxation: tense each muscle group for 5 seconds, then release. Start from your toes and work upward.",
-      "When stress feels unmanageable, it helps to name what's really behind it. What is the core thing you're most afraid won't work out? Sometimes naming the fear reduces its power significantly.",
-      "Your nervous system is working hard right now. Give it permission to rest. Box breathing — 4 counts in, 4 hold, 4 out, 4 hold — is used by special forces soldiers to manage high-stress situations.",
-    ],
-    rw: [
-      "Ingorane ni ikimenyetso cyo ku mutima — ariko umubiri wawe ukeneye isorore. Gerageza ukwitonde imitsi: menyeresha imitsi isekunde 5, hanyuma yitonze. Tangira ku birenge.",
-      "Iyo ingorane zumvikana nk'irehana cyane, bifasha kumenya icyo gishingiye. Ni iki kintu cyane utinya ko kitazagenda neza? Gukivuga kenshi bigabanya imbaraga zacyo.",
-    ]
-  },
-  trauma: {
-    en: [
-      "What you've been through was real, and it makes sense your nervous system is still responding to it. Trauma is not a sign of weakness — it's evidence that something significant happened to you. Healing happens at your own pace.",
-      "When traumatic memories surface, grounding helps bring you back to safety. Feel your feet on the floor. Notice the temperature of the air. Name 3 things in the room. You are here, now, and you are safe.",
-      "Healing from trauma is not linear — some days feel like going backward, but that's part of the process. Rwanda has remarkable community healing traditions. Have you been able to talk to anyone who understands your experience?",
-    ],
-    rw: [
-      "Ibyo wahuye nabyose birari ukuri, kandi bisobanurika ko umubiri wawe ukigisubiza. Trauma si ubudahangarwa — ni ibimenyetso by'ibintu bikomeye byakugwiririye. Gukira bigenda uko ushakiye.",
-      "Iyo ibintu bya mbere byongerahajaho, ukwegeranya bifasha kukugarura mu mutekano. Umva ibirenge byawe ku butaka. Tanga izina ibintu 3 mu cyumba. Uri hano, ubu, kandi uri mubukiro.",
-    ]
-  },
-  grief: {
-    en: [
-      "Grief has no timeline, and there is no right way to do it. What you're feeling — whether it's sadness, anger, numbness, or even moments of joy — is all part of love expressing itself through loss.",
-      "Losing someone you love changes you, and that's okay. Grief comes in waves — sometimes you're swimming, sometimes you're drowning. Both are normal. Be as gentle with yourself as you would be with someone you love.",
-      "Your pain is a reflection of how much you loved. While nothing erases that loss, grief can transform over time into something you carry more gently. Have you been able to talk about the person you lost with anyone?",
-    ],
-    rw: [
-      "Akababaro ntagira igihe, kandi nta buryo bwiza bwo kubugira. Ibyo umva — agahinda, umujinya, ubujiji, cyangwa n'ibyishimo — ni byose igice cy'urukundo rugaragara mu gupiripita.",
-      "Gupfukirana umuntu ukunda kukuhinduye, kandi ni ko kugomba kwaba. Akababaro kaza nk'amazi — rimwe uri gutwima, rimwe untiyuhaguza. Byombi ni bisanzwe.",
-    ]
-  },
-  sleep: {
-    en: [
-      "Poor sleep and mental health are deeply connected — each affects the other. Try the 4-7-8 method before bed: inhale 4 counts, hold 7, exhale 8. This breathing pattern is specifically designed to promote sleep onset.",
-      "Our brains need a wind-down signal before sleep. Try: no screens 1 hour before bed, keep your room cool and dark, and aim for the same sleep time every night — even weekends. Consistency is more powerful than total hours.",
-    ],
-    rw: [
-      "Itiro ribi n'ubuzima bwo mu mutwe bifite isano ikomeye. Gerageza ubuhumekero bwa 4-7-8 mbere yo kuryama. Humeka 4, komeza 7, sohora 8. Ni uburyo bwihariye bwo gufasha gusinzira.",
-    ]
-  },
-  crisis: {
-    en: [
-      "I hear you and I'm very glad you're still here. What you're feeling right now is incredibly painful, but these feelings can change. Please reach out immediately: Rwanda Hotline 114, Healthy Minds Rwanda: +250 790 003 002, Emergency: 112. You don't have to face this alone.",
-      "Your life matters deeply, and I want you to be safe right now. Please call 114 (free, 24/7) or +250 790 003 002 immediately. Is there one person nearby you could call or go to right now?",
-    ],
-    rw: [
-      "Ndakwumva kandi nishimye ko ugihari. Ibyo umva ubu ni bibi cyane, ariko ibi byumviro bishobora guhinduka. Hamagara ako kanya: 114, Healthy Minds: +250 790 003 002, Ihutirwa: 112. Nta kimwe urerego.",
-    ]
-  },
-  general: {
-    en: [
-      "Thank you for sharing that with me. It takes courage to speak about what you're feeling. I want to understand more — can you tell me what's been weighing most heavily on your mind lately?",
-      "I'm here with you, and I'm listening carefully. Your feelings are valid and worth exploring. What would feel most helpful to focus on right now — something practical, or simply being heard?",
-      "You've taken an important step by reaching out. Whatever you're carrying, you don't have to carry it alone. What feels most pressing for you right now?",
-    ],
-    rw: [
-      "Urakoze kuvuga ibyo umva. Bisaba ubutwari kuvuga ibyo umva mu mutima. Ndashaka gusobanukirwa neza — ni iki kiremereye cyane mu mutwe wawe vuba aha?",
-      "Ndi hano nawe, kandi ndakwumviriza neza. Ibyumviro byawe ni by'ukuri kandi bikwiye gupimwa. Ni iki cyangufasha cyane ubu?",
-    ]
-  }
-};
-
-function detectTopic(text: string): string {
-  const lower = text.toLowerCase();
-  if (detectCrisis(text)) return 'crisis';
-  if (['anxious', 'anxiety', 'worry', 'panic', 'scared', 'ubwoba', 'impungenge'].some(k => lower.includes(k))) return 'anxiety';
-  if (['depress', 'sad', 'hopeless', 'empty', 'agahinda', 'guturika'].some(k => lower.includes(k))) return 'depression';
-  if (['stress', 'overwhelm', 'pressure', 'ingorane', 'umunaniro'].some(k => lower.includes(k))) return 'stress';
-  if (['trauma', 'ptsd', 'abuse', 'flashback', 'nightmare'].some(k => lower.includes(k))) return 'trauma';
-  if (['grief', 'loss', 'died', 'death', 'mourning', 'akababaro', 'gupfukirana'].some(k => lower.includes(k))) return 'grief';
-  if (['sleep', 'insomnia', 'tired', 'exhausted', 'itiro', 'umunaniro'].some(k => lower.includes(k))) return 'sleep';
-  return 'general';
-}
-
-function getOfflineResponse(text: string, lang: string, usedIndexes: Map<string, number>): string {
-  const topic = detectTopic(text);
-  const responses = OFFLINE_RESPONSES[topic] || OFFLINE_RESPONSES.general;
-  const langResponses = (lang === 'rw' && responses.rw.length > 0) ? responses.rw : responses.en;
-  const lastIdx = usedIndexes.get(topic) ?? -1;
-  const nextIdx = (lastIdx + 1) % langResponses.length;
-  usedIndexes.set(topic, nextIdx);
-  return langResponses[nextIdx];
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -301,25 +188,9 @@ export default function AIChatPage() {
     };
   }, [isLoading]);
 
-  // ── TIER 1: Gemini Direct ──────────────────────────────────
-  const callGeminiDirect = async (userText: string, history: Message[]): Promise<string> => {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: SYSTEM_PROMPT,
-    });
-
-    const formattedHistory = history.map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    }));
-
-    const chat = model.startChat({ history: formattedHistory });
-    const result = await chat.sendMessage(userText);
-    return result.response.text();
-  };
-
-  // ── SEND MESSAGE (3-tier fallback) ────────────────────────
+  // ──────────────────────────────────────────────────────────────
+  // SEND MESSAGE (Edge Function prioritized)
+  // ──────────────────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
@@ -341,32 +212,55 @@ export default function AIChatPage() {
     setTierUsed(null);
 
     let reply = '';
+    
     try {
-      // Tier 1: Gemini direct
-      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
-        reply = await callGeminiDirect(userText, messages);
-        setTierUsed(1);
-      } else {
-        throw new Error('No API key');
-      }
-    } catch {
-      try {
-        // Tier 2: Supabase Edge Function
-        const { data, error } = await supabase.functions.invoke('bright-worker', {
-          body: { 
-            message: userText,
-            history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-            lang: lang
-          }
-        });
+      // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      const { data, error } = await supabase.functions.invoke('bright-worker', {
+        body: { 
+          message: userText,
+          history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+          lang: lang
+        }
+      });
 
-        if (error) throw error;
-        reply = data.reply;
-        setTierUsed(2);
-      } catch (e) {
-        console.error("Edge Function Error:", e);
-        // Tier 3: Local offline engine
-        reply = getOfflineResponse(userText, lang, offlineIndexRef.current);
+      if (error) throw error;
+      if (!data?.reply) throw new Error('No reply from Edge Function');
+      
+      reply = data.reply;
+      setTierUsed(2);
+    } catch (edgeError) {
+      console.error("Edge Function Error:", edgeError);
+      
+      // 2. FALLBACK TO DIRECT GEMINI (If key exists in .env)
+      try {
+        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
+          // Inline Gemini call logic to remove the separate function
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const model = genAI.getGenerativeModel({
+            model: 'gemini-1.5-flash',
+            systemInstruction: SYSTEM_PROMPT,
+          });
+
+          const formattedHistory = messages.map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }],
+          }));
+
+          const chat = model.startChat({ history: formattedHistory });
+          const result = await chat.sendMessage(userText);
+          reply = result.response.text();
+          setTierUsed(1);
+        } else {
+          throw new Error('No API keys provided');
+        }
+      } catch (geminiError) {
+        console.error("Gemini Direct Error:", geminiError);
+        
+        // 3. FINAL FALLBACK: Dynamic Error Message (Replaces Fixed Answers)
+        reply = lang === 'rw' 
+          ? "Mwihangane, ndagira ikibazo cy'itumanaho ubu. Gerageza nanone mu kanya gato cyangwa uhamagare 114 niba ukeneye ubufasha bwihuse."
+          : "I'm having trouble connecting to my brain right now. Please try again in a moment, or call 114 if you need immediate support.";
         setTierUsed(3);
       }
     }
