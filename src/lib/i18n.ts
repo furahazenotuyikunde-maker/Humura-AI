@@ -14,6 +14,7 @@ const resources = {
       "nav.sign": "Sign Language",
       "nav.professionals": "Professionals",
       "nav.emergency": "Emergency",
+      "nav.settings": "Settings",
       
       "home.greeting": "Hello, how are you feeling today?",
       "home.greeting.sub": "Humura AI is here to support you.",
@@ -42,6 +43,7 @@ const resources = {
       "nav.sign": "Amarenga",
       "nav.professionals": "Inzobere",
       "nav.emergency": "Ihutirwa",
+      "nav.settings": "Igenamiterere",
       
       "home.greeting": "Muraho, umeze ute uyu munsi?",
       "home.greeting.sub": "Humura AI iri hano kugufasha.",

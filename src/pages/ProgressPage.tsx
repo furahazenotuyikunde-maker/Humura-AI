@@ -198,7 +198,7 @@ export default function ProgressPage() {
     return found ? found.emoji : '—';
   }, [moodEntries]);
 
-  const handleMoodSelect = (mood: typeof MOODS[0]) => {
+  const handleMoodSelect = async (mood: typeof MOODS[0]) => {
     if (todayEntry) return; // Already logged today
     setSelectedMood(mood.id);
     setMoodTip(lang === 'rw' ? mood.tip.rw : mood.tip.en);
@@ -216,10 +216,14 @@ export default function ProgressPage() {
     localStorage.setItem('Humura_moods', JSON.stringify(updated));
 
     // Non-blocking sync to Supabase
-    supabase.from('mood_metrics').upsert({ mood_level: mood.id, created_at: new Date().toISOString() }).catch(() => {});
+    try {
+      await supabase.from('mood_metrics').upsert({ mood_level: mood.id, created_at: new Date().toISOString() });
+    } catch (e) {
+      console.warn("Supabase sync failed (likely offline):", e);
+    }
   };
 
-  const saveJournal = () => {
+  const saveJournal = async () => {
     if (!journalText.trim()) return;
     const entry: JournalEntry = {
       id: Date.now().toString(),
@@ -235,7 +239,11 @@ export default function ProgressPage() {
     setTimeout(() => setJournalSaved(false), 3000);
 
     // Non-blocking Supabase sync
-    supabase.from('journal_entries').insert({ content: entry.content }).catch(() => {});
+    try {
+      await supabase.from('journal_entries').insert({ content: entry.content });
+    } catch (e) {
+      console.warn("Supabase journal sync failed:", e);
+    }
   };
 
   const getInsight = async () => {

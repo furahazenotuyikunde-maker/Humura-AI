@@ -350,9 +350,20 @@ export default function AIChatPage() {
       }
     } catch {
       try {
-        // Tier 2: Would be Supabase Edge Function — skip for now
-        throw new Error('No edge function configured');
-      } catch {
+        // Tier 2: Supabase Edge Function
+        const { data, error } = await supabase.functions.invoke('bright-worker', {
+          body: { 
+            message: userText,
+            history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+            lang: lang
+          }
+        });
+
+        if (error) throw error;
+        reply = data.reply;
+        setTierUsed(2);
+      } catch (e) {
+        console.error("Edge Function Error:", e);
         // Tier 3: Local offline engine
         reply = getOfflineResponse(userText, lang, offlineIndexRef.current);
         setTierUsed(3);

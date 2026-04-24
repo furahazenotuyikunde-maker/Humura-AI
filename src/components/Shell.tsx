@@ -57,7 +57,7 @@ export const Shell: React.FC<ShellProps> = () => {
     {
       title: '',
       items: [
-        { to: '/settings', icon: Settings, label: 'Settings' },
+        { to: '/settings', icon: Settings, label: t('nav.settings') },
       ],
     },
   ];

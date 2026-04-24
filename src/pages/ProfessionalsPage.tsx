@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight } from 'lucide-react';
