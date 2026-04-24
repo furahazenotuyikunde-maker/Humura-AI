@@ -3,8 +3,9 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, LogIn, LogOut, UserCircle
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +18,26 @@ export const Shell: React.FC<ShellProps> = () => {
   const navigate = useNavigate();
 
   const isRw = i18n.language?.startsWith('rw') || false;
+
+  // Auth state
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   // History state
   const [showHistory, setShowHistory] = useState(false);
@@ -115,23 +136,48 @@ export const Shell: React.FC<ShellProps> = () => {
 
 
 
-        <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm">
-          <button 
-            onClick={() => i18n.changeLanguage('en')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              !isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
-            }`}
-          >
-            English
-          </button>
-          <button 
-            onClick={() => i18n.changeLanguage('rw')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-              isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
-            }`}
-          >
-            Kinyarwanda
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm mr-2">
+            <button 
+              onClick={() => i18n.changeLanguage('en')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                !isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              English
+            </button>
+            <button 
+              onClick={() => i18n.changeLanguage('rw')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              Kinyarwanda
+            </button>
+          </div>
+
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary border border-primary-200 shadow-inner">
+                <UserCircle size={24} />
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="hidden md:flex p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                title={isRw ? 'Sohoka' : 'Logout'}
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/login"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-2xl text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95"
+            >
+              <LogIn size={16} />
+              <span className="hidden sm:inline">{isRw ? 'Injira' : 'Join Now'}</span>
+            </Link>
+          )}
         </div>
       </header>
 
