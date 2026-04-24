@@ -51,6 +51,14 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastUpdated: Date;
+}
+
+
 const THINKING_MESSAGES = [
   "Reading your message carefully...",
   "Considering your emotional context...",
@@ -148,12 +156,16 @@ export default function AIChatPage() {
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem('Humura_chat_history');
+  const [sessions, setSessions] = useState<ChatSession[]>(() => {
+    const saved = localStorage.getItem('Humura_chat_sessions');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
+        return parsed.map((s: any) => ({
+          ...s,
+          lastUpdated: new Date(s.lastUpdated),
+          messages: s.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+        }));
       } catch (e) {
         return [];
       }
@@ -161,9 +173,23 @@ export default function AIChatPage() {
     return [];
   });
 
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
+    return localStorage.getItem('Humura_current_session_id');
+  });
+
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Derived current session
+  const currentSession = sessions.find(s => s.id === currentSessionId) || null;
+  const messages = currentSession?.messages || [];
+
   useEffect(() => {
-    localStorage.setItem('Humura_chat_history', JSON.stringify(messages));
-  }, [messages]);
+    localStorage.setItem('Humura_chat_sessions', JSON.stringify(sessions));
+    if (currentSessionId) {
+      localStorage.setItem('Humura_current_session_id', currentSessionId);
+    }
+  }, [sessions, currentSessionId]);
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCrisisAlert, setShowCrisisAlert] = useState(false);
@@ -172,6 +198,28 @@ export default function AIChatPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [micError, setMicError] = useState('');
   const [tierUsed, setTierUsed] = useState<number | null>(null);
+
+  const startNewChat = () => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: isRw ? 'Ikiganiro Gishya' : 'New Chat',
+      messages: [],
+      lastUpdated: new Date(),
+    };
+    setSessions(prev => [newSession, ...prev]);
+    setCurrentSessionId(newSession.id);
+    setShowHistory(false);
+  };
+
+  // Initialize first chat if none exists
+  useEffect(() => {
+    if (sessions.length === 0) {
+      startNewChat();
+    } else if (!currentSessionId) {
+      setCurrentSessionId(sessions[0].id);
+    }
+  }, []);
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -218,7 +266,6 @@ export default function AIChatPage() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
     setTierUsed(null);
 
@@ -282,12 +329,24 @@ export default function AIChatPage() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, aiMsg]);
+    setSessions(prev => prev.map(s => {
+      if (s.id === currentSessionId) {
+        const updatedMessages = [...s.messages, userMsg, aiMsg];
+        // Auto-update title based on first user message
+        let newTitle = s.title;
+        if (s.messages.length === 0) {
+          newTitle = userText.slice(0, 30) + (userText.length > 30 ? '...' : '');
+        }
+        return { ...s, messages: updatedMessages, title: newTitle, lastUpdated: new Date() };
+      }
+      return s;
+    }));
     setIsLoading(false);
 
     // TTS auto-play
     speakText(reply);
-  }, [input, isLoading, messages, lang]);
+  }, [input, isLoading, currentSessionId, sessions, lang, isRw]);
+
 
   // ── VOICE INPUT ────────────────────────────────────────────
   const startListening = () => {
@@ -345,11 +404,16 @@ export default function AIChatPage() {
   };
 
   const clearChat = () => {
-    setMessages([]);
-    setInput('');
-    offlineIndexRef.current.clear();
-    localStorage.removeItem('Humura_chat_history');
+    if (!currentSessionId) return;
+    setSessions(prev => prev.filter(s => s.id !== currentSessionId));
+    if (sessions.length > 1) {
+      const remaining = sessions.filter(s => s.id !== currentSessionId);
+      setCurrentSessionId(remaining[0].id);
+    } else {
+      startNewChat();
+    }
   };
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-80px)] relative">
@@ -363,16 +427,20 @@ export default function AIChatPage() {
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-primary-50 bg-white/60 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <MessageCircle size={16} className="text-white" />
-          </div>
+          <button 
+            onClick={() => setShowHistory(!showHistory)}
+            className="p-2 hover:bg-primary-50 rounded-xl transition-colors text-primary"
+          >
+            <RotateCcw size={20} />
+          </button>
           <div>
-            <p className="font-bold text-primary-900 text-sm">Humura AI</p>
+            <p className="font-bold text-primary-900 text-sm">{currentSession?.title || 'Humura AI'}</p>
             <p className="text-[10px] text-primary-500">
               {tierUsed === 3 ? '📴 Offline Mode' : tierUsed === 1 ? '🌐 Gemini AI' : isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           {isSpeaking ? (
             <button onClick={stopSpeaking} className="p-2 bg-primary-50 rounded-xl text-primary hover:bg-primary-100 transition-colors">
@@ -383,8 +451,11 @@ export default function AIChatPage() {
               <Volume2 size={16} />
             </button>
           )}
-          <button onClick={clearChat} className="p-2 bg-primary-50 rounded-xl text-primary-400 hover:bg-primary-100 transition-colors">
-            <RotateCcw size={16} />
+          <button 
+            onClick={startNewChat}
+            className="p-2 bg-primary text-white rounded-xl hover:bg-primary-600 transition-colors shadow-sm"
+          >
+            <MessageCircle size={16} />
           </button>
           <a href="/emergency" className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors">
             <Phone size={13} />
@@ -392,6 +463,77 @@ export default function AIChatPage() {
           </a>
         </div>
       </div>
+
+      {/* History Sidebar/Drawer */}
+      <AnimatePresence>
+        {showHistory && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistory(false)}
+              className="absolute inset-0 bg-black/20 z-[100] backdrop-blur-[2px]"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              className="absolute inset-y-0 left-0 w-64 bg-white z-[110] shadow-2xl border-r border-primary-50 flex flex-col"
+            >
+              <div className="p-4 border-b border-primary-50 flex items-center justify-between">
+                <h3 className="font-bold text-primary-900">{isRw ? 'Amateka' : 'History'}</h3>
+                <button onClick={() => setShowHistory(false)} className="p-1 text-neutral-400">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                <button
+                  onClick={startNewChat}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl font-bold text-sm hover:bg-primary-100 transition-colors mb-4"
+                >
+                  <MessageCircle size={16} />
+                  {isRw ? 'Ikiganiro Gishya' : 'New Chat'}
+                </button>
+                {sessions.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setCurrentSessionId(s.id);
+                      setShowHistory(false);
+                    }}
+                    className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-start gap-3 ${
+                      s.id === currentSessionId
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-neutral-600 hover:bg-primary-50'
+                    }`}
+                  >
+                    <MessageCircle size={16} className={s.id === currentSessionId ? 'text-white' : 'text-primary-300'} />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-bold truncate">{s.title}</p>
+                      <p className={`text-[10px] ${s.id === currentSessionId ? 'text-white/70' : 'text-neutral-400'}`}>
+                        {s.lastUpdated.toLocaleDateString()}
+                      </p>
+                    </div>
+                    {s.id === currentSessionId && (
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           clearChat();
+                         }}
+                         className="p-1 hover:bg-white/20 rounded"
+                       >
+                         <X size={14} />
+                       </button>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

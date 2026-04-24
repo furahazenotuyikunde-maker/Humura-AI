@@ -69,12 +69,22 @@ export const Shell: React.FC<ShellProps> = () => {
           <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm">
           <button 
-            onClick={toggleLanguage}
-            className="px-3 py-1.5 rounded-full bg-primary-50 text-primary-900 text-sm font-semibold hover:bg-primary-100 transition-colors"
+            onClick={() => i18n.changeLanguage('en')}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+              !isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+            }`}
           >
-            {isRw ? 'English' : 'Kinyarwanda'}
+            EN
+          </button>
+          <button 
+            onClick={() => i18n.changeLanguage('rw')}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+              isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+            }`}
+          >
+            RW
           </button>
         </div>
       </header>
