@@ -206,7 +206,7 @@ export default function SettingsPage() {
                   : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
               }`}
             >
-              {l === 'en' ? '🇬🇧 English' : '🇷🇼 Kinyarwanda'}
+              {l === 'en' ? 'English' : 'Kinyarwanda'}
             </button>
           ))}
         </div>
