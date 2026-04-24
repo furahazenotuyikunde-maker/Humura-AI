@@ -430,7 +430,7 @@ export default function AIChatPage() {
 
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-80px)] relative">
+    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-60px)] relative mb-8">
       {/* Crisis Overlay */}
       <AnimatePresence>
         {showCrisisAlert && (

@@ -142,7 +142,7 @@ export const Shell: React.FC<ShellProps> = () => {
         </div>
 
         {/* Premium Footer */}
-        <footer className="mt-12 pt-10 pb-6 border-t border-primary-50 bg-white/50 backdrop-blur-sm rounded-t-[3rem]">
+        <footer className="mt-32 pt-16 pb-12 border-t border-primary-50 bg-white/50 backdrop-blur-sm rounded-t-[4rem]">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
             {/* About */}
             <div className="space-y-4">
