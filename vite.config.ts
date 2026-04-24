@@ -7,10 +7,16 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-ai': ['@google/generative-ai'],
-          'vendor-ui': ['framer-motion', 'lucide-react'],
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          if (id.includes('@google/generative-ai')) {
+            return 'vendor-ai';
+          }
+          if (id.includes('framer-motion') || id.includes('lucide-react')) {
+            return 'vendor-ui';
+          }
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            return 'vendor-react';
+          }
         },
       },
     },
