@@ -95,6 +95,51 @@ function MoodBarChart({ entries, lang }: { entries: MoodEntry[]; lang: string })
   );
 }
 
+function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
+  if (moodEntries.length === 0) {
+    return lang === 'rw'
+      ? "Nta makuru ahagije dufite yo kuguha inama. Gerageza kwandika uko umeze mu buryo buhoraho."
+      : "We don't have enough data to give you an insight yet. Try logging your mood for a few days!";
+  }
+
+  const last7 = moodEntries.slice(-7);
+  const moods = last7.map(e => e.mood);
+  const counts: Record<string, number> = {};
+  moods.forEach(m => counts[m] = (counts[m] || 0) + 1);
+  const dominantMood = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as MoodLevel;
+
+  const insights: Record<string, { en: string; rw: string }> = {
+    great: {
+      en: "Your mood has been excellent lately! This is a great time to tackle new challenges or share your positive energy with others. Keep up the habits that are making you feel this way.",
+      rw: "Akanyamuneza kawe kashitse ku rugero rwo hejuru! Iki ni igihe cyiza cyo gukora imishinga mishya cyangwa gusangira ibyishimo n'abandi. Komeza imigenzo igutera kumva ameze neza."
+    },
+    good: {
+      en: "You've been feeling good consistently. Maintaining this balance is key. Try to identify what's contributing to this stability and keep those practices in your daily routine.",
+      rw: "Umeze neza mu buryo buhoraho. Kubungabunga aya mahirwe ni ingenzi. Gerageza kumenya ibigufasha kumva utuje maze ubikomeze mu buzima bwawe bwa buri munsi."
+    },
+    neutral: {
+      en: "Your mood has been steady. This is a good baseline for reflection. Maybe try introducing one small new positive activity today to see if it gives you a gentle lift.",
+      rw: "Umutima wawe uratuje. Iki ni igihe cyiza cyo gutekereza. Gerageza gukora igikorwa kimwe gito gishya gishimishije uyu munsi urebe ko cyakwongerera ibyishimo."
+    },
+    anxious: {
+      en: "I've noticed some patterns of anxiety recently. Remember that feelings aren't facts. Focusing on your breath for just 2 minutes can help ground you when things feel overwhelming.",
+      rw: "Nabonye ibimenyetso by'impungenge mu minsi ishize. Ibuka ko ibyo wumva atari ko kuri kose. Kwibanda ku guhumeka neza iminota 2 gusa bishobora kugufasha gutuza."
+    },
+    sad: {
+      en: "You've been through a bit of a low period. Please be very gentle with yourself right now. Small steps like getting 10 minutes of sunlight can help shift your perspective slowly.",
+      rw: "Wanyuze mu bihe bikunze kuguhangayikisha. Nyabuneka rero, wiroroheje cyane ubu. Intambwe nto nko kumara iminota 10 ku zuba bishobora kugufasha guhindura imitekerereze buhoro buhoro."
+    },
+    mixed: {
+      en: "Your moods have been fluctuating recently. This is completely normal on the path to wellness. Focus on consistent self-care and notice which activities help you feel most centered.",
+      rw: "Ibyo wumva mu mutima byagiye bihinduka vuba aha. Ibi ni bisanzwe mu ruzinduko rwo gukira. Ibande ku kwitaho no kumenya ibikorwa bigufasha kumva utuje cyane."
+    }
+  };
+
+  const isMixed = Object.keys(counts).length > 2;
+  const result = isMixed ? insights.mixed : (insights[dominantMood] || insights.neutral);
+  return lang === 'rw' ? result.rw : result.en;
+}
+
 // ──────────────────────────────────────────────────────────────
 // MAIN PROGRESS PAGE
 // ──────────────────────────────────────────────────────────────
@@ -132,9 +177,10 @@ export default function ProgressPage() {
 
   const streak = useMemo(() => {
     let s = 0;
+    const todayDate = new Date();
     for (let i = 0; i < 30; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+      const d = new Date(todayDate);
+      d.setDate(todayDate.getDate() - i);
       const ds = d.toISOString().split('T')[0];
       if (moodEntries.find(e => e.date === ds)) s++;
       else break;
@@ -146,8 +192,9 @@ export default function ProgressPage() {
     if (!moodEntries.length) return '—';
     const counts: Record<string, number> = {};
     moodEntries.forEach(e => { counts[e.mood] = (counts[e.mood] || 0) + 1; });
-    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-    const found = MOODS.find(m => m.id === top[0]);
+    const topArr = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (!topArr.length) return '—';
+    const found = MOODS.find(m => m.id === topArr[0][0]);
     return found ? found.emoji : '—';
   }, [moodEntries]);
 
@@ -169,7 +216,7 @@ export default function ProgressPage() {
     localStorage.setItem('Humura_moods', JSON.stringify(updated));
 
     // Non-blocking sync to Supabase
-    supabase.from('mood_metrics').upsert({ mood_level: mood.id, created_at: new Date().toISOString() }).then(() => {});
+    supabase.from('mood_metrics').upsert({ mood_level: mood.id, created_at: new Date().toISOString() }).catch(() => {});
   };
 
   const saveJournal = () => {
@@ -188,31 +235,41 @@ export default function ProgressPage() {
     setTimeout(() => setJournalSaved(false), 3000);
 
     // Non-blocking Supabase sync
-    supabase.from('journal_entries').insert({ content: entry.content }).then(() => {});
+    supabase.from('journal_entries').insert({ content: entry.content }).catch(() => {});
   };
 
   const getInsight = async () => {
     setInsightLoading(true);
-    const last7 = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
-    const prompt = `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7 || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific and actionable.`;
+    setInsightText(''); // Clear previous
 
     try {
-      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
+      const hasValidKey = GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key' && GEMINI_API_KEY.length > 10;
+
+      if (hasValidKey) {
+        const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
+        const prompt = `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`;
+        
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(prompt);
         setInsightText(result.response.text());
       } else {
-        setInsightText(lang === 'rw'
-          ? 'Kugira ngo ubone inama z\'ubwonko, shyira urufunguzo rwa Gemini API mu .env. Ariko ibuka: gukurikirana ikibabi cy\'imihindagurikire yawe buri munsi ni intambwe nkuru yo kubungabunga ubuzima bwawe bwo mu mutwe.'
-          : 'Add your Gemini API key to .env to get personalized insights. For now: tracking your daily mood is itself a powerful act of self-care and awareness.');
+        // Use quality offline generator if no key
+        setTimeout(() => {
+          setInsightText(getOfflineInsight(moodEntries, lang));
+          setInsightLoading(false);
+        }, 800); // Artificial delay for "thinking" feel
+        return;
       }
-    } catch {
-      setInsightText(lang === 'rw' ? 'Gerageza nanone.' : 'Please try again.');
+    } catch (err) {
+      console.error("AI Insight Error:", err);
+      // Fallback to offline on error
+      setInsightText(getOfflineInsight(moodEntries, lang));
     } finally {
       setInsightLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-5 pb-10">
