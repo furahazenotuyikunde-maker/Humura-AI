@@ -72,19 +72,19 @@ export const Shell: React.FC<ShellProps> = () => {
         <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm">
           <button 
             onClick={() => i18n.changeLanguage('en')}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
               !isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
             }`}
           >
-            EN
+            English
           </button>
           <button 
             onClick={() => i18n.changeLanguage('rw')}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
               isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
             }`}
           >
-            RW
+            Kinyarwanda
           </button>
         </div>
       </header>
