@@ -271,7 +271,7 @@ export default function SignLanguagePage() {
 
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.trim());
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
       
       const availableIds = signs.map(s => s.id).join(', ');
       const prompt = `You are an expert AI reading sign language, body language, and facial expressions. Look very carefully at the provided user image. Pick ONE exact keyword from this list that best matches their expression or sign: [${availableIds}]. If they look completely neutral, relaxed, or no action is clear, output "none". Do NOT output any formatting, punctuation, or other words. ONLY the exact ID string.`;
@@ -389,16 +389,39 @@ export default function SignLanguagePage() {
                   ANALYZING
                 </div>
               )}
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white z-10">
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-4">
-                  <ScanEye size={32} />
+              
+              {/* Done & Send overlay button */}
+              {selected.length > 0 && (
+                <div className="absolute bottom-4 inset-x-4 z-20">
+                  <motion.button
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    onClick={() => {
+                      stopCamera();
+                      handleSend();
+                    }}
+                    className="w-full bg-primary text-white py-3 rounded-2xl font-bold text-sm shadow-2xl flex items-center justify-center gap-2 border border-white/20 backdrop-blur-sm"
+                  >
+                    <Send size={18} />
+                    {isRw ? 'Ngejeje — Ohereza ubu' : 'Finished Signing — Send Now'}
+                  </motion.button>
                 </div>
-                <p className="font-bold mb-2">
-                  {isRw ? 'kamera ifashwe kugirango isome amarenga yibyo ukora.' : 'Multimodal Vision Ready'}
-                </p>
-                <p className="text-xs text-white/70 max-w-[200px]">
-                  {isRw ? 'AI iri kugufasha kumenya amarenga ukoresha byikora.' : 'AI will automatically detect your signs as you make them.'}
-                </p>
+              )}
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white z-10 pointer-events-none">
+                {!selected.length && (
+                   <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-4">
+                      <ScanEye size={32} />
+                    </div>
+                    <p className="font-bold mb-2">
+                      {isRw ? 'kamera ifashwe kugirango isome amarenga yibyo ukora.' : 'Multimodal Vision Ready'}
+                    </p>
+                    <p className="text-xs text-white/70 max-w-[200px]">
+                      {isRw ? 'AI iri kugufasha kumenya amarenga ukoresha byikora.' : 'AI will automatically detect your signs as you make them.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -408,7 +431,7 @@ export default function SignLanguagePage() {
                   {isRw ? 'Sikanira Byikora (AI)' : 'Auto-Detect Signs'}
                 </span>
                 <span className="text-[10px] text-primary-600 leading-tight">
-                  {isRw ? 'Gemini 1.5 Vision isoma ibimenyetso' : 'Gemini 1.5 Vision scans your body language'}
+                  {isRw ? 'Gemini 3 Flash isoma ibimenyetso' : 'Gemini 3 Flash scans your body language'}
                 </span>
               </div>
               <button
@@ -427,9 +450,14 @@ export default function SignLanguagePage() {
         )}
         
         {!cameraActive && !cameraError && (
-          <p className="text-xs text-neutral-400 text-center py-2">
-            {isRw ? 'Kamera ifashwe kugira ngo isome amarenga byikora.' : 'Turn on the camera to let AI auto-detect your expressions.'}
-          </p>
+          <div className="text-center py-4 space-y-2">
+             <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto text-primary">
+                <Camera size={20} />
+             </div>
+             <p className="text-xs text-neutral-500 max-w-[250px] mx-auto">
+               {isRw ? 'Kanda buto yo haruguru kugira ngo utangire gukoresha amarenga byikora.' : 'Turn on the camera and start signing. AI will build your message for you.'}
+             </p>
+          </div>
         )}
       </div>
 
