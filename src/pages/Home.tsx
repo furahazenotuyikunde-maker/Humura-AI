@@ -166,7 +166,7 @@ export default function Home() {
         <Phone size={18} className="text-red-500 flex-shrink-0" />
         <div className="flex-1 text-left">
           <p className="font-bold text-red-900 text-xs">{isRw ? 'ubufasha bw’ihutirwa?' : 'Need immediate support?'}</p>
-          <p className="text-red-600 text-xs">114 · +250 790 003 002</p>
+          <p className="text-red-600 text-xs">116 (Free) · 114 · +250 790 003 002</p>
         </div>
 
         <AlertTriangle size={16} className="text-red-400" />
@@ -234,7 +234,7 @@ export default function Home() {
             {isRw ? 'Koresha USSD — Nta murandasi ukenewe' : 'USSD Access — No internet needed'}
           </p>
           <p className="text-xs text-primary-600 mt-0.5">
-            {isRw ? 'Kanda *789# kuri telefoni yawe kugira ngo ubone ubufasha' : 'Dial *789# on any phone for mental health support'}
+            {isRw ? 'Kanda *114# cyangwa u-hamagare 116 (ku buntu) u-bone ubufasha' : 'Dial *114# or call 116 (free) on any phone for support'}
           </p>
         </div>
       </div>
