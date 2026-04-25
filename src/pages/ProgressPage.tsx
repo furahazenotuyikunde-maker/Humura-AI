@@ -159,6 +159,7 @@ export default function ProgressPage() {
   const [insightText, setInsightText] = useState('');
   const [insightLoading, setInsightLoading] = useState(false);
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
+  const [tierUsed, setTierUsed] = useState<number | null>(null);
 
   const today = todayStr();
   const todayEntry = moodEntries.find(e => e.date === today);
@@ -254,13 +255,15 @@ export default function ProgressPage() {
 
     try {
       // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      console.log("Humura AI (Insight): Attempting Edge Function call...");
       const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
       
       const { data, error } = await supabase.functions.invoke('bright-worker', {
         body: { 
           message: `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`,
           history: [],
-          lang: lang
+          lang: lang,
+          apiKey: GEMINI_API_KEY.trim()
         }
       });
 
@@ -268,14 +271,17 @@ export default function ProgressPage() {
       if (!data?.reply) throw new Error('No reply from Edge Function');
       
       setInsightText(data.reply);
+      setTierUsed(2);
+      console.log("✅ Humura AI (Insight): Response received from Edge Function.");
     } catch (edgeError) {
-      console.error("Edge Function Insight Error:", edgeError);
+      console.warn("⚠️ Humura AI (Insight): Edge Function failed, falling back to direct API.", edgeError);
       
-      // 2. FALLBACK TO DIRECT GEMINI (Dynamic Import)
+      // 2. FALLBACK TO DIRECT GEMINI
       try {
-        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key' && GEMINI_API_KEY.length > 10) {
+        const cleanKey = GEMINI_API_KEY.trim();
+        if (cleanKey && cleanKey.length > 20) {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const genAI = new GoogleGenerativeAI(cleanKey);
           const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
           
           const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
@@ -283,13 +289,16 @@ export default function ProgressPage() {
           
           const result = await model.generateContent(prompt);
           setInsightText(result.response.text());
+          setTierUsed(1);
+          console.log("✅ Humura AI (Insight): Response received from direct Gemini API.");
         } else {
-          throw new Error('No valid API keys');
+          throw new Error('Invalid or missing Gemini API key');
         }
       } catch (geminiError) {
-        console.error("Gemini Direct Insight Error:", geminiError);
+        console.error("❌ Humura AI (Insight): Direct Gemini API also failed.", geminiError);
         // 3. FINAL FALLBACK: Offline Generator
         setInsightText(getOfflineInsight(moodEntries, lang));
+        setTierUsed(3);
       }
     } finally {
       setInsightLoading(false);
@@ -569,8 +578,13 @@ export default function ProgressPage() {
                 <h3 className="font-bold text-primary-900">
                   {isRw ? 'Inama ya AI y\'Ubuzima' : 'AI Wellness Insight'}
                 </h3>
-                <p className="text-xs text-neutral-500">
-                  {isRw ? 'Ikoze ku makuru yawe ya 7 y\'imihindagurikire' : 'Personalized from your last 7 mood entries'}
+                <p className="text-xs flex items-center gap-2">
+                  <span className="text-neutral-500">{isRw ? 'Ikoze ku makuru yawe ya 7 y\'imihindagurikire' : 'Personalized from your last 7 mood entries'}</span>
+                  {tierUsed === 1 || tierUsed === 2 ? (
+                    <span className="text-green-600 font-bold animate-pulse text-[10px]">● LIVE</span>
+                  ) : tierUsed === 3 ? (
+                    <span className="text-amber-600 font-bold text-[10px]">● OFFLINE</span>
+                  ) : null}
                 </p>
               </div>
             </div>

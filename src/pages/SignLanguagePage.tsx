@@ -70,6 +70,7 @@ export default function SignLanguagePage() {
   const [showCrisisWarning, setShowCrisisWarning] = useState(false);
   const [autoDetectActive, setAutoDetectActive] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [tierUsed, setTierUsed] = useState<number | null>(null);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
@@ -156,12 +157,14 @@ export default function SignLanguagePage() {
 
     try {
       // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      console.log("Humura AI (Sign): Attempting Edge Function call...");
       const { data, error } = await supabase.functions.invoke('bright-worker', {
         body: { 
           message: `User is communicating via sign language. Selected signs: ${message}`,
           history: [],
           lang: lang,
-          isSignLanguage: true
+          isSignLanguage: true,
+          apiKey: GEMINI_API_KEY.trim()
         }
       });
 
@@ -169,26 +172,32 @@ export default function SignLanguagePage() {
       if (!data?.reply) throw new Error('No reply from Edge Function');
       
       setAiResponse(data.reply);
+      setTierUsed(2);
+      console.log("✅ Humura AI (Sign): Response received from Edge Function.");
     } catch (edgeError) {
-      console.error("Edge Function Sign Error:", edgeError);
+      console.warn("⚠️ Humura AI (Sign): Edge Function failed, falling back to direct API.", edgeError);
       
-      // 2. FALLBACK TO DIRECT GEMINI (Dynamic Import)
+      // 2. FALLBACK TO DIRECT GEMINI
       try {
-        if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_key') {
+        const cleanKey = GEMINI_API_KEY.trim();
+        if (cleanKey && cleanKey.length > 20) {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const genAI = new GoogleGenerativeAI(cleanKey);
           const model = genAI.getGenerativeModel({
             model: 'gemini-1.5-flash',
             systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${isRw ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
           });
           const result = await model.generateContent(message);
           setAiResponse(result.response.text());
+          setTierUsed(1);
+          console.log("✅ Humura AI (Sign): Response received from direct Gemini API.");
         } else {
-          setAiResponse(generateFallback());
+          throw new Error('Invalid or missing Gemini API key');
         }
       } catch (geminiError) {
-        console.error("Gemini Direct Sign Error:", geminiError);
+        console.error("❌ Humura AI (Sign): Direct Gemini API also failed.", geminiError);
         setAiResponse(generateFallback());
+        setTierUsed(3);
       }
     } finally {
       setIsLoading(false);
@@ -312,8 +321,11 @@ export default function SignLanguagePage() {
             <RotateCcw size={18} />
           </button>
         </div>
-        <p className="text-[10px] text-primary-600 mt-1 uppercase font-bold tracking-wider">
-            {isRw ? 'Koresha amarenga utangira ikiganiro na AI' : 'Inclusive Mental Health Support'}
+        <p className="text-[10px] flex items-center gap-2 mt-1 uppercase font-bold tracking-wider">
+            <span className={tierUsed === 1 || tierUsed === 2 ? "text-green-600 animate-pulse" : "text-primary-600"}>
+              {tierUsed === 1 || tierUsed === 2 ? (isRw ? 'AI iri gukora' : 'Live AI Active') : (isRw ? 'Koresha amarenga utangira ikiganiro na AI' : 'Inclusive Mental Health Support')}
+            </span>
+            {tierUsed === 3 && <span className="text-amber-600 italic">📴 {isRw ? 'Uburyo bwo hanze' : 'Offline'}</span>}
         </p>
       </motion.div>
 
