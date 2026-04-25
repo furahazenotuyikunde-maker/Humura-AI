@@ -125,18 +125,19 @@ export default function AIChatPage() {
     setIsLoading(true);
 
     try {
-      // TIER 1: CALL SUPABASE EDGE FUNCTION 'chat'
-      console.log("Humura AI: Attempting Edge Function 'chat'...");
+      // TIER 1: CALL SUPABASE EDGE FUNCTION 'super-task'
+      console.log("Humura AI: Attempting Edge Function 'super-task'...");
       const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: userText,
           history: messages.map(m => ({ role: m.role, content: m.content })),
-          lang: lang
+          lang: lang,
+          apiKey: import.meta.env.VITE_GEMINI_API_KEY
         }
       });
 
       if (error) throw error;
-      if (!data?.reply) throw new Error('No reply received from Edge Function');
+      if (!data?.reply) throw new Error('No reply received from AI service');
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -156,31 +157,14 @@ export default function AIChatPage() {
         }
         return s;
       }));
-          const result = await chat.sendMessage(userText);
-          const replyText = result.response.text();
 
-          const aiMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: replyText,
-            timestamp: new Date(),
-          };
-
-          setSessions(prev => prev.map(s => {
-            if (s.id === currentSessionId) {
-              return { ...s, messages: [...s.messages, aiMsg], lastUpdated: new Date() };
-            }
-            return s;
-          }));
-        } else {
-          throw new Error('No local API key found for fallback');
-        }
-      } catch (fallbackErr: any) {
-        console.error("❌ Both connection tiers failed:", fallbackErr);
-        setErrorMessage(
-          `Error: ${fallbackErr.message || err.message || 'Unknown connection error'}`
-        );
-      }
+    } catch (err: any) {
+      console.error("❌ Chat failed:", err);
+      setErrorMessage(
+        isRw 
+          ? `Ikibazo: ${err.message || 'Ntabwo nshoboye kugusubiza ubu. Ongera ugerageze.'}`
+          : `Error: ${err.message || 'I am unable to respond right now. Please try again.'}`
+      );
     } finally {
       setIsLoading(false);
     }
