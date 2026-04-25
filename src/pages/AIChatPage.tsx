@@ -125,7 +125,8 @@ export default function AIChatPage() {
     setIsLoading(true);
 
     try {
-      // CALL SUPABASE EDGE FUNCTION 'chat'
+      // TIER 1: CALL SUPABASE EDGE FUNCTION 'chat'
+      console.log("Humura AI: Attempting Edge Function 'chat'...");
       const { data, error } = await supabase.functions.invoke('chat', {
         body: { 
           userMessage: userText,
@@ -135,7 +136,7 @@ export default function AIChatPage() {
       });
 
       if (error) throw error;
-      if (!data?.reply) throw new Error(isRw ? 'Nta gisubizo cyabonetse' : 'No reply received from AI');
+      if (!data?.reply) throw new Error('No reply received from Edge Function');
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -157,8 +158,52 @@ export default function AIChatPage() {
       }));
 
     } catch (err: any) {
-      console.error("Chat Error:", err);
-      setErrorMessage(isRw ? 'Habaye ikibazo mu guhura na AI. Ongera ugerageze.' : 'Failed to connect to AI. Please check your connection and try again.');
+      console.warn("⚠️ Edge Function failed, trying direct API fallback...", err);
+      
+      // TIER 2: FALLBACK TO DIRECT GEMINI API (If key available locally)
+      try {
+        const localKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (localKey && localKey.length > 10) {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(localKey.trim());
+          const model = genAI.getGenerativeModel({ 
+            model: 'gemini-2.5-pro',
+            systemInstruction: "You are Humura AI, a compassionate mental health support assistant for Rwanda. Respond in the same language as the user. Validate feelings first, then provide gentle support. Keep responses warm and clear."
+          });
+
+          const formattedHistory = messages.map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }],
+          }));
+
+          const chat = model.startChat({ history: formattedHistory });
+          const result = await chat.sendMessage(userText);
+          const replyText = result.response.text();
+
+          const aiMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: replyText,
+            timestamp: new Date(),
+          };
+
+          setSessions(prev => prev.map(s => {
+            if (s.id === currentSessionId) {
+              return { ...s, messages: [...s.messages, aiMsg], lastUpdated: new Date() };
+            }
+            return s;
+          }));
+        } else {
+          throw new Error('No local API key found for fallback');
+        }
+      } catch (fallbackErr: any) {
+        console.error("❌ Both connection tiers failed:", fallbackErr);
+        setErrorMessage(
+          err.message?.includes('404') 
+            ? (isRw ? 'Porogaramu ya AI ntabwo yashyizweho (404). Hamagara umukozi wacu.' : 'AI Function not deployed (404). Please deploy the "chat" edge function.')
+            : (isRw ? 'Habaye ikibazo mu guhura na AI. Ongera ugerageze.' : 'Failed to connect to AI. Please check your connection or deploy the function.')
+        );
+      }
     } finally {
       setIsLoading(false);
     }

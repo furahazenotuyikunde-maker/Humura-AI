@@ -156,8 +156,8 @@ export default function SignLanguagePage() {
     };
 
     try {
-      // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
-      console.log("Humura AI (Sign): Attempting Edge Function call...");
+      // TIER 1: TRY EDGE FUNCTION
+      console.log("Humura AI (Sign): Attempting Edge Function 'chat'...");
       const { data, error } = await supabase.functions.invoke('chat', {
         body: { 
           userMessage: `User is communicating via sign language. Selected signs: ${message}`,
@@ -169,15 +169,15 @@ export default function SignLanguagePage() {
       });
 
       if (error) throw error;
-      if (!data?.reply) throw new Error('No reply from Edge Function');
+      if (!data?.reply) throw new Error('No reply received from Edge Function');
       
       setAiResponse(data.reply);
       setTierUsed(2);
       console.log("✅ Humura AI (Sign): Response received from Edge Function.");
-    } catch (edgeError) {
+    } catch (edgeError: any) {
       console.warn("⚠️ Humura AI (Sign): Edge Function failed, falling back to direct API.", edgeError);
       
-      // 2. FALLBACK TO DIRECT GEMINI
+      // TIER 2: FALLBACK TO DIRECT GEMINI
       try {
         const cleanKey = GEMINI_API_KEY.trim();
         if (cleanKey && cleanKey.length > 20) {
@@ -192,11 +192,15 @@ export default function SignLanguagePage() {
           setTierUsed(1);
           console.log("✅ Humura AI (Sign): Response received from direct Gemini API.");
         } else {
-          throw new Error('Invalid or missing Gemini API key');
+          throw new Error('No local API key found for fallback');
         }
-      } catch (geminiError) {
-        console.error("❌ Humura AI (Sign): Direct Gemini API also failed.", geminiError);
-        setAiResponse(generateFallback());
+      } catch (geminiError: any) {
+        console.error("❌ Both connection tiers failed:", geminiError);
+        setAiResponse(
+          edgeError.message?.includes('404')
+            ? (isRw ? 'Porogaramu ya AI ntabwo yashyizweho (404). Hamagara umukozi wacu.' : 'AI Function not deployed (404).')
+            : generateFallback()
+        );
         setTierUsed(3);
       }
     } finally {
