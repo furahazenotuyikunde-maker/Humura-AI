@@ -13,8 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { userMessage, history, apiKey: bodyApiKey } = await req.json()
+    const { userMessage, history, lang, apiKey: bodyApiKey } = await req.json()
     const apiKey = bodyApiKey || Deno.env.get("GEMINI_API_KEY")
+    
+    const isRw = lang?.startsWith('rw')
+    const languageName = isRw ? 'Kinyarwanda' : 'English'
 
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY not found in environment or request body")
@@ -44,7 +47,13 @@ serve(async (req) => {
             { role: 'user', parts: [{ text: userMessage }] }
           ],
           systemInstruction: {
-            parts: [{ text: "You are Humura AI v3, a next-gen mental health companion for the people of Rwanda. You possess deep emotional intelligence and cultural awareness. When responding to sign language or text, always lead with empathy and validation. Use the power of Gemini 3 to see the person behind the symptoms. For any sign of crisis, gently provide the Rwanda 114 hotline." }]
+            parts: [{ text: `You are Humura AI v3, a next-gen mental health companion for the people of Rwanda. 
+            STRICT RULE: You MUST respond ONLY in ${languageName}. 
+            Do NOT mix languages. Do NOT provide translations in parentheses. 
+            If the user speaks a different language, gently steer back to ${languageName}.
+            You possess deep emotional intelligence and cultural awareness. 
+            Always lead with empathy and validation. 
+            For any sign of crisis, gently provide the Rwanda 114 hotline.` }]
           },
           generationConfig: {
             temperature: 0.7,
