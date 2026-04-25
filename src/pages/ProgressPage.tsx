@@ -282,7 +282,7 @@ export default function ProgressPage() {
         if (cleanKey && cleanKey.length > 20) {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(cleanKey);
-          const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+          const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
           
           const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
           const prompt = `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`;

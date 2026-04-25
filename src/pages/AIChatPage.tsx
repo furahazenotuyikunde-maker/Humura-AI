@@ -167,7 +167,7 @@ export default function AIChatPage() {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(localKey.trim());
           const model = genAI.getGenerativeModel({ 
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-1.5-flash',
             systemInstruction: "You are Humura AI, a compassionate mental health support assistant for Rwanda. Respond in the same language as the user. Validate feelings first, then provide gentle support. Keep responses warm and clear."
           });
 

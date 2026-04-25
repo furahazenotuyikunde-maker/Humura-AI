@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "ai-login": "npx supabase login",
     "ai-link": "npx supabase link --project-ref acetkeyzhbgfsetwkfuo",
-    "ai-deploy": "npx supabase functions deploy chat"
+    "ai-deploy": "npx supabase functions deploy",
+    "ai-deploy-vision": "npx supabase functions deploy vision"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
