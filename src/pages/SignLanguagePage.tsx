@@ -349,9 +349,9 @@ export default function SignLanguagePage() {
               {isRw ? 'Uburyo bwo gukoresha amarenga' : 'How to use'}
             </h4>
             <ul className="text-xs text-primary-700 space-y-1.5 list-decimal pl-4">
-              <li>{isRw ? 'hitama amarenga by’ibura 5 avuga ibyo wumva' : 'Select up to 5 signs describing your state'}</li>
-              <li>{isRw ? 'Kanda ohereza kugirango AI igusubize' : 'Tap "Send to AI" to get a therapeutic response'}</li>
-              <li>{isRw ? 'Reba ubutumwa bwawe burubakwa hepfo nyuma yuko AI ifashe ibimenyetso ikanatekereza' : 'Watch your message build as AI processes the intent'}</li>
+              <li>{isRw ? 'Kanda "SCAN" kugira ngo AI itangire gusoma amarenga yawe' : 'Tap "SCAN" to let AI start reading your signs'}</li>
+              <li>{isRw ? 'Kora amarenga avuga ibyo wumva cyangwa ibyo nkeneye' : 'Make signs describing your feelings or needs'}</li>
+              <li>{isRw ? 'Kanda "NGEJEJE" kugira ngo AI iguhe ubufasha' : 'Tap "FINISH" to get instant AI support'}</li>
               <li>{isRw ? 'Kandi umva kugirango igisubizo cy’umvikane' : 'Use the speaker icon to hear the response aloud'}</li>
             </ul>
           </motion.div>
@@ -484,57 +484,9 @@ export default function SignLanguagePage() {
         )}
       </AnimatePresence>
 
-      {/* Category tabs */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-        {(Object.entries(CATEGORY_CONFIG) as [typeof activeCategory, typeof CATEGORY_CONFIG[typeof activeCategory]][]).map(([key, cfg]) => (
-          <button
-            key={key}
-            onClick={() => setActiveCategory(key)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
-              activeCategory === key
-                ? 'bg-primary text-white shadow-md shadow-primary/25'
-                : 'bg-white border border-primary-100 text-primary-700 hover:bg-primary-50'
-            }`}
-          >
-            <span>{cfg.emoji}</span>
-            {isRw ? cfg.rw : cfg.en}
-          </button>
-        ))}
-      </div>
+      {/* The Grid and categories have been removed for a purely vision-driven experience */}
 
-      {/* Signs grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {categoryFiltered.map(sign => {
-          const isSelected = selected.find(s => s.id === sign.id);
-          return (
-            <motion.button
-              key={sign.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => toggleSign(sign)}
-              className={`relative p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                sign.isCrisis
-                  ? isSelected
-                    ? 'border-red-500 bg-red-500 text-white shadow-lg shadow-red-500/25'
-                    : 'border-red-200 bg-red-50 text-red-800 hover:border-red-400'
-                  : isSelected
-                  ? 'border-primary bg-primary text-white shadow-lg shadow-primary/25'
-                  : 'border-primary-100 bg-white text-primary-800 hover:border-primary-300 hover:bg-primary-50'
-              }`}
-              aria-label={isRw ? sign.rw : sign.en}
-            >
-              {isSelected && (
-                <span className="absolute top-1.5 right-1.5 text-xs bg-white/90 rounded-full w-5 h-5 flex items-center justify-center text-primary font-bold shadow">
-                  ✓
-                </span>
-              )}
-              <span className="text-3xl">{sign.emoji}</span>
-              <span className="text-xs font-semibold text-center leading-tight">
-                {isRw ? sign.rw : sign.en}
-              </span>
-            </motion.button>
-          );
-        })}
-      </div>
+      {/* Signs grid removed as requested */}
 
       {/* Composed message */}
       <AnimatePresence>
