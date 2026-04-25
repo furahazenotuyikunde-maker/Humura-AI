@@ -217,15 +217,6 @@ export const Shell: React.FC<ShellProps> = () => {
           </div>
 
           <div className="mt-10 pt-6 border-t border-primary-50 flex flex-col items-center gap-6 text-center">
-            {/* Quick Exit at the absolute bottom */}
-            <a
-              href="https://google.com"
-              className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-all border border-red-100 shadow-sm"
-            >
-              <ShieldAlert size={16} />
-              {isRw ? 'Gusohoka (Quick Exit)' : 'Quick Exit (Gusohoka)'}
-            </a>
-
             <p className="text-[10px] text-neutral-400 font-medium tracking-widest uppercase">
               &copy; {new Date().getFullYear()} Humura AI · Mind Supported, Life Empowered.
             </p>
