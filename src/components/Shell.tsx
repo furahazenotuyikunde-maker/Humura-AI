@@ -167,11 +167,12 @@ export const Shell: React.FC<ShellProps> = () => {
               </h4>
               <ul className="text-xs text-neutral-500 space-y-2">
                 <li className="font-bold text-primary-600">
-                  {isRw ? "• Porogaramu igendanwa (Mobile-First)" : "• Mobile-First Web App"}
+                  {isRw ? "• Porogaramu igendanwa (React & Vite)" : "• Mobile-First App (React & Vite)"}
                 </li>
-                <li>• React & Vite</li>
-                <li>• Google Gemini 1.5 Flash</li>
-                <li>• Supabase Edge Functions</li>
+                <li>• Google Gemini 3 Flash Preview</li>
+                <li>• Supabase Edge (super-task)</li>
+                <li>• Sign Language Vision AI</li>
+                <li>• Multi-turn AI Memory</li>
               </ul>
             </div>
 
