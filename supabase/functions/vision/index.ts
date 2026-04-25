@@ -21,7 +21,7 @@ serve(async (req) => {
     }
 
     // Call Gemini 3 Flash Preview (Multimodal)
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -50,7 +50,18 @@ serve(async (req) => {
       throw new Error(data.error?.message || "Failed to analyze image with Gemini Vision")
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis generated."
+    let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis generated."
+    
+    // Robust JSON extraction: Find the first '{' and last '}' to strip away markdown if the AI includes it
+    try {
+      const firstBrace = reply.indexOf('{');
+      const lastBrace = reply.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        reply = reply.substring(firstBrace, lastBrace + 1);
+      }
+    } catch (e) {
+      console.warn("JSON extraction failed, returning raw string.");
+    }
 
     return new Response(
       JSON.stringify({ reply }),

@@ -146,20 +146,16 @@ export default function SignLanguagePage() {
         body: {
           imageBase64,
           mimeType: 'image/jpeg',
-          prompt: `You are a sign language expert. Analyze this image carefully.
-            1. Identify the exact sign language gesture being made
-            2. State the letter, word or phrase it represents
-            3. Give a helpful explanation
+          prompt: `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
+            1. Identify the specific sign language gesture, body language, or facial expression.
+            2. Interpret the emotional meaning or specific need (e.g., "I feel alone", "I need help").
+            3. Provide a warm, empathetic explanation in the user's context (Rwanda).
             Respond in JSON format:
             {
-              "detectedSign": "the letter or word detected",
-              "explanation": "full explanation of the sign and what it means"
+              "detectedSign": "the emotion or need detected",
+              "explanation": "a compassionate 2-sentence explanation of what you see and a validating response."
             }
-            If no sign language gesture is visible, return:
-            {
-              "detectedSign": "No sign detected",
-              "explanation": "No sign language gesture was visible. Please position your hands clearly in front of the camera."
-            }`
+            If no clear gesture is visible, guide them to position their hands better.`
         }
       });
 
@@ -246,7 +242,7 @@ export default function SignLanguagePage() {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(cleanKey);
           const model = genAI.getGenerativeModel({
-            model: 'gemini-3-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${isRw ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
           });
           const result = await model.generateContent(message);
@@ -334,10 +330,10 @@ export default function SignLanguagePage() {
 
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.trim());
-      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
       
       const availableIds = signs.map(s => s.id).join(', ');
-      const prompt = `You are an expert AI reading sign language, body language, and facial expressions. Look very carefully at the provided user image. Pick ONE exact keyword from this list that best matches their expression or sign: [${availableIds}]. If they look completely neutral, relaxed, or no action is clear, output "none". Do NOT output any formatting, punctuation, or other words. ONLY the exact ID string.`;
+      const prompt = `You are Humura AI, a compassionate observer. Look at the user's gesture and facial expression. Pick ONE exact keyword from this list that best matches their state: [${availableIds}]. If they look neutral or no clear sign is made, output "none". Respond ONLY with the keyword. No other text.`;
       
       const result = await model.generateContent([
         prompt,

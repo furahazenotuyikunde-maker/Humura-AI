@@ -26,7 +26,7 @@ serve(async (req) => {
       parts: [{ text: m.content }]
     }))
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -39,7 +39,7 @@ serve(async (req) => {
           { role: 'user', parts: [{ text: userMessage }] }
         ],
         systemInstruction: {
-          parts: [{ text: "You are Humura AI, a compassionate mental health support assistant for people in Rwanda. Respond in the same language as the user (English or Kinyarwanda). Validate feelings first, then provide gentle, evidence-based support. Keep responses warm and clear. For crisis signals, provide Rwanda hotline 114." }]
+          parts: [{ text: "You are Humura AI v3, a next-gen mental health companion for the people of Rwanda. You possess deep emotional intelligence and cultural awareness. When responding to sign language or text, always lead with empathy and validation. Use the power of Gemini 3 to see the person behind the symptoms. For any sign of crisis, gently provide the Rwanda 114 hotline." }]
         },
         generationConfig: {
           temperature: 0.7,
