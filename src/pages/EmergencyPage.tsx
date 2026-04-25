@@ -133,14 +133,7 @@ export default function EmergencyPage() {
         </div>
       </motion.div>
 
-      {/* Quick Exit Button */}
-      <a
-        href="https://google.com"
-        className="flex items-center justify-center gap-2 w-full py-3.5 bg-neutral-800 text-white text-sm font-bold rounded-2xl hover:bg-black transition-colors"
-      >
-        <ShieldAlert size={16} />
-        {isRw ? 'Sohoka Vuba (Hisha Gahunda)' : 'Quick Exit (Hide Page Immediately)'}
-      </a>
+      {/* Emergency Contacts */}
 
       {/* Emergency Contacts */}
       <div className="space-y-3">

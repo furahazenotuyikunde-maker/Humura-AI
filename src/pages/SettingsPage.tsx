@@ -232,21 +232,89 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Data Management */}
+      <div className="space-y-3">
+        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
+          {isRw ? 'Gucunga Amakuru' : 'Data Management'}
+        </h2>
+        <div className="glass-card rounded-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                <Shield size={18} className="text-red-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-primary-900 text-sm">
+                  {isRw ? 'Siba ibyabitswe' : 'Clear Chat History'}
+                </p>
+                <p className="text-xs text-neutral-400">
+                  {isRw ? 'Siba amateka y\'ibiganiro byose' : 'Delete all your chat sessions permanently'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (window.confirm(isRw ? 'Ushaka gusiba amateka yose?' : 'Are you sure you want to clear all history?')) {
+                  localStorage.removeItem('Humura_chat_sessions');
+                  alert(isRw ? 'Mateka yasibwe!' : 'History cleared!');
+                  window.location.reload();
+                }
+              }}
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
+            >
+              {isRw ? 'Siba' : 'Clear All'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Preferences */}
+      <div className="space-y-3">
+        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
+          {isRw ? 'Ibyo Ukunda' : 'Preferences'}
+        </h2>
+        <div className="glass-card rounded-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center">
+                <Sun size={18} className="text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-primary-900 text-sm">
+                  {isRw ? 'Amajwi' : 'Chat Sounds'}
+                </p>
+                <p className="text-xs text-neutral-400">
+                  {isRw ? 'Gukoresha amajwi mu biganiro' : 'Play sound effects during chat'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => updateSetting('sounds' as any, !((settings as any).sounds))}
+              className={`w-12 h-6 rounded-full transition-colors relative ${(settings as any).sounds ? 'bg-primary' : 'bg-neutral-200'}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${(settings as any).sounds ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Exit */}
-      <div>
+      <div className="pt-4">
         <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400 mb-3">
-          {isRw ? 'Gusohoka ' : 'Safety'}
+          {isRw ? 'Gusohoka mu mutekano' : 'Privacy & Safety'}
         </h2>
         <a
           href="https://google.com"
-          className="flex items-center justify-center gap-3 w-full py-4 bg-neutral-800 text-white font-bold rounded-2xl hover:bg-black transition-colors"
+          className="flex items-center justify-center gap-3 w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
           aria-label="Quick exit to Google"
         >
-          <Shield size={18} />
-          {isRw ? 'Sohoka  — Jya kuri Google' : 'Quick Exit — Go to Google'}
+          <Shield size={20} />
+          {isRw ? 'Sohoka Vuba — Jya kuri Google' : 'Quick Exit — Go to Google'}
         </a>
-        <p className="text-xs text-neutral-400 text-center mt-2">
-          {isRw ? 'Kanda hano kugira ngo uhite usohoka muri porogaramu' : 'Instantly leaves the app and goes to Google for safety'}
+        <p className="text-xs text-neutral-400 text-center mt-3 leading-relaxed px-4">
+          {isRw 
+            ? 'Kanda hano kugira ngo uhite usohoka muri porogaramu maze ufungure Google. Ibi bituma nta muntu ubona ko wakoresheje uru rubuga.' 
+            : 'Instantly leaves the app and opens Google. This helps if you need to hide your activity quickly for your safety.'}
         </p>
       </div>
 
