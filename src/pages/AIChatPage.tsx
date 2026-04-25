@@ -235,7 +235,7 @@ export default function AIChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
-  const thHumurantervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const offlineIndexRef = useRef<Map<string, number>>(new Map());
 
   // Auto-scroll
@@ -247,15 +247,15 @@ export default function AIChatPage() {
   useEffect(() => {
     if (isLoading) {
       let idx = 0;
-      thHumurantervalRef.current = setInterval(() => {
+      thinkingIntervalRef.current = setInterval(() => {
         idx = (idx + 1) % THINKING_MESSAGES.length;
         setThinkingText(THINKING_MESSAGES[idx]);
       }, 1500);
     } else {
-      if (thHumurantervalRef.current) clearInterval(thHumurantervalRef.current);
+      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
     }
     return () => {
-      if (thHumurantervalRef.current) clearInterval(thHumurantervalRef.current);
+      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
     };
   }, [isLoading]);
 
@@ -285,12 +285,13 @@ export default function AIChatPage() {
     
     try {
       // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
+      console.log("Humura AI: Attempting Edge Function call...");
       const { data, error } = await supabase.functions.invoke('bright-worker', {
         body: { 
           message: userText,
           history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
           lang: lang,
-          apiKey: GEMINI_API_KEY // Optional: If edge function is configured to take it
+          apiKey: GEMINI_API_KEY.trim()
         }
       });
 
@@ -299,21 +300,21 @@ export default function AIChatPage() {
       
       reply = data.reply;
       setTierUsed(2);
+      console.log("✅ Humura AI: Response received from Edge Function.");
     } catch (edgeError) {
-      console.error("Edge Function Error:", edgeError);
+      console.warn("⚠️ Humura AI: Edge Function failed, falling back to direct API.", edgeError);
       
-      // 2. FALLBACK TO DIRECT GEMINI (If key exists in .env)
+      // 2. FALLBACK TO DIRECT GEMINI
       try {
-        if (GEMINI_API_KEY && GEMINI_API_KEY.length > 10) {
-          // Direct client-side call if Edge Function fails
+        const cleanKey = GEMINI_API_KEY.trim();
+        if (cleanKey && cleanKey.length > 20) {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+          const genAI = new GoogleGenerativeAI(cleanKey);
           const model = genAI.getGenerativeModel({
             model: 'gemini-1.5-flash',
             systemInstruction: SYSTEM_PROMPT,
           });
 
-          // Convert messages to Gemini format
           const formattedHistory = messages.slice(-10).map(m => ({
             role: m.role === 'user' ? 'user' : 'model',
             parts: [{ text: m.content }],
@@ -323,13 +324,14 @@ export default function AIChatPage() {
           const result = await chat.sendMessage(userText);
           reply = result.response.text();
           setTierUsed(1);
+          console.log("✅ Humura AI: Response received from direct Gemini API.");
         } else {
-          throw new Error('Valid Gemini API key missing or invalid format (should start with AIza)');
+          throw new Error('Invalid or missing Gemini API key');
         }
       } catch (geminiError) {
-        console.error("Gemini Direct Error:", geminiError);
+        console.error("❌ Humura AI: Direct Gemini API also failed.", geminiError);
         
-        // 3. FINAL FALLBACK: Dynamic Local Response (Never shows a "broken" error)
+        // 3. FINAL FALLBACK: Dynamic Local Response
         const randomFallback = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
         reply = isRw ? randomFallback.rw : randomFallback.en;
         setTierUsed(3);
@@ -446,8 +448,17 @@ export default function AIChatPage() {
           </div>
           <div>
             <p className="font-bold text-primary-900 text-sm truncate max-w-[120px]">{currentSession?.title || 'Humura AI'}</p>
-            <p className="text-[10px] text-primary-500">
-              {tierUsed === 3 ? '📴 Offline Mode' : isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}
+            <p className="text-[10px] flex items-center gap-1">
+              {tierUsed === 1 || tierUsed === 2 ? (
+                <span className="flex items-center gap-1 text-green-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  {isRw ? 'AI iri gukora' : 'Live AI Active'}
+                </span>
+              ) : tierUsed === 3 ? (
+                <span className="text-amber-600 font-medium italic">📴 {isRw ? 'Uburyo bwo hanze' : 'Offline Mode'}</span>
+              ) : (
+                <span className="text-primary-500">{isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}</span>
+              )}
             </p>
           </div>
         </div>
