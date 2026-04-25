@@ -311,7 +311,7 @@ export default function AIChatPage() {
           const { GoogleGenerativeAI } = await import('@google/generative-ai');
           const genAI = new GoogleGenerativeAI(cleanKey);
           const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: SYSTEM_PROMPT,
           });
 
