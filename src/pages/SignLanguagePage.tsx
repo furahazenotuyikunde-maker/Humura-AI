@@ -443,7 +443,7 @@ export default function SignLanguagePage() {
                 }`}
               >
                 <ScanEye size={14} className={autoDetectActive ? 'animate-pulse' : ''} />
-                {autoDetectActive ? 'ON' : 'OFF'}
+                {autoDetectActive ? (isRw ? 'Ngejeje' : 'FINISH') : (isRw ? 'Sikanira' : 'SCAN')}
               </button>
             </div>
           </div>
