@@ -127,7 +127,7 @@ export default function AIChatPage() {
     try {
       // TIER 1: CALL SUPABASE EDGE FUNCTION 'chat'
       console.log("Humura AI: Attempting Edge Function 'chat'...");
-      const { data, error } = await supabase.functions.invoke('chat', {
+      const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: userText,
           history: messages.map(m => ({ role: m.role, content: m.content })),
