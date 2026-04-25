@@ -66,6 +66,7 @@ export default function SignLanguagePage() {
   const [activeCategory, setActiveCategory] = useState<'feelings' | 'ineed' | 'body' | 'crisis'>('feelings');
   const [selected, setSelected] = useState<Sign[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [scanResult, setScanResult] = useState<{ detectedSign: string; explanation: string } | null>(null);
   const [aiResponse, setAiResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCrisisWarning, setShowCrisisWarning] = useState(false);
@@ -122,6 +123,66 @@ export default function SignLanguagePage() {
 
   const composeMessage = () => {
     return selected.map(s => isRw ? s.rw : s.en).join(', ');
+  };
+
+  const handleScan = async () => {
+    if (!videoRef.current) return;
+    setIsAnalyzing(true);
+    setScanResult(null);
+    setAiResponse('');
+
+    // Capture frame from video
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(videoRef.current, 0, 0);
+    const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+
+    // Call Gemini via 'vision' edge function
+    try {
+      const { data, error } = await supabase.functions.invoke('vision', {
+        body: {
+          imageBase64,
+          mimeType: 'image/jpeg',
+          prompt: `You are a sign language expert. Analyze this image carefully.
+            1. Identify the exact sign language gesture being made
+            2. State the letter, word or phrase it represents
+            3. Give a helpful explanation
+            Respond in JSON format:
+            {
+              "detectedSign": "the letter or word detected",
+              "explanation": "full explanation of the sign and what it means"
+            }
+            If no sign language gesture is visible, return:
+            {
+              "detectedSign": "No sign detected",
+              "explanation": "No sign language gesture was visible. Please position your hands clearly in front of the camera."
+            }`
+        }
+      });
+
+      if (error) throw error;
+
+      try {
+        const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
+        setScanResult(parsed);
+      } catch {
+        setScanResult({
+          detectedSign: "Error",
+          explanation: data.reply || "Could not analyze the image. Please try again."
+        });
+      }
+    } catch (err: any) {
+      console.error("Vision scan failed:", err);
+      setScanResult({
+        detectedSign: "Connection Error",
+        explanation: "Make sure the 'vision' edge function is deployed and your internet is active."
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleSend = async () => {
@@ -443,15 +504,12 @@ export default function SignLanguagePage() {
                 </span>
               </div>
               <button
-                onClick={() => setAutoDetectActive(!autoDetectActive)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm ${
-                  autoDetectActive 
-                    ? 'bg-primary text-white shadow-primary/30' 
-                    : 'bg-white text-primary-700 hover:bg-primary-100'
-                }`}
+                onClick={handleScan}
+                disabled={isAnalyzing}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm bg-white text-primary-700 hover:bg-primary-100 disabled:opacity-50`}
               >
-                <ScanEye size={14} className={autoDetectActive ? 'animate-pulse' : ''} />
-                {autoDetectActive ? (isRw ? 'Ngejeje' : 'FINISH') : (isRw ? 'Sikanira' : 'SCAN')}
+                <ScanEye size={14} className={isAnalyzing ? 'animate-pulse' : ''} />
+                {isRw ? 'Sikanira' : 'SCAN'}
               </button>
             </div>
           </div>
@@ -489,8 +547,8 @@ export default function SignLanguagePage() {
           </motion.div>
         )}
 
-        {/* Show after response arrives */}
-        {aiResponse && !isAnalyzing && (
+        {/* Show after response arrives (either aiResponse or scanResult) */}
+        {(aiResponse || scanResult) && !isAnalyzing && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -503,13 +561,38 @@ export default function SignLanguagePage() {
               </h3>
             </div>
             <div className="h-px bg-primary-50 w-full mb-4" />
-            <p className="text-sm text-primary-800 leading-relaxed font-medium">
-              {aiResponse}
-            </p>
+            
+            {scanResult ? (
+              <div className="space-y-3">
+                <div className="inline-block px-3 py-1 bg-primary-100 text-primary-900 rounded-lg font-black text-base">
+                  {scanResult.detectedSign}
+                </div>
+                <p className="text-sm text-primary-800 leading-relaxed">
+                  {scanResult.explanation}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-primary-800 leading-relaxed font-medium">
+                {aiResponse}
+              </p>
+            )}
             
             <div className="flex gap-2 mt-5">
               <button
-                onClick={speakResponse}
+                onClick={() => {
+                  const text = scanResult ? `${scanResult.detectedSign}. ${scanResult.explanation}` : aiResponse;
+                  if (!('speechSynthesis' in window) || !text) return;
+                  if (isSpeaking) {
+                    window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                    return;
+                  }
+                  const utterance = new SpeechSynthesisUtterance(text);
+                  utterance.lang = isRw ? 'rw-RW' : 'en-US';
+                  utterance.onend = () => setIsSpeaking(false);
+                  window.speechSynthesis.speak(utterance);
+                  setIsSpeaking(true);
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                   isSpeaking ? 'bg-primary text-white' : 'bg-primary-50 text-primary hover:bg-primary-100'
                 }`}
@@ -518,7 +601,7 @@ export default function SignLanguagePage() {
                 {isSpeaking ? (isRw ? 'Hagarika' : 'Stop') : (isRw ? 'Wumva' : 'Listen')}
               </button>
               <button
-                onClick={reset}
+                onClick={() => { reset(); setScanResult(null); }}
                 className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-xl text-xs font-semibold hover:bg-primary-100 transition-colors"
               >
                 <RotateCcw size={14} />
@@ -529,7 +612,7 @@ export default function SignLanguagePage() {
         )}
 
         {/* Show before any scan */}
-        {!isAnalyzing && !aiResponse && (
+        {!isAnalyzing && !aiResponse && !scanResult && (
           <div className="text-center p-6 bg-white/40 rounded-2xl border border-dashed border-primary-100">
             <p className="text-sm text-neutral-400 italic">
               📷 {isRw ? 'Erekeza kamera ku kimenyetso cy’amarenga maze ukande Sikanira' : 'Point camera at a sign language gesture and tap Scan'}
