@@ -199,9 +199,7 @@ export default function AIChatPage() {
       } catch (fallbackErr: any) {
         console.error("❌ Both connection tiers failed:", fallbackErr);
         setErrorMessage(
-          err.message?.includes('404') 
-            ? (isRw ? 'Porogaramu ya AI ntabwo yashyizweho (404). Hamagara umukozi wacu.' : 'AI Function not deployed (404). Please deploy the "chat" edge function.')
-            : (isRw ? 'Habaye ikibazo mu guhura na AI. Ongera ugerageze.' : 'Failed to connect to AI. Please check your connection or deploy the function.')
+          `Error: ${fallbackErr.message || err.message || 'Unknown connection error'}`
         );
       }
     } finally {
