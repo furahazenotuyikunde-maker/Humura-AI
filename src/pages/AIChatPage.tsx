@@ -1,47 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Volume2, VolumeX, RotateCcw, Phone, Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader2 } from 'lucide-react';
 
 import { supabase } from '../lib/supabaseClient';
-
-// ──────────────────────────────────────────────────────────────
-// 3-TIER AI CONFIGURATION
-// ──────────────────────────────────────────────────────────────
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-const SYSTEM_PROMPT = `You are Humura AI, a compassionate mental health support assistant for people in Rwanda.
-
-RULES:
-1. Respond in the same language as the user (English or Kinyarwanda — detect automatically)
-2. Always read the user's exact words and address their specific situation — never generic replies
-3. Validate feelings first, then give practical evidence-based coping strategies: CBT, grounding, mindfulness, DBT, ACT
-4. Keep responses to 3-6 sentences — warm and clear
-5. Vary your opening every single response — never start two answers the same way
-6. For crisis signals: immediately provide Rwanda crisis hotline +250 790 003 002
-7. Reference the user's specific words to show you truly read their message
-8. Never repeat the same coping strategy twice in one conversation
-9. For sign language users: treat their composed message with identical care as spoken messages
-10. Temperature: 0.85 — varied, not repetitive`;
-
-// ──────────────────────────────────────────────────────────────
-// CRISIS DETECTION
-// ──────────────────────────────────────────────────────────────
-const CRISIS_KEYWORDS_EN = [
-  'suicide', 'kill myself', 'end my life', 'want to die', 'hurt myself',
-  'self harm', 'self-harm', 'hopeless', 'give up', 'cant go on', "can't go on",
-  'worthless', 'better off dead', 'nobody cares', 'disappear forever', 'no reason to live'
-];
-const CRISIS_KEYWORDS_RW = [
-  'kwiyahura', 'kwisiga', 'kwicwa', 'gupfa', 'ntamuntu wandikunda',
-  'narimbuwe', 'ntakiyo', 'nshaka gupfa', 'ntakigomba kubaho'
-];
-
-function detectCrisis(text: string): boolean {
-  const lower = text.toLowerCase();
-  return [...CRISIS_KEYWORDS_EN, ...CRISIS_KEYWORDS_RW].some(k => lower.includes(k));
-}
 
 // ──────────────────────────────────────────────────────────────
 // TYPES
@@ -60,99 +23,6 @@ interface ChatSession {
   lastUpdated: Date;
 }
 
-
-const THINKING_MESSAGES = [
-  "Reading your message carefully...",
-  "Considering your emotional context...",
-  "Drawing from CBT & mindfulness research...",
-  "Preparing a personalised response...",
-];
-
-const OFFLINE_RESPONSES = [
-  { en: "Thank you for sharing. Your feelings are valid, and I'm here to listen. Take a deep breath and remember you're not alone.", rw: "Urakoze gusangira nanjye. Ibyo wumva ni ukuri, kandi ndi hano kugira ngo nkutege amatwi. Fata umwuka wimbitse kandi wibuke ko utari wenyine." },
-  { en: "I hear you. It sounds like you're going through a lot right now. Please be kind to yourself as we navigate this together.", rw: "Ndakumva. Biragaragara ko urimo kunyura muri byinshi ubu. Ndagusaba kwiyitaho neza mu gihe turi kumwe muri ibi." },
-  { en: "Your voice matters. I'm listening with empathy and without judgment. What else is on your mind?", rw: "Ijwi ryawe ni ingenzi. Ndaguteze amatwi n'impuhwe kandi ntagucira urubanza. Ni iki kindi ufite ku mutima?" },
-  { en: "I'm here for you. Even when words are hard to find, I'm holding space for your journey toward wellness.", rw: "Ndi hano ku bwawe. Kugerageza kubona amagambo bikaba bigoye, ndi hano ngo ngufashe mu rugendo rwawe rugana ku buzima bwiza." },
-  { en: "Thank you for trusting me. You have a lot of inner strength, and together we can find small steps toward peace.", rw: "Urakoze kunyizera. Ufite imbaraga nyinshi mu mutima, kandi hamwe dushobora kubona intambwe nto zigana ku mahoro." }
-];
-
-
-// ──────────────────────────────────────────────────────────────
-// CRISIS OVERLAY COMPONENT
-// ──────────────────────────────────────────────────────────────
-function CrisisOverlay({ onDismiss, lang }: { onDismiss: () => void; lang: string }) {
-  const isRw = lang.startsWith('rw');
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-red-900/97 flex flex-col items-center justify-center p-6 text-center"
-    >
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, type: 'spring' }}
-        className="max-w-sm w-full"
-      >
-        <div className="relative inline-flex items-center justify-center w-20 h-20 mb-6">
-          <AlertTriangle size={48} className="text-white animate-pulse" />
-        </div>
-        <h2 className="text-3xl font-extrabold text-white mb-2">
-          {isRw ? 'Uri mubukiro bwacu' : 'You Are Not Alone'}
-        </h2>
-        <p className="text-red-200 mb-8 leading-relaxed">
-          {isRw
-            ? 'Ndakwumva, kandi nishimye ko ugihari. Hamagara ubu — inzobere ziri hano zigufasha.'
-            : 'We hear you, and we\'re glad you\'re still here. Please reach out to someone who can help right now.'}
-        </p>
-
-        <div className="space-y-3 w-full mb-8">
-          <a
-            href="tel:114"
-            className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
-          >
-            <span>🆘 {isRw ? 'Hotline y\'Ubuzima bwo mu Mutwe' : 'Mental Health Crisis Hotline'}</span>
-            <span className="text-red-600 font-black">114</span>
-          </a>
-          <a
-            href="tel:+250790003002"
-            className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
-          >
-            <span>💚 Healthy Minds Rwanda</span>
-            <span className="text-red-600 font-black text-sm">+250 790 003 002</span>
-          </a>
-          <a
-            href="tel:+250783375550"
-            className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
-          >
-            <span>🏥 Icyizere Center</span>
-            <span className="text-red-600 font-black text-sm">+250 783 375 550</span>
-          </a>
-          <a
-            href="tel:112"
-            className="flex items-center justify-between w-full py-4 px-5 bg-white text-red-900 font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform"
-          >
-            <span>🚨 {isRw ? 'Polisi/Imbangukiragutabara' : 'Police/Ambulance'}</span>
-            <span className="text-red-600 font-black">112</span>
-          </a>
-        </div>
-
-        <button
-          onClick={onDismiss}
-          className="text-white/70 hover:text-white flex items-center gap-2 mx-auto transition-colors"
-        >
-          <X size={18} />
-          <span className="text-sm">{isRw ? 'Ndabona neza, garuka ku kiganiro' : 'I\'m okay, return to chat'}</span>
-        </button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────
-// MAIN CHAT COMPONENT
-// ──────────────────────────────────────────────────────────────
 export default function AIChatPage() {
   const { i18n } = useTranslation();
   const lang = i18n.language || 'en';
@@ -179,38 +49,36 @@ export default function AIChatPage() {
   });
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionUrlId);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
-  // Sync with URL
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Sync with URL and local storage
   useEffect(() => {
     if (sessionUrlId && sessionUrlId !== currentSessionId) {
       setCurrentSessionId(sessionUrlId);
     }
   }, [sessionUrlId]);
 
+  useEffect(() => {
+    localStorage.setItem('Humura_chat_sessions', JSON.stringify(sessions));
+    if (currentSessionId && searchParams.get('session') !== currentSessionId) {
+      setSearchParams({ session: currentSessionId });
+    }
+  }, [sessions, currentSessionId]);
+
   // Derived current session
   const currentSession = sessions.find(s => s.id === currentSessionId) || null;
   const messages = currentSession?.messages || [];
 
+  // Auto-scroll
   useEffect(() => {
-    localStorage.setItem('Humura_chat_sessions', JSON.stringify(sessions));
-    if (currentSessionId) {
-      localStorage.setItem('Humura_current_session_id', currentSessionId);
-      // Keep URL in sync
-      if (searchParams.get('session') !== currentSessionId) {
-        setSearchParams({ session: currentSessionId });
-      }
-    }
-  }, [sessions, currentSessionId]);
-
-
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showCrisisAlert, setShowCrisisAlert] = useState(false);
-  const [thinkingText, setThinkingText] = useState(THINKING_MESSAGES[0]);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [micError, setMicError] = useState('');
-  const [tierUsed, setTierUsed] = useState<number | null>(null);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   const startNewChat = () => {
     const newSession: ChatSession = {
@@ -223,7 +91,7 @@ export default function AIChatPage() {
     setCurrentSessionId(newSession.id);
   };
 
-  // Initialize first chat if none exists
+  // Initialize first chat
   useEffect(() => {
     if (sessions.length === 0) {
       startNewChat();
@@ -232,44 +100,12 @@ export default function AIChatPage() {
     }
   }, []);
 
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const offlineIndexRef = useRef<Map<string, number>>(new Map());
-
-  // Auto-scroll
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
-
-  // Thinking animation
-  useEffect(() => {
-    if (isLoading) {
-      let idx = 0;
-      thinkingIntervalRef.current = setInterval(() => {
-        idx = (idx + 1) % THINKING_MESSAGES.length;
-        setThinkingText(THINKING_MESSAGES[idx]);
-      }, 1500);
-    } else {
-      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
-    }
-    return () => {
-      if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
-    };
-  }, [isLoading]);
-
-  // ──────────────────────────────────────────────────────────────
-  // SEND MESSAGE (Edge Function prioritized)
-  // ──────────────────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const userText = input.trim();
     setInput('');
-
-    const isCrisis = detectCrisis(userText);
-    if (isCrisis) setShowCrisisAlert(true);
+    setErrorMessage('');
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -278,352 +114,199 @@ export default function AIChatPage() {
       timestamp: new Date(),
     };
 
-    setIsLoading(true);
-    setTierUsed(null);
+    // Optimistic update
+    setSessions(prev => prev.map(s => {
+      if (s.id === currentSessionId) {
+        return { ...s, messages: [...s.messages, userMsg], lastUpdated: new Date() };
+      }
+      return s;
+    }));
 
-    let reply = '';
-    
+    setIsLoading(true);
+
     try {
-      // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
-      console.log("Humura AI: Attempting Edge Function call...");
-      const { data, error } = await supabase.functions.invoke('bright-worker', {
+      // CALL SUPABASE EDGE FUNCTION 'chat'
+      const { data, error } = await supabase.functions.invoke('chat', {
         body: { 
-          message: userText,
-          history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-          lang: lang,
-          apiKey: GEMINI_API_KEY.trim()
+          userMessage: userText,
+          history: messages.map(m => ({ role: m.role, content: m.content })),
+          lang: lang
         }
       });
 
       if (error) throw error;
-      if (!data?.reply) throw new Error('No reply from Edge Function');
-      
-      reply = data.reply;
-      setTierUsed(2);
-      console.log("✅ Humura AI: Response received from Edge Function.");
-    } catch (edgeError) {
-      console.warn("⚠️ Humura AI: Edge Function failed, falling back to direct API.", edgeError);
-      
-      // 2. FALLBACK TO DIRECT GEMINI
-      try {
-        const cleanKey = GEMINI_API_KEY.trim();
-        if (cleanKey && cleanKey.length > 20) {
-          const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(cleanKey);
-          const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-pro',
-            systemInstruction: SYSTEM_PROMPT,
-          });
+      if (!data?.reply) throw new Error(isRw ? 'Nta gisubizo cyabonetse' : 'No reply received from AI');
 
-          const formattedHistory = messages.slice(-10).map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }],
-          }));
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.reply,
+        timestamp: new Date(),
+      };
 
-          const chat = model.startChat({ history: formattedHistory });
-          const result = await chat.sendMessage(userText);
-          reply = result.response.text();
-          setTierUsed(1);
-          console.log("✅ Humura AI: Response received from direct Gemini API.");
-        } else {
-          throw new Error('Invalid or missing Gemini API key');
+      setSessions(prev => prev.map(s => {
+        if (s.id === currentSessionId) {
+          const updatedMessages = [...s.messages, userMsg, aiMsg];
+          let newTitle = s.title;
+          if (s.messages.length === 0) {
+            newTitle = userText.slice(0, 30) + (userText.length > 30 ? '...' : '');
+          }
+          return { ...s, messages: updatedMessages, title: newTitle, lastUpdated: new Date() };
         }
-      } catch (geminiError) {
-        console.error("❌ Humura AI: Direct Gemini API also failed.", geminiError);
-        
-        // 3. FINAL FALLBACK: Dynamic Local Response
-        const randomFallback = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
-        reply = isRw ? randomFallback.rw : randomFallback.en;
-        setTierUsed(3);
-      }
+        return s;
+      }));
+
+    } catch (err: any) {
+      console.error("Chat Error:", err);
+      setErrorMessage(isRw ? 'Habaye ikibazo mu guhura na AI. Ongera ugerageze.' : 'Failed to connect to AI. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
     }
+  }, [input, isLoading, currentSessionId, sessions, lang, isRw, messages]);
 
-    const aiMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: reply,
-      timestamp: new Date(),
-    };
-
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSessionId) {
-        const updatedMessages = [...s.messages, userMsg, aiMsg];
-        // Auto-update title based on first user message
-        let newTitle = s.title;
-        if (s.messages.length === 0) {
-          newTitle = userText.slice(0, 30) + (userText.length > 30 ? '...' : '');
-        }
-        return { ...s, messages: updatedMessages, title: newTitle, lastUpdated: new Date() };
-      }
-      return s;
-    }));
-    setIsLoading(false);
-
-    // TTS auto-play
-    speakText(reply);
-  }, [input, isLoading, currentSessionId, sessions, lang, isRw]);
-
-
-  // ── VOICE INPUT ────────────────────────────────────────────
+  // Voice Input
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setMicError(isRw ? 'Porogaramu ntishobora guha ijwi muri iyi porogaramu' : 'Speech recognition is not supported in this browser.');
-      return;
-    }
-
+    if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.lang = isRw ? 'rw-RW' : 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
     recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setInput(transcript);
-    };
-    recognition.onerror = (e: any) => {
-      setIsListening(false);
-      if (e.error === 'not-allowed') {
-        setMicError(isRw ? 'Uburenganzira bwa mikoro ntibwahawe. Reka uburenganzira bwa mikoro mu igenamiterere rya porogaramu.' : 'Microphone permission denied. Please allow microphone access in your browser settings.');
-      } else {
-        setMicError(isRw ? 'Ikibazo cy\'ijwi: ' + e.error : 'Voice error: ' + e.error);
-      }
-    };
+    recognition.onresult = (e: any) => setInput(e.results[0][0].transcript);
+    recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
-
     recognitionRef.current = recognition;
     recognition.start();
   };
 
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  };
-
-  // ── TTS ────────────────────────────────────────────────────
-  const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = isRw ? 'rw-RW' : 'en-US';
-    utterance.rate = 0.95;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const stopSpeaking = () => {
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-  };
-
-  const clearChat = () => {
-    if (!currentSessionId) return;
-    setSessions(prev => prev.filter(s => s.id !== currentSessionId));
-    if (sessions.length > 1) {
-      const remaining = sessions.filter(s => s.id !== currentSessionId);
-      setCurrentSessionId(remaining[0].id);
-    } else {
-      startNewChat();
-    }
-  };
-
-
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-60px)] relative mb-8">
-      {/* Crisis Overlay */}
-      <AnimatePresence>
-        {showCrisisAlert && (
-          <CrisisOverlay onDismiss={() => setShowCrisisAlert(false)} lang={lang} />
-        )}
-      </AnimatePresence>
-
+    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-60px)] relative bg-[#F0F2F5]">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-primary-50 bg-white/60 backdrop-blur-sm flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <MessageCircle size={16} className="text-white" />
+      <div className="flex items-center justify-between px-4 py-3 bg-primary text-white shadow-md z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <MessageCircle size={24} />
           </div>
           <div>
-            <p className="font-bold text-primary-900 text-sm truncate max-w-[120px]">{currentSession?.title || 'Humura AI'}</p>
-            <p className="text-[10px] flex items-center gap-1">
-              {tierUsed === 1 || tierUsed === 2 ? (
-                <span className="flex items-center gap-1 text-green-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  {isRw ? 'AI iri gukora' : 'Live AI Active'}
-                </span>
-              ) : tierUsed === 3 ? (
-                <span className="text-amber-600 font-medium italic">📴 {isRw ? 'Uburyo bwo hanze' : 'Offline Mode'}</span>
-              ) : (
-                <span className="text-primary-500">{isRw ? 'Haze kugira ngo tuganire' : 'Here to support you'}</span>
-              )}
+            <p className="font-bold text-sm truncate max-w-[150px]">{currentSession?.title || 'Humura AI'}</p>
+            <p className="text-[10px] opacity-80 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              {isRw ? 'Ndi hano' : 'Online'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={startNewChat}
-            className="p-2 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors"
-          >
-            <Plus size={18} />
+          <button onClick={startNewChat} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <Plus size={20} />
           </button>
-          <a href="/emergency" className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors">
-            <Phone size={13} />
+          <a href="tel:114" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 rounded-xl text-xs font-black hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20">
+            <Phone size={14} />
             114
           </a>
         </div>
       </div>
 
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat opacity-90">
         {messages.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="h-full flex flex-col items-center justify-center text-center space-y-6 py-10"
-          >
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <MessageCircle size={40} className="text-primary" />
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-white/40 backdrop-blur-sm rounded-3xl mx-4 my-10 border border-white/50 shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <MessageCircle size={32} className="text-primary" />
             </div>
-            <div>
-              <h3 className="font-extrabold text-primary-900 text-xl mb-2">
-                {isRw ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
-              </h3>
-              <p className="text-primary-600 text-sm max-w-xs leading-relaxed">
-                {isRw
-                  ? 'Ndi inshuti yawe yo gufasha mu buzima bwo mu mutwe. Vuga ibyo umva mu mutima — sinya icyo gishaka.'
-                  : 'Your compassionate mental wellness companion. Share what\'s on your mind — I\'m here to listen without judgment.'}
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2 max-w-sm">
-              {[
-                isRw ? 'Ndi nababaye' : 'I feel anxious',
-                isRw ? 'Sikuryama neza' : 'I can\'t sleep well',
-                isRw ? 'Ndi ingorane nyinshi' : 'I\'m feeling overwhelmed',
-              ].map(suggestion => (
-                <button
-                  key={suggestion}
-                  onClick={() => setInput(suggestion)}
-                  className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-xs font-semibold hover:bg-primary-100 transition-colors"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+            <h3 className="font-extrabold text-primary-900 text-xl mb-2">
+              {isRw ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
+            </h3>
+            <p className="text-primary-600 text-sm max-w-xs leading-relaxed">
+              {isRw
+                ? 'Ndi inshuti yawe yo gufasha mu buzima bwo mu mutwe. Vuga ibyo umva mu mutima.'
+                : 'Your compassionate mental wellness companion. Share what\'s on your mind — I\'m here to listen.'}
+            </p>
+          </div>
         )}
 
         <AnimatePresence>
           {messages.map((m) => (
             <motion.div
               key={m.id}
-              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {m.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-                  <MessageCircle size={14} className="text-white" />
-                </div>
-              )}
               <div
-                className={`max-w-[80%] p-4 rounded-3xl shadow-sm text-sm leading-relaxed ${
+                className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed relative ${
                   m.role === 'user'
-                    ? 'bg-primary text-white rounded-tr-sm'
-                    : 'bg-white border border-primary-100 text-primary-900 rounded-tl-sm'
+                    ? 'bg-primary text-white rounded-tr-none'
+                    : 'bg-white text-primary-900 rounded-tl-none border border-neutral-100'
                 }`}
               >
                 {m.content}
-                <p className={`text-[10px] mt-1.5 ${m.role === 'user' ? 'text-white/50' : 'text-neutral-400'}`}>
+                <div className={`text-[10px] mt-1.5 text-right opacity-60`}>
                   {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  {m.role === 'assistant' && (
-                    <button
-                      onClick={() => speakText(m.content)}
-                      className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
-                    >
-                      🔊
-                    </button>
-                  )}
-                </p>
+                </div>
+                {/* Tail for bubbles */}
+                <div className={`absolute top-0 w-2 h-2 ${
+                  m.role === 'user' 
+                    ? 'right-[-8px] border-l-[8px] border-l-primary border-b-[8px] border-b-transparent' 
+                    : 'left-[-8px] border-r-[8px] border-r-white border-b-[8px] border-b-transparent'
+                }`} />
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {/* Thinking indicator */}
+        {/* Typing indicator */}
         {isLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-start"
-          >
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-              <MessageCircle size={14} className="text-white" />
-            </div>
-            <div className="bg-white border border-primary-100 text-primary-700 rounded-3xl rounded-tl-sm p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="think-dot bg-primary" />
-                <span className="think-dot bg-primary" />
-                <span className="think-dot bg-primary" />
-              </div>
-              <p className="text-xs text-primary-500 italic">{thinkingText}</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
+              <span className="think-dot bg-primary-400" />
+              <span className="think-dot bg-primary-400" />
+              <span className="think-dot bg-primary-400" />
             </div>
           </motion.div>
         )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="flex justify-center">
+            <div className="bg-red-50 text-red-700 px-4 py-2 rounded-2xl text-xs flex items-center gap-2 border border-red-100 shadow-sm animate-shake">
+              <AlertTriangle size={14} />
+              {errorMessage}
+            </div>
+          </div>
+        )}
+
         <div ref={scrollRef} />
       </div>
 
-      {/* Mic error */}
-      <AnimatePresence>
-        {micError && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="mx-4 mb-2 p-3 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-2"
-          >
-            <AlertTriangle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-red-700 flex-1">{micError}</p>
-            <button onClick={() => setMicError('')} className="text-red-400 hover:text-red-600">
-              <X size={14} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Input Bar */}
-      <div className="flex-shrink-0 p-3 bg-white/60 backdrop-blur-md border-t border-primary-50 flex gap-2">
+      <div className="p-3 bg-white border-t border-neutral-200 flex items-center gap-2 pb-safe">
         <button
-          onClick={isListening ? stopListening : startListening}
-          className={`p-3.5 rounded-2xl transition-all flex-shrink-0 ${
-            isListening
-              ? 'bg-red-500 text-white animate-pulse'
-              : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-          }`}
-          aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+          onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+          className={`p-3 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-neutral-400 hover:bg-neutral-100'}`}
         >
-          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
         </button>
 
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder={isRw ? 'Andika ubutumwa cyangwa kanda mikoro...' : 'Type your message or tap the mic...'}
-          className="flex-1 px-4 py-3 bg-white border border-primary-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-neutral-400 font-medium text-sm"
-        />
+        <div className="flex-1 relative">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            placeholder={isRw ? 'Andika ubutumwa...' : 'Type a message...'}
+            className="w-full pl-4 pr-12 py-3.5 bg-[#F0F2F5] rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+          />
+        </div>
 
         <button
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
-          className="p-3.5 bg-accent text-white rounded-2xl hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent/20 flex-shrink-0"
-          aria-label="Send message"
+          className={`p-3.5 rounded-full shadow-lg transition-all ${
+            !input.trim() || isLoading 
+              ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' 
+              : 'bg-primary text-white hover:bg-primary-900 shadow-primary/20'
+          }`}
         >
-          <Send size={20} />
+          {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Send size={22} />}
         </button>
       </div>
     </div>
