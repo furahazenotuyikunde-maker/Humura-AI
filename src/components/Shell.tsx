@@ -153,7 +153,7 @@ export const Shell: React.FC<ShellProps> = () => {
                 <img src="/logo.png" alt="Humura AI" className="h-8 object-contain" />
                 <span className="font-bold text-primary-900 tracking-tight">Humura AI</span>
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-sm text-neutral-500 leading-relaxed">
                 {isRw 
                   ? "Humura AI ni urubuga rw'ikoranabuhanga rurimo indimi ebyiri rugamije gutanga ubufasha mu buzima bwo mu mutwe, rwifashishije ikoranabuhanga rya AI, amarenga, n'uburyo bwo gufasha mu bibazo byihutirwa mu muryango nyarwanda."
                   : "Humura AI is a bilingual mental health platform providing empathetic AI therapy, sign language support, and crisis intervention for the Rwandan community."}
@@ -165,7 +165,7 @@ export const Shell: React.FC<ShellProps> = () => {
               <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
                 {isRw ? "Ikoranabuhanga" : "Technology"}
               </h4>
-              <ul className="text-xs text-neutral-500 space-y-2">
+              <ul className="text-sm text-neutral-500 space-y-2">
                 <li className="font-bold text-primary-600">
                   {isRw ? "• Porogaramu igendanwa (React & Vite)" : "• Mobile-First App (React & Vite)"}
                 </li>
@@ -181,18 +181,18 @@ export const Shell: React.FC<ShellProps> = () => {
               <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
                 {isRw ? "Ubuhamya" : "Testimonies"}
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="space-y-1">
-                  <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2 leading-relaxed">
+                  <div className="italic text-xs text-neutral-500 border-l-2 border-primary-100 pl-3 leading-relaxed">
                     "{isRw ? "uru rubuga rwamfashije mu bihe bikomeye. AI ya humura irumva cyane" : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
                   </div>
-                  <p className="text-[9px] font-bold text-primary-600 pl-2">— {isRw ? "Kamana john" : "Kamana John"}</p>
+                  <p className="text-xs font-bold text-primary-600 pl-3">— {isRw ? "Kamana john" : "Kamana John"}</p>
                 </div>
                 <div className="space-y-1">
-                  <div className="italic text-[10px] text-neutral-400 border-l-2 border-primary-100 pl-2 leading-relaxed">
+                  <div className="italic text-xs text-neutral-500 border-l-2 border-primary-100 pl-3 leading-relaxed">
                     "{isRw ? "Uburyo bw’amarenga nibwo nshobora gukoresha kuko ntumva si ntavuge. Urakoze humura AI" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
                   </div>
-                  <p className="text-[9px] font-bold text-primary-600 pl-2">— {isRw ? "Kanyange ancilla" : "Kanyange Ancilla"}</p>
+                  <p className="text-xs font-bold text-primary-600 pl-3">— {isRw ? "Kanyange ancilla" : "Kanyange Ancilla"}</p>
                 </div>
               </div>
             </div>
@@ -203,13 +203,13 @@ export const Shell: React.FC<ShellProps> = () => {
               <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
                 {isRw ? "Twandikire" : "Contact"}
               </h4>
-              <div className="text-xs text-neutral-500 space-y-2">
+              <div className="text-sm text-neutral-500 space-y-2">
                 <p className="flex items-center gap-2">
-                  <Phone size={14} className="text-primary-400" />
+                  <Phone size={16} className="text-primary-400" />
                   +250 790 723 406
                 </p>
                 <p className="flex items-center gap-2">
-                  <ShieldAlert size={14} className="text-primary-400" />
+                  <ShieldAlert size={16} className="text-primary-400" />
                   tuyikundefzeno@gmail.com
                 </p>
               </div>
