@@ -65,6 +65,7 @@ export default function SignLanguagePage() {
 
   const [activeCategory, setActiveCategory] = useState<'feelings' | 'ineed' | 'body' | 'crisis'>('feelings');
   const [selected, setSelected] = useState<Sign[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCrisisWarning, setShowCrisisWarning] = useState(false);
@@ -126,7 +127,7 @@ export default function SignLanguagePage() {
   const handleSend = async () => {
     if (selected.length === 0) return;
     const message = composeMessage();
-    setIsLoading(true);
+    setIsAnalyzing(true);
     setAiResponse('');
 
     const OFFLINE_RESPONSES = [
@@ -204,6 +205,7 @@ export default function SignLanguagePage() {
         setTierUsed(3);
       }
     } finally {
+      setIsAnalyzing(false);
       setIsLoading(false);
     }
   };
@@ -460,9 +462,78 @@ export default function SignLanguagePage() {
              <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto text-primary">
                 <Camera size={20} />
              </div>
-             <p className="text-xs text-neutral-500 max-w-[250px] mx-auto">
-               {isRw ? 'Kanda buto yo haruguru kugira ngo utangire gukoresha amarenga byikora.' : 'Turn on the camera and start signing. AI will build your message for you.'}
+             <p className="text-xs text-neutral-500 max-w-[250px] mx-auto italic">
+               {isRw ? 'Kanda buto yo haruguru kugira ngo utangire gukoresha amarenga byikora.' : 'Point camera at a sign language gesture and tap Scan'}
              </p>
+          </div>
+        )}
+      </div>
+
+      {/* NEW: AI Thinking & Response Area directly below camera */}
+      <div className="mt-4 space-y-4">
+        {/* Show while loading */}
+        {isAnalyzing && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl border border-primary-50 shadow-sm"
+          >
+            <div className="flex gap-1.5 mb-3">
+              <span className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce"></span>
+            </div>
+            <p className="text-sm font-bold text-primary-900">
+              🤔 {isRw ? 'Gusesengura amarenga...' : 'Analyzing sign language...'}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Show after response arrives */}
+        {aiResponse && !isAnalyzing && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-5 shadow-md border-l-4 border-primary border-t border-r border-b border-primary-50"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">✋</span>
+              <h3 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
+                {isRw ? 'Amarenga yamenyekanye' : 'Sign Detected'}
+              </h3>
+            </div>
+            <div className="h-px bg-primary-50 w-full mb-4" />
+            <p className="text-sm text-primary-800 leading-relaxed font-medium">
+              {aiResponse}
+            </p>
+            
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={speakResponse}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                  isSpeaking ? 'bg-primary text-white' : 'bg-primary-50 text-primary hover:bg-primary-100'
+                }`}
+              >
+                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                {isSpeaking ? (isRw ? 'Hagarika' : 'Stop') : (isRw ? 'Wumva' : 'Listen')}
+              </button>
+              <button
+                onClick={reset}
+                className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-xl text-xs font-semibold hover:bg-primary-100 transition-colors"
+              >
+                <RotateCcw size={14} />
+                {isRw ? 'Gutangira Nshya' : 'Start New'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Show before any scan */}
+        {!isAnalyzing && !aiResponse && (
+          <div className="text-center p-6 bg-white/40 rounded-2xl border border-dashed border-primary-100">
+            <p className="text-sm text-neutral-400 italic">
+              📷 {isRw ? 'Erekeza kamera ku kimenyetso cy’amarenga maze ukande Sikanira' : 'Point camera at a sign language gesture and tap Scan'}
+            </p>
           </div>
         )}
       </div>
@@ -543,40 +614,7 @@ export default function SignLanguagePage() {
         )}
       </AnimatePresence>
 
-      {/* AI Response */}
-      <AnimatePresence>
-        {aiResponse && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-5 border border-primary-100 shadow-sm space-y-3"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm">🤟</div>
-              <p className="font-bold text-primary-900 text-sm">Humura AI</p>
-            </div>
-            <p className="text-sm text-primary-800 leading-relaxed">{aiResponse}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={speakResponse}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  isSpeaking ? 'bg-primary text-white' : 'bg-primary-50 text-primary hover:bg-primary-100'
-                }`}
-              >
-                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                {isSpeaking ? (isRw ? 'Hagarika' : 'Stop') : (isRw ? 'Wumva' : 'Listen')}
-              </button>
-              <button
-                onClick={reset}
-                className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-xl text-xs font-semibold hover:bg-primary-100 transition-colors"
-              >
-                <RotateCcw size={14} />
-                {isRw ? 'Gutangira Nshya' : 'Start New'}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Old response box removed - replaced by new one under camera */}
     </div>
   );
 }
