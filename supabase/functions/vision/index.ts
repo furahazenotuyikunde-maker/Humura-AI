@@ -21,7 +21,7 @@ serve(async (req) => {
     }
 
     // Call Gemini 3 Flash Preview (Multimodal)
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
 
     const response = await fetch(apiUrl, {
       method: 'POST',
