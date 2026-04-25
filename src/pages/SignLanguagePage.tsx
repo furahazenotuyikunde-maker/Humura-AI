@@ -247,7 +247,7 @@ export default function SignLanguagePage() {
 
   useEffect(() => {
     if (autoDetectActive && cameraActive) {
-      detectIntervalRef.current = setInterval(captureAndAnalyze, 4000);
+      detectIntervalRef.current = setInterval(captureAndAnalyze, 6000);
     } else {
       if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
     }
@@ -271,7 +271,7 @@ export default function SignLanguagePage() {
 
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.trim());
-      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
       
       const availableIds = signs.map(s => s.id).join(', ');
       const prompt = `You are an expert AI reading sign language, body language, and facial expressions. Look very carefully at the provided user image. Pick ONE exact keyword from this list that best matches their expression or sign: [${availableIds}]. If they look completely neutral, relaxed, or no action is clear, output "none". Do NOT output any formatting, punctuation, or other words. ONLY the exact ID string.`;
@@ -383,12 +383,18 @@ export default function SignLanguagePage() {
           <div className="space-y-3">
             <div className="relative rounded-xl overflow-hidden bg-black max-h-64 flex justify-center">
               <video ref={videoRef} autoPlay muted playsInline className="h-full max-h-64 object-cover" />
-              {isDetecting && autoDetectActive && (
-                <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/60 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-bold">
-                  <Loader2 size={12} className="animate-spin" />
-                  ANALYZING
+                <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5">
+                  <div className="flex items-center gap-1.5 bg-black/60 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-bold">
+                    <Loader2 size={12} className="animate-spin" />
+                    {isRw ? 'GUSESENGURA...' : 'ANALYSING...'}
+                  </div>
                 </div>
               )}
+              
+              {!isDetecting && autoDetectActive && (
+                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-white/20 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-medium border border-white/10">
+                    {isRw ? 'AI iri kumva...' : 'AI Listening...'}
+                 </div>
               
               {/* Done & Send overlay button */}
               {selected.length > 0 && (
