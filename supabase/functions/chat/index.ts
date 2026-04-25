@@ -26,7 +26,7 @@ serve(async (req) => {
       parts: [{ text: m.content }]
     }))
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`
 
     const response = await fetch(apiUrl, {
       method: 'POST',
