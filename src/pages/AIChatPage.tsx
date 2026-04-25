@@ -147,36 +147,15 @@ export default function AIChatPage() {
 
       setSessions(prev => prev.map(s => {
         if (s.id === currentSessionId) {
-          const updatedMessages = [...s.messages, userMsg, aiMsg];
+          const updatedMessages = [...s.messages, aiMsg];
           let newTitle = s.title;
-          if (s.messages.length === 0) {
+          if (s.messages.length === 1) {
             newTitle = userText.slice(0, 30) + (userText.length > 30 ? '...' : '');
           }
           return { ...s, messages: updatedMessages, title: newTitle, lastUpdated: new Date() };
         }
         return s;
       }));
-
-    } catch (err: any) {
-      console.warn("⚠️ Edge Function failed, trying direct API fallback...", err);
-      
-      // TIER 2: FALLBACK TO DIRECT GEMINI API (If key available locally)
-      try {
-        const localKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (localKey && localKey.length > 10) {
-          const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(localKey.trim());
-          const model = genAI.getGenerativeModel({ 
-            model: 'gemini-3-flash-preview',
-            systemInstruction: "You are Humura AI, a compassionate mental health support assistant for Rwanda. Respond in the same language as the user. Validate feelings first, then provide gentle support. Keep responses warm and clear."
-          });
-
-          const formattedHistory = messages.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }],
-          }));
-
-          const chat = model.startChat({ history: formattedHistory });
           const result = await chat.sendMessage(userText);
           const replyText = result.response.text();
 
