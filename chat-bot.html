@@ -52,11 +52,11 @@
 
         try {
             console.log("Humura AI: Calling Edge Function...");
-            const response = await fetch('https://acetkeyzhbgfsetwkfuo.supabase.co/functions/v1/bright-worker', {
+            const response = await fetch('https://acetkeyzhbgfsetwkfuo.supabase.co/functions/v1/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    message: text,
+                    userMessage: text,
                     history: history 
                 })
             });

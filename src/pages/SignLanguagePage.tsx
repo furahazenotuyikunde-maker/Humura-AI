@@ -158,9 +158,9 @@ export default function SignLanguagePage() {
     try {
       // 1. TRY EDGE FUNCTION (Most Secure & Dynamic)
       console.log("Humura AI (Sign): Attempting Edge Function call...");
-      const { data, error } = await supabase.functions.invoke('bright-worker', {
+      const { data, error } = await supabase.functions.invoke('chat', {
         body: { 
-          message: `User is communicating via sign language. Selected signs: ${message}`,
+          userMessage: `User is communicating via sign language. Selected signs: ${message}`,
           history: [],
           lang: lang,
           isSignLanguage: true,

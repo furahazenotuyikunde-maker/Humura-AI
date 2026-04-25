@@ -21,7 +21,6 @@ serve(async (req) => {
     }
 
     // Format history for Gemini API
-    // Gemini 1.5/2.x history format: [{ role: 'user' | 'model', parts: [{ text: string }] }]
     const formattedHistory = (history || []).map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }]

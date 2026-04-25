@@ -258,9 +258,9 @@ export default function ProgressPage() {
       console.log("Humura AI (Insight): Attempting Edge Function call...");
       const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
       
-      const { data, error } = await supabase.functions.invoke('bright-worker', {
+      const { data, error } = await supabase.functions.invoke('chat', {
         body: { 
-          message: `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`,
+          userMessage: `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`,
           history: [],
           lang: lang,
           apiKey: GEMINI_API_KEY.trim()
