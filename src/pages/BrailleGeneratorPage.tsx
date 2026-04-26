@@ -1,43 +1,53 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, MoreHorizontal, FileText, Download, Trash2, Languages, Type } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, MoreHorizontal, FileText, Download, Trash2, Languages, Type, Copy, Check, Info } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { addNotification } from '../lib/notifications';
 
 // ──────────────────────────────────────────────────────────────
-// BRAILLE MAPPING (Grade 1 English)
+// BRAILLE MAPPING (UEB Grade 1)
 // ──────────────────────────────────────────────────────────────
 const BRAILLE_MAP: Record<string, string> = {
+  // Letters
   'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 'i': '⠊', 'j': '⠚',
   'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞',
   'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 'y': '⠽', 'z': '⠵',
+  // Numbers (shared with a-j)
   '1': '⠁', '2': '⠃', '3': '⠉', '4': '⠙', '5': '⠑', '6': '⠋', '7': '⠛', '8': '⠓', '9': '⠊', '0': '⠚',
-  ' ': '⠀', '.': '⠲', ',': '⠂', ';': '⠆', ':': '⠒', '!': '⠖', '?': '⠦', '"': '⠶', '(': '⠦', ')': '⠴', '-': '⠤',
+  // Punctuation & Symbols
+  ' ': '⠀', 
+  '.': '⠲', ',': '⠂', ';': '⠆', ':': '⠒', '!': '⠖', '?': '⠦', 
+  '(': '⠦', ')': '⠴', '[': '⠨⠦', ']': '⠨⠴', '{': '⠸⠦', '}': '⠸⠴',
+  '"': '⠶', "'": '⠄', '-': '⠤', '_': '⠨⠤', '/': '⠸⠌', '\\': '⠸⠡',
+  '@': '⠈⠁', '#': '⠼', '$': '⠈⠎', '%': '⠨⠏', '&': '⠯', '*': '⠐⠔',
+  '+': '⠐⠖', '=': '⠐⠶', '<': '⠨⠣', '>': '⠨⠜', '^': '⠈⠮'
 };
 
 const NUMBER_PREFIX = '⠼';
 const CAPITAL_PREFIX = '⠠';
 
 function convertToBraille(text: string): string {
+  if (!text) return '';
   let result = '';
-  const lowerText = text.toLowerCase();
   
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    const lowerChar = lowerText[i];
+    const lowerChar = char.toLowerCase();
     
-    // Handle Capitalization
-    if (char !== lowerChar && /[a-z]/i.test(char)) {
-      result += CAPITAL_PREFIX;
-    }
-    
-    // Handle Numbers (simplified Grade 1)
+    // Handle Numbers
     if (/[0-9]/.test(char)) {
       if (i === 0 || !/[0-9]/.test(text[i - 1])) {
         result += NUMBER_PREFIX;
       }
+      result += BRAILLE_MAP[char] || char;
+      continue;
+    }
+    
+    // Handle Capitals
+    if (char !== lowerChar && /[a-z]/i.test(char)) {
+      result += CAPITAL_PREFIX;
     }
     
     result += BRAILLE_MAP[lowerChar] || char;
@@ -46,9 +56,6 @@ function convertToBraille(text: string): string {
   return result;
 }
 
-// ──────────────────────────────────────────────────────────────
-// COMPONENT
-// ──────────────────────────────────────────────────────────────
 export default function BrailleGeneratorPage() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
@@ -57,11 +64,19 @@ export default function BrailleGeneratorPage() {
 
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const brailleText = useMemo(() => convertToBraille(inputText), [inputText]);
 
   const handleClear = () => {
     setInputText('');
+  };
+
+  const handleCopy = () => {
+    if (!brailleText) return;
+    navigator.clipboard.writeText(brailleText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const generatePDF = () => {
@@ -73,19 +88,21 @@ export default function BrailleGeneratorPage() {
       doc.text("Braille Document", 20, 20);
       doc.setFontSize(10);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 28);
-      doc.setFontSize(24);
+      
+      doc.setFontSize(20);
       const splitBraille = doc.splitTextToSize(brailleText, 170);
       doc.text(splitBraille, 20, 45);
+      
       doc.save(`braille-document-${Date.now()}.pdf`);
       
       addNotification({
         type: 'info',
-        titleEn: 'Braille Document Ready',
-        titleRw: 'Inyandiko y\'abafite ubumuga bwo kutabona Yarangiye',
-        messageEn: 'Your Braille PDF has been generated and saved successfully.',
-        messageRw: 'Inyandiko yawe ya PDF y\'abafite ubumuga bwo kutabona yateguwe kandi yabitswe neza.',
+        titleEn: 'PDF Generated',
+        titleRw: 'PDF Yakozwe',
+        messageEn: 'Your Braille document is ready.',
+        messageRw: 'Inyandiko yawe yarangiye.',
         icon: 'FileText',
-        color: 'text-blue-500 bg-blue-50',
+        color: 'text-primary bg-primary-50',
         link: '/braille'
       });
     } catch (error) {
@@ -96,93 +113,114 @@ export default function BrailleGeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
-      {/* Blue Gradient Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center gap-3 shadow-md">
-        <button 
-          onClick={() => navigate(-1)}
-          className="text-white p-1 hover:bg-white/10 rounded-full transition-colors"
-          aria-label="Go back"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <h1 className="text-white text-xl font-bold tracking-tight">
-          {isRw ? 'Gukora Inyandiko mu buryo bw’abafite ubumuga bwo kutabona' : 'Braille Document Generator'}
-        </h1>
-        <div className="ml-auto">
-          <button className="text-white p-1 opacity-60">
-            <MoreHorizontal size={24} />
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans pb-10">
+      {/* Header */}
+      <div className="bg-white border-b border-neutral-200 p-4 sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
+          >
+            <ArrowLeft size={24} />
           </button>
+          <div>
+            <h1 className="text-xl font-black text-neutral-900 tracking-tight">
+              {isRw ? 'Semura mu nshuti' : 'Braille Translator'}
+            </h1>
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+              Grade 1 English Braille (UEB)
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-6 flex-1 max-w-2xl mx-auto w-full">
-        {/* Input Section */}
-        <div className="space-y-2">
-          <label className="block text-neutral-700 font-bold text-sm ml-1">
-            {isRw ? 'Andika inyandiko yawe' : 'Enter your text'}
-          </label>
-          <div className="relative">
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={isRw ? 'Andika ikintu hano... urugero: Muraho' : 'Type something here... e.g. Hello World'}
-              className="w-full h-40 p-4 text-lg border border-neutral-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none bg-white transition-all resize-none text-neutral-800"
-            />
-            <div className="text-right text-xs text-neutral-500 mt-1 mr-1">
-              {inputText.length} {isRw ? 'inyuguti' : 'characters'}
-            </div>
+      <div className="p-4 space-y-6 flex-1 max-w-2xl mx-auto w-full pt-8">
+        {/* Input Card */}
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-neutral-200 space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+              <Type size={14} />
+              {isRw ? 'Andika inyandiko' : 'Source Text'}
+            </label>
+            <button 
+              onClick={handleClear}
+              className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+            >
+              <Trash2 size={12} />
+              {isRw ? 'Gusiba' : 'Clear'}
+            </button>
           </div>
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder={isRw ? 'Andika hano...' : 'Enter English text to translate...'}
+            className="w-full h-32 text-lg font-medium bg-neutral-50 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/10 border-none resize-none placeholder:text-neutral-300 transition-all"
+          />
         </div>
 
-        {/* Preview Section */}
-        <div className="space-y-2">
-          <label className="block text-neutral-700 font-bold text-sm ml-1">
-            {isRw ? 'Icyitegererezo cy’abafite ubumuga bwo kutabona' : 'Braille preview'}
-          </label>
-          <div 
-            className={`w-full min-h-[120px] p-6 rounded-xl border border-neutral-200 flex items-center justify-center text-center transition-all ${
-              brailleText ? 'bg-neutral-50 border-neutral-300' : 'bg-[#F9F8F3]'
-            }`}
-          >
+        {/* Output Card */}
+        <div className="bg-white rounded-[2rem] p-6 shadow-md border-2 border-primary/20 space-y-4 relative overflow-hidden">
+          <div className="flex items-center justify-between relative z-10">
+            <label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+              <Languages size={14} />
+              {isRw ? 'Inyandiko y\'abafite ubumuga' : 'Braille Output'}
+            </label>
+            <button
+              onClick={handleCopy}
+              disabled={!brailleText}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                copied ? 'bg-green-500 text-white' : 'bg-primary/10 text-primary hover:bg-primary/20'
+              } disabled:opacity-30`}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? (isRw ? 'Byakopewe' : 'Copied!') : (isRw ? 'Kopa' : 'Copy')}
+            </button>
+          </div>
+
+          <div className="min-h-[160px] flex items-center justify-center p-4 bg-primary-50/30 rounded-2xl border border-dashed border-primary/20 relative z-10">
             {brailleText ? (
-              <p className="text-4xl text-neutral-800 break-all leading-relaxed font-braille w-full">
+              <p className="text-5xl text-primary-900 break-all leading-[1.6] font-braille w-full text-center tracking-wider">
                 {brailleText}
               </p>
             ) : (
-              <p className="text-neutral-400 italic">
-                {isRw ? 'Inyuguti z’abafite ubumuga bwo kutabona zizagaragara hano' : 'Braille symbols will appear here'}
-              </p>
+              <div className="text-center space-y-2 opacity-30">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Languages size={24} />
+                </div>
+                <p className="text-sm font-bold italic">
+                  {isRw ? 'Inyuguti zizagaragara hano' : 'Translation will appear here'}
+                </p>
+              </div>
             )}
           </div>
+
+          {/* Decorative background circle */}
+          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         </div>
 
-        {/* Buttons Grid */}
-        <div className="grid grid-cols-2 gap-3 pt-4">
+        {/* Action Buttons */}
+        <div className="grid grid-cols-1 gap-3 pt-4">
           <button
             onClick={generatePDF}
             disabled={!brailleText || isGenerating}
-            className="h-14 bg-white border border-neutral-300 text-neutral-800 rounded-xl font-bold hover:bg-neutral-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            className="flex items-center justify-center gap-3 h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-primary-900 transition-all shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50"
           >
-            {isGenerating ? (isRw ? 'Gukora...' : 'Generating...') : (isRw ? 'Bika PDF' : 'Generate PDF')}
-          </button>
-          <button
-            onClick={handleClear}
-            className="h-14 bg-white border border-neutral-300 text-neutral-800 rounded-xl font-bold hover:bg-neutral-50 transition-all shadow-sm active:scale-95"
-          >
-            {isRw ? 'Kuraho' : 'Clear'}
+            {isGenerating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download size={20} />}
+            {isGenerating ? (isRw ? 'Gukora...' : 'Processing...') : (isRw ? 'Bika kuri PDF' : 'Save as PDF')}
           </button>
         </div>
-      </div>
 
-      {/* Accessibility / Bottom Info */}
-      <div className="p-6 text-center">
-        <p className="text-xs text-neutral-400 italic font-medium">
-          {isRw 
-            ? 'Yateguwe mu buryo bworoshye gukoreshwa.' 
-            : 'Designed for accessibility and simple touch navigation.'}
-        </p>
+        {/* Info Box */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
+          <Info className="text-blue-500 shrink-0" size={20} />
+          <p className="text-[11px] text-blue-700 leading-relaxed font-medium">
+            {isRw 
+              ? 'Iri semura rirakoresha uburyo bwa Grade 1 (UEB). Ni uburyo bwiza bwo kwigira no gukora inyandiko zoroheje z\'abafite ubumuga bwo kutabona.' 
+              : 'This translator uses Unified English Braille (UEB) Grade 1. It is designed for educational purposes and creating accessible labels or short documents.'}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+

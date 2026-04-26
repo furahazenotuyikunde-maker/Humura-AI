@@ -27,6 +27,9 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  .font-braille {
+    font-family: "Apple Braille", "Segoe UI Symbol", "Symbola", "Bravura", monospace;
+  }
 }
 
 @layer components {
