@@ -82,7 +82,7 @@ export default function TranslatorPage() {
             </h1>
             <p className="text-sm font-bold text-primary-600 flex items-center gap-1">
               <Sparkles size={14} />
-              {isRw ? 'Iri gukoresha LibreTranslate' : 'Powered by LibreTranslate'}
+              {isRw ? 'Iri gukoresha MyMemory API' : 'Powered by MyMemory API'}
             </p>
           </div>
         </div>
@@ -191,9 +191,9 @@ export default function TranslatorPage() {
           🚀
         </div>
         <div>
-          <p className="font-black text-sm uppercase tracking-tighter">Argos Open Tech API</p>
+          <p className="font-black text-sm uppercase tracking-tighter">MyMemory Translation API</p>
           <p className="text-xs font-medium text-neutral-500 italic">
-            translate.argosopentech.com
+            api.mymemory.translated.net
           </p>
         </div>
       </motion.div>

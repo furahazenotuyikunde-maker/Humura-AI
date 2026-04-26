@@ -1,6 +1,5 @@
 import glossary from './kinyarwanda_glossary.json';
 
-const LIBRE_TRANSLATE_URL = 'https://translate.argosopentech.com/translate';
 
 export async function translateText(text: string, target: 'rw' | 'en', source?: 'rw' | 'en'): Promise<string> {
   if (!text) return '';
@@ -31,24 +30,15 @@ export async function translateText(text: string, target: 'rw' | 'en', source?: 
 
   
   try {
-    const response = await fetch(LIBRE_TRANSLATE_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        q: text,
-        source: effectiveSource,
-        target: target,
-        format: 'text',
-        api_key: ''
-      }),
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${effectiveSource}|${target}`;
+    const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error('Translation API failed');
+      throw new Error('MyMemory API failed');
     }
 
     const data = await response.json();
-    return data.translatedText || text;
+    return data.responseData?.translatedText || text;
   } catch (error) {
     console.error('Translation error:', error);
     return text; // Fallback to original text

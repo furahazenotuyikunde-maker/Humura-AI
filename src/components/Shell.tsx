@@ -266,7 +266,7 @@ export const Shell: React.FC<ShellProps> = () => {
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-                    LibreTranslate API
+                    MyMemory Translation API
                   </li>
                 </ul>
               </div>
