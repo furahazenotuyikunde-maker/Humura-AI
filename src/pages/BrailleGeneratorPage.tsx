@@ -84,23 +84,80 @@ export default function BrailleGeneratorPage() {
     setIsGenerating(true);
     try {
       const doc = new jsPDF();
-      doc.setFontSize(18);
-      doc.text("Braille Document", 20, 20);
+      const margin = 20;
+      let x = margin;
+      let y = 45;
+      const dotRadius = 0.6;
+      const dotSpacing = 2.5;
+      const cellSpacing = 6;
+      const lineHeight = 12;
+
+      // Header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(15, 20, 80);
+      doc.text("Braille Document", margin, 20);
+      
+      doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 28);
+      doc.setTextColor(120, 120, 140);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, 28);
       
-      doc.setFontSize(20);
-      const splitBraille = doc.splitTextToSize(brailleText, 170);
-      doc.text(splitBraille, 20, 45);
+      doc.setDrawColor(200, 200, 210);
+      doc.line(margin, 32, 190, 32);
+
+      // Draw Braille Dots
+      doc.setFillColor(15, 20, 80);
       
+      for (let i = 0; i < brailleText.length; i++) {
+        const char = brailleText[i];
+        const code = char.charCodeAt(0);
+        
+        // Unicode Braille starts at 0x2800
+        if (code >= 0x2800 && code <= 0x28FF) {
+          const dots = code - 0x2800;
+          
+          // 2x3 Grid Mapping (Dots 1-6)
+          const dotPositions = [
+            { bit: 0x01, dx: 0, dy: 0 },             // Dot 1
+            { bit: 0x02, dx: 0, dy: dotSpacing },    // Dot 2
+            { bit: 0x04, dx: 0, dy: dotSpacing * 2 },// Dot 3
+            { bit: 0x08, dx: dotSpacing, dy: 0 },    // Dot 4
+            { bit: 0x10, dx: dotSpacing, dy: dotSpacing }, // Dot 5
+            { bit: 0x20, dx: dotSpacing, dy: dotSpacing * 2 } // Dot 6
+          ];
+
+          dotPositions.forEach(pos => {
+            if (dots & pos.bit) {
+              doc.circle(x + pos.dx, y + pos.dy, dotRadius, 'F');
+            }
+          });
+        }
+
+        // Advance X position
+        x += cellSpacing;
+
+        // Wrap text
+        if (x > 180 || char === '\n') {
+          x = margin;
+          y += lineHeight;
+        }
+
+        // Add new page if needed
+        if (y > 270) {
+          doc.addPage();
+          y = margin;
+        }
+      }
+
       doc.save(`braille-document-${Date.now()}.pdf`);
       
       addNotification({
         type: 'info',
         titleEn: 'PDF Generated',
         titleRw: 'PDF Yakozwe',
-        messageEn: 'Your Braille document is ready.',
-        messageRw: 'Inyandiko yawe yarangiye.',
+        messageEn: 'Your Braille document is ready with real dot vectors.',
+        messageRw: 'Inyandiko yawe yarangiye neza.',
         icon: 'FileText',
         color: 'text-primary bg-primary-50',
         link: '/braille'
