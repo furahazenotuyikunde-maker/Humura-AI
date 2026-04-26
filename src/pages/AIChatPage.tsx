@@ -159,8 +159,8 @@ export default function AIChatPage() {
 
       if (error && (error as any).status === 429) {
         const rateLimitMessage = isRw 
-          ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
-          : "Rate limit reached (20 requests/min). Please try again in 60 seconds.";
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.";
         setErrorMessage(rateLimitMessage);
         return;
       }

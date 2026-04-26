@@ -168,8 +168,8 @@ export default function SignLanguagePage() {
         setScanResult({
           detectedSign: isRw ? "Umuburo" : "Rate Limit",
           explanation: isRw 
-            ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
-            : "The system has reached its limit of 20 requests per minute. Please wait a moment."
+            ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+            : "You've hit the system limit (20 requests/min). Please try again in 60 seconds."
         });
         return;
       }
@@ -218,8 +218,8 @@ export default function SignLanguagePage() {
 
     const generateFallback = () => {
       const quotaMessage = isRw
-        ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
-        : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
+        ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
+        : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support.";
 
       if (selected.some(s => s.isCrisis)) {
         return isRw
@@ -244,8 +244,8 @@ export default function SignLanguagePage() {
 
       if (error && (error as any).status === 429) {
         setAiResponse(isRw 
-          ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
-          : "Rate limit reached (20 requests/min). Please try again in 60 seconds.");
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.");
         return;
       }
 

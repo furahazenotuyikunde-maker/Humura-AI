@@ -19,8 +19,10 @@ serve(async (req) => {
     console.warn(`Rate limit exceeded: ${count} requests in the last minute.`)
     return new Response(
       JSON.stringify({ 
-        error: "Rate limit exceeded. The system is limited to 20 requests per minute to ensure stability. Please try again in a moment.",
-        reply: "Too many requests. Please wait a minute before trying again."
+        error: "Rate limit exceeded. The system is limited to 20 requests per minute.",
+        reply: isRw 
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
+          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support."
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
     )
@@ -88,8 +90,8 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               reply: isRw 
-                ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)" 
-                : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)" 
+                ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
+                : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support." 
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )

@@ -106,8 +106,8 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
   }
 
   const quotaMessage = lang.startsWith('rw')
-    ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
-    : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
+    ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
+    : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support.";
   
   return quotaMessage;
 }
@@ -263,8 +263,8 @@ export default function ProgressPage() {
 
       if (error && (error as any).status === 429) {
         setInsightText(isRw 
-          ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
-          : "Rate limit reached (20 requests/min). Please try again in 60 seconds.");
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.");
         return;
       }
 
