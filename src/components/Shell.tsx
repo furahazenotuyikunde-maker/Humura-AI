@@ -37,6 +37,33 @@ export const Shell: React.FC<ShellProps> = () => {
     return [];
   });
 
+  // Global Accessibility Settings Loader
+  useEffect(() => {
+    const applySettings = () => {
+      const saved = localStorage.getItem('Humura_settings_v2');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          document.documentElement.classList.toggle('high-contrast', !!settings.highContrast);
+          const sizeClasses = ['text-sm', 'text-md', 'text-lg', 'text-xl'];
+          document.documentElement.classList.remove(...sizeClasses);
+          if (settings.textSize) {
+            document.documentElement.classList.add(`text-${settings.textSize}`);
+          }
+        } catch (e) {}
+      }
+    };
+
+    applySettings();
+    // Listen for storage changes (when settings are updated in another tab or the same page)
+    window.addEventListener('storage', applySettings);
+    return () => window.removeEventListener('storage', applySettings);
+  }, []);
+
+  const handleSafetyExit = () => {
+    window.location.replace('https://www.google.com');
+  };
+
   // Refresh history whenever it's opened
   useEffect(() => {
     if (showHistory) {
@@ -118,6 +145,15 @@ export const Shell: React.FC<ShellProps> = () => {
 
 
         <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSafetyExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-full text-xs font-black shadow-sm active:scale-95 transition-transform"
+            aria-label={isRw ? "Sohoka vuba" : "Safety Exit"}
+          >
+            <X size={14} />
+            <span>{isRw ? "Sohoka" : "Exit"}</span>
+          </button>
+          
           <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm mr-2">
             <button 
               onClick={() => i18n.changeLanguage('en')}
