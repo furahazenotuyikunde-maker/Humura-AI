@@ -16,32 +16,17 @@ export async function checkRateLimit(): Promise<{ allowed: boolean; count: numbe
   const oneMinuteAgo = new Date(now.getTime() - 60000).toISOString()
 
   try {
-    // 1. Log this request
-    const { error: insertError } = await supabase
-      .from('request_logs')
-      .insert([{ created_at: now.toISOString() }])
-
-    if (insertError) {
-      // If table doesn't exist, we might need to create it or just fail safe (allow)
-      // but the requirement is STRICT.
-      console.error("Error logging request:", insertError)
-      
-      // Attempt to create table if it doesn't exist (primitive migration)
-      if (insertError.code === '42P01') { // undefined_table
-        console.log("Table 'request_logs' not found. Please create it in the Supabase SQL Editor.")
-        // For now, we'll allow it but log a warning. 
-        // In a real production environment, this should be part of a migration.
-        return { allowed: true, count: 0 }
-      }
-    }
-
-    // 2. Count requests in the last minute
+    // 1. Count requests in the last minute (sliding window)
     const { count, error: countError } = await supabase
       .from('request_logs')
       .select('*', { count: 'exact', head: true })
       .gt('created_at', oneMinuteAgo)
 
     if (countError) {
+      if (countError.code === '42P01') {
+         console.log("Table 'request_logs' not found. Please create it.")
+         return { allowed: true, count: 0 }
+      }
       console.error("Error counting requests:", countError)
       return { allowed: true, count: 0 }
     }
@@ -49,9 +34,22 @@ export async function checkRateLimit(): Promise<{ allowed: boolean; count: numbe
     const currentCount = count || 0
     const limit = 20
 
+    if (currentCount >= limit) {
+      return { allowed: false, count: currentCount }
+    }
+
+    // 2. Log this request ONLY if allowed
+    const { error: insertError } = await supabase
+      .from('request_logs')
+      .insert([{ created_at: now.toISOString() }])
+
+    if (insertError) {
+      console.error("Error logging request:", insertError)
+    }
+
     return {
-      allowed: currentCount <= limit,
-      count: currentCount
+      allowed: true,
+      count: currentCount + 1
     }
   } catch (err) {
     console.error("Rate limiter exception:", err)
