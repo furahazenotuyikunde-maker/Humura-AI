@@ -95,9 +95,9 @@ export default function TranslatorPage() {
             <button
               key={l}
               onClick={() => setSourceLang(l)}
-              className={`px-3 py-1 rounded-xl font-black text-sm border-2 border-black transition-all ${sourceLang === l ? 'bg-black text-white' : 'bg-white text-black opacity-40'}`}
+              className={`px-4 py-2 rounded-xl font-black text-[10px] border-2 border-black transition-all ${sourceLang === l ? 'bg-black text-white' : 'bg-white text-black opacity-40'}`}
             >
-              {l === 'en' ? 'EN' : 'RW'}
+              {l === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
             </button>
           ))}
         </div>
@@ -114,9 +114,9 @@ export default function TranslatorPage() {
             <button
               key={l}
               onClick={() => setTargetLang(l)}
-              className={`px-3 py-1 rounded-xl font-black text-sm border-2 border-primary transition-all ${targetLang === l ? 'bg-primary text-white' : 'bg-white text-primary opacity-40'}`}
+              className={`px-4 py-2 rounded-xl font-black text-[10px] border-2 border-primary transition-all ${targetLang === l ? 'bg-primary text-white' : 'bg-white text-primary opacity-40'}`}
             >
-              {l === 'en' ? 'EN' : 'RW'}
+              {l === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
             </button>
           ))}
         </div>
