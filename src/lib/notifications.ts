@@ -39,4 +39,5 @@ export const addNotification = (notif: Omit<NotificationItem, 'id' | 'timeEn' | 
   
   // Dispatch a storage event so other tabs/components can update
   window.dispatchEvent(new Event('storage'));
+  window.dispatchEvent(new Event('humura-notification-added'));
 };

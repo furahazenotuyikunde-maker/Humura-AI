@@ -21,6 +21,7 @@ export const Shell: React.FC<ShellProps> = () => {
 
   // History state
   const [showHistory, setShowHistory] = useState(false);
+  const [shouldShake, setShouldShake] = useState(false);
   const [sessions, setSessions] = useState<any[]>(() => {
     const saved = localStorage.getItem('Humura_chat_sessions');
     if (saved) {
@@ -58,6 +59,17 @@ export const Shell: React.FC<ShellProps> = () => {
     // Listen for storage changes (when settings are updated in another tab or the same page)
     window.addEventListener('storage', applySettings);
     return () => window.removeEventListener('storage', applySettings);
+  }, []);
+
+  // Notification Shake Listener
+  useEffect(() => {
+    const triggerShake = () => {
+      setShouldShake(true);
+      setTimeout(() => setShouldShake(false), 2000);
+    };
+
+    window.addEventListener('humura-notification-added', triggerShake);
+    return () => window.removeEventListener('humura-notification-added', triggerShake);
   }, []);
 
   const handleSafetyExit = () => {
@@ -164,6 +176,14 @@ export const Shell: React.FC<ShellProps> = () => {
               Kinyarwanda
             </button>
           </div>
+
+          <button 
+            onClick={() => navigate('/notifications')}
+            className={`p-2 rounded-full bg-primary-50 text-primary-600 border border-primary-100 shadow-sm transition-all active:scale-95 ${shouldShake ? 'animate-shake-bell ring-2 ring-primary-200' : ''}`}
+            aria-label="Notifications"
+          >
+            <Bell size={20} />
+          </button>
         </div>
       </header>
 
@@ -301,7 +321,7 @@ export const Shell: React.FC<ShellProps> = () => {
                         }`
                       }
                     >
-                      <item.icon size={18} />
+                      <item.icon size={18} className={item.to === '/notifications' && shouldShake ? 'animate-shake-bell' : ''} />
                       {item.label}
                     </NavLink>
                   )

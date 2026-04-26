@@ -132,3 +132,20 @@ html.text-xl { font-size: 24px; }
   color: white;
   font-family: 'Outfit', sans-serif;
 }
+
+/* Bell Shake Animation */
+@keyframes bellShake {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  85% { transform: rotate(-5deg); }
+  100% { transform: rotate(0); }
+}
+
+.animate-shake-bell {
+  animation: bellShake 0.6s ease-in-out;
+  animation-iteration-count: 3; /* Shakes for ~1.8 seconds */
+}
