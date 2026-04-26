@@ -95,7 +95,31 @@
   animation: pulseRing 1.5s ease-out infinite;
 }
 
-/* Discreet mode weather overlay */
+/* High Contrast Mode */
+.high-contrast {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+}
+.high-contrast * {
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+.high-contrast button, .high-contrast a {
+  border: 2px solid #FFFFFF !important;
+}
+.high-contrast .bg-primary, .high-contrast .bg-primary-50 {
+  background-color: #000000 !important;
+  border: 2px solid #FFFFFF !important;
+}
+
+/* Text Scaling */
+html.text-sm { font-size: 14px; }
+html.text-md { font-size: 16px; }
+html.text-lg { font-size: 20px; }
+html.text-xl { font-size: 24px; }
+
 .discreet-overlay {
   position: fixed;
   inset: 0;

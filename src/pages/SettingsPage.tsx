@@ -1,332 +1,292 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Sun, Eye, Contrast, Shield, TriangleAlert, Info } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Settings, User, Languages, Bell, Eye, Type, Contrast, 
+  Mic, FileText, Shield, ChevronRight, Check, Info
+} from 'lucide-react';
+
+type TextSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface SettingsState {
-  simpleView: boolean;
+  screenReader: boolean;
+  textSize: TextSize;
   highContrast: boolean;
-  discreetMode: boolean;
+  voiceNav: boolean;
+  notifications: boolean;
 }
 
 export default function SettingsPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language || 'en';
-  const isRw = lang.startsWith('rw');
+  const navigate = useNavigate();
+  const isRw = i18n.language?.startsWith('rw');
 
-  const [settings, setSettings] = useState<SettingsState>({
-    simpleView: false,
-    highContrast: false,
-    discreetMode: false,
+  const [settings, setSettings] = useState<SettingsState>(() => {
+    const saved = localStorage.getItem('Humura_settings_v2');
+    return saved ? JSON.parse(saved) : {
+      screenReader: false,
+      textSize: 'md',
+      highContrast: false,
+      voiceNav: false,
+      notifications: true
+    };
   });
 
-  const [showDiscreet, setShowDiscreet] = useState(false);
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Load settings from localStorage
+  // Sync settings with UI classes
   useEffect(() => {
-    const stored = localStorage.getItem('Humura_settings');
-    if (stored) setSettings(JSON.parse(stored));
-  }, []);
+    localStorage.setItem('Humura_settings_v2', JSON.stringify(settings));
+    
+    // High Contrast
+    document.documentElement.classList.toggle('high-contrast', settings.highContrast);
+    
+    // Text Size
+    document.documentElement.classList.remove('text-sm', 'text-md', 'text-lg', 'text-xl');
+    document.documentElement.classList.add(`text-${settings.textSize}`);
+  }, [settings]);
 
-  const updateSetting = (key: keyof SettingsState, value: boolean) => {
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    localStorage.setItem('Humura_settings', JSON.stringify(updated));
-
-    if (key === 'simpleView') {
-      document.documentElement.style.fontSize = value ? '18px' : '';
-    }
-    if (key === 'highContrast') {
-      document.documentElement.classList.toggle('high-contrast', value);
-    }
-    if (key === 'discreetMode' && value) {
-      setShowDiscreet(true);
-    }
+  const toggle = (key: keyof SettingsState) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Triple-click to exit discreet mode
-  const handleTripleClick = () => {
-    clickCountRef.current += 1;
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = setTimeout(() => { clickCountRef.current = 0; }, 500);
-    if (clickCountRef.current >= 3) {
-      setShowDiscreet(false);
-      updateSetting('discreetMode', false);
-      clickCountRef.current = 0;
-    }
+  const setTextSize = (size: TextSize) => {
+    setSettings(prev => ({ ...prev, textSize: size }));
   };
 
   return (
-    <div className="space-y-5 pb-10">
-      {/* Discreet Mode Weather Overlay */}
-      <AnimatePresence>
-        {showDiscreet && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] discreet-overlay"
-            onClick={handleTripleClick}
-          >
-            <div className="text-center">
-              <div className="text-8xl mb-4">☀️</div>
-              <h1 className="text-5xl font-extrabold">28°C</h1>
-              <p className="text-2xl mt-2 opacity-80">Kigali, Rwanda</p>
-              <p className="text-xl mt-1 opacity-70">Mostly Sunny</p>
-              <div className="mt-8 grid grid-cols-4 gap-6 text-sm opacity-60">
-                {['Mon', 'Tue', 'Wed', 'Thu'].map((d, i) => (
-                  <div key={d} className="flex flex-col items-center gap-1">
-                    <span>{d}</span>
-                    <span className="text-2xl">{'☀️🌤️⛅🌦️'[i]}</span>
-                    <span>{24 + i}°</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-12 text-xs opacity-40">
-                {isRw ? 'Kanda inshuro 3 gusubira' : 'Triple-tap anywhere to exit'}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+    <div className="max-w-2xl mx-auto space-y-8 pb-20 px-4">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <Settings className="text-primary" size={28} />
-        <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
+      <header className="flex items-center gap-3 pt-4">
+        <Settings className="text-primary" size={32} />
+        <h1 className="text-3xl font-black text-primary-900 tracking-tight">
           {isRw ? 'Igenamiterere' : 'Settings'}
         </h1>
-      </div>
+      </header>
 
-      {/* Accessibility Settings */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {isRw ? 'Ubugari bwo Gukoresha' : 'Accessibility'}
-        </h2>
-
-        {/* Simple View */}
-        <div className="glass-card rounded-2xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center">
-              <Sun size={18} className="text-primary" />
+      {/* 1. Profile Section */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <User size={18} className="text-neutral-400" />
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+            {isRw ? 'Umwirondoro' : 'Profile'}
+          </h2>
+        </div>
+        <div className="bg-white rounded-3xl p-5 border border-primary-50 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary text-xl font-bold">
+              H
             </div>
             <div>
-              <p className="font-semibold text-primary-900 text-sm">
-                {isRw ? 'Igitekerezo Cyoroshye' : 'Simple View'}
-              </p>
-              <p className="text-xs text-neutral-400">
-                {isRw ? 'Ibinyandiko binini na buto' : 'Larger text and buttons'}
-              </p>
+              <p className="font-bold text-primary-900">Humura User</p>
+              <p className="text-xs text-neutral-400">{isRw ? 'Nta konti ikenewe' : 'No account needed'}</p>
             </div>
           </div>
-          <button
-            onClick={() => updateSetting('simpleView', !settings.simpleView)}
-            className={`w-12 h-6 rounded-full transition-colors relative ${settings.simpleView ? 'bg-primary' : 'bg-neutral-200'}`}
-            aria-label="Toggle simple view"
-            role="switch"
-            aria-checked={settings.simpleView}
-          >
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.simpleView ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          <button className="p-2 text-primary hover:bg-primary-50 rounded-xl transition-colors">
+            <ChevronRight size={20} />
           </button>
         </div>
+      </section>
 
-        {/* High Contrast */}
-        <div className="glass-card rounded-2xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center">
-              <Contrast size={18} className="text-primary" />
-            </div>
-            <div>
-              <p className="font-semibold text-primary-900 text-sm">
-                {isRw ? 'Ibara Rikomeye' : 'High Contrast Mode'}
-              </p>
-              <p className="text-xs text-neutral-400">
-                {isRw ? 'WCAG 2.1 AA gukurikira' : 'WCAG 2.1 AA compliant colors'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => updateSetting('highContrast', !settings.highContrast)}
-            className={`w-12 h-6 rounded-full transition-colors relative ${settings.highContrast ? 'bg-primary' : 'bg-neutral-200'}`}
-            aria-label="Toggle high contrast"
-            role="switch"
-            aria-checked={settings.highContrast}
-          >
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.highContrast ? 'translate-x-6' : 'translate-x-0.5'}`} />
-          </button>
+      {/* 2. Language Section */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <Languages size={18} className="text-neutral-400" />
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+            {isRw ? 'Ururimi' : 'Language'}
+          </h2>
         </div>
-
-        {/* Discreet Mode */}
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Eye size={18} className="text-amber-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-primary-900 text-sm">
-                  {isRw ? 'Uburyo bwo Kwihisha' : 'Discreet Mode'}
-                </p>
-                <p className="text-xs text-neutral-400">
-                  {isRw ? 'Hisha gahunda nk\'igihe cy\'ikirere' : 'Disguise app as a weather app'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => updateSetting('discreetMode', !settings.discreetMode)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${settings.discreetMode ? 'bg-amber-500' : 'bg-neutral-200'}`}
-              aria-label="Toggle discreet mode"
-              role="switch"
-              aria-checked={settings.discreetMode}
-            >
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.discreetMode ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-          <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-xl ml-12">
-            ☀️ {isRw ? 'Porogaramu izagaragara nk\'"28°C Kigali, Mostly Sunny". Kanda inshuro 3 cyangwa kande buto ruhishe kugira ngo usubire.' : 'App appears as "28°C Kigali, Mostly Sunny". Triple-tap anywhere or use the hidden button to return.'}
-          </p>
-        </div>
-      </div>
-
-      {/* Language */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {isRw ? 'Ururimi' : 'Language'}
-        </h2>
-        <div className="glass-card rounded-2xl p-4 flex gap-3">
-          {['en', 'rw'].map(l => (
-            <button
-              key={l}
-              onClick={() => i18n.changeLanguage(l)}
-              className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all ${
-                i18n.language?.startsWith(l)
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                  : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
-              }`}
-            >
-              {l === 'en' ? 'English' : 'Kinyarwanda'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Emergency contacts */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {isRw ? 'Nimero z\'Ihutirwa' : 'Emergency Numbers'}
-        </h2>
-        <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="bg-white rounded-3xl overflow-hidden border border-primary-50 shadow-sm">
           {[
-            { name: 'Rwanda Crisis Hotline', number: '114', color: 'text-red-600' },
-            { name: 'Healthy Minds Rwanda', number: '+250 790 003 002', color: 'text-rose-600' },
-            { name: 'Icyizere Center', number: '+250 783 375 550', color: 'text-purple-600' },
-            { name: 'Police / Ambulance', number: '112', color: 'text-blue-600' },
-          ].map(c => (
-            <div key={c.number} className="flex items-center justify-between">
-              <span className="text-sm font-medium text-primary-800">{c.name}</span>
-              <a href={`tel:${c.number}`} className={`font-black text-sm ${c.color}`}>{c.number}</a>
-            </div>
+            { id: 'en', label: 'English', sub: 'Default' },
+            { id: 'rw', label: 'Kinyarwanda', sub: 'Ikinyarwanda' }
+          ].map((lang) => (
+            <button
+              key={lang.id}
+              onClick={() => i18n.changeLanguage(lang.id)}
+              className="w-full flex items-center justify-between p-5 hover:bg-primary-50 transition-colors border-b border-primary-50 last:border-0"
+              aria-label={`Change language to ${lang.label}`}
+            >
+              <div className="text-left">
+                <p className="font-bold text-primary-900">{lang.label}</p>
+                <p className="text-xs text-neutral-400">{lang.sub}</p>
+              </div>
+              {i18n.language?.startsWith(lang.id) && (
+                <Check size={20} className="text-primary" />
+              )}
+            </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Data Management */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {isRw ? 'Gucunga Amakuru' : 'Data Management'}
-        </h2>
-        <div className="glass-card rounded-2xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
-                <Shield size={18} className="text-red-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-primary-900 text-sm">
-                  {isRw ? 'Siba ibyabitswe' : 'Clear Chat History'}
-                </p>
-                <p className="text-xs text-neutral-400">
-                  {isRw ? 'Siba amateka y\'ibiganiro byose' : 'Delete all your chat sessions permanently'}
-                </p>
-              </div>
+      {/* 3. Notifications Section */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <Bell size={18} className="text-neutral-400" />
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+            {isRw ? 'Imenyesha' : 'Notifications'}
+          </h2>
+        </div>
+        <div className="bg-white rounded-3xl p-5 border border-primary-50 shadow-sm flex items-center justify-between min-h-[72px]">
+          <div>
+            <p className="font-bold text-primary-900">{isRw ? 'Imenyesha ry\'izahabu' : 'Push Notifications'}</p>
+            <p className="text-xs text-neutral-400">{isRw ? 'Amakuru n\'ubutumwa bushya' : 'Stay updated with new support'}</p>
+          </div>
+          <button
+            onClick={() => toggle('notifications')}
+            className={`w-14 h-8 rounded-full transition-all relative ${settings.notifications ? 'bg-primary shadow-inner' : 'bg-neutral-200'}`}
+            aria-checked={settings.notifications}
+            role="switch"
+            aria-label="Toggle notifications"
+          >
+            <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${settings.notifications ? 'translate-x-7' : 'translate-x-1'}`} />
+          </button>
+        </div>
+      </section>
+
+      {/* 4. Accessibility Section - CORE */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <Eye size={18} className="text-primary" />
+          <h2 className="text-sm font-black uppercase tracking-widest text-primary-900">
+            {isRw ? 'Ubugari bwo Gukoresha' : 'Accessibility'}
+          </h2>
+        </div>
+        
+        <div className="bg-white rounded-[2rem] border-2 border-primary-100 overflow-hidden shadow-xl">
+          {/* Screen Reader */}
+          <div className="p-5 flex items-center justify-between border-b border-primary-50 min-h-[80px]">
+            <div className="flex-1 pr-4">
+              <p className="font-black text-primary-900">{isRw ? 'Soma Ibiherereye' : 'Screen Reader'}</p>
+              <p className="text-xs text-neutral-500 font-medium">{isRw ? 'Byahujwe na TalkBack na VoiceOver' : 'Optimized for TalkBack and VoiceOver'}</p>
             </div>
             <button
-              onClick={() => {
-                if (window.confirm(isRw ? 'Ushaka gusiba amateka yose?' : 'Are you sure you want to clear all history?')) {
-                  localStorage.removeItem('Humura_chat_sessions');
-                  alert(isRw ? 'Mateka yasibwe!' : 'History cleared!');
-                  window.location.reload();
-                }
-              }}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
+              onClick={() => toggle('screenReader')}
+              className={`w-14 h-8 rounded-full transition-all relative ${settings.screenReader ? 'bg-primary shadow-inner' : 'bg-neutral-200'}`}
+              aria-checked={settings.screenReader}
+              role="switch"
+              aria-label="Toggle screen reader optimization"
             >
-              {isRw ? 'Siba' : 'Clear All'}
+              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${settings.screenReader ? 'translate-x-7' : 'translate-x-1'}`} />
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Preferences */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400">
-          {isRw ? 'Ibyo Ukunda' : 'Preferences'}
-        </h2>
-        <div className="glass-card rounded-2xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center">
-                <Sun size={18} className="text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-primary-900 text-sm">
-                  {isRw ? 'Amajwi' : 'Chat Sounds'}
-                </p>
-                <p className="text-xs text-neutral-400">
-                  {isRw ? 'Gukoresha amajwi mu biganiro' : 'Play sound effects during chat'}
-                </p>
-              </div>
+          {/* Text Size */}
+          <div className="p-5 border-b border-primary-50">
+            <div className="mb-4">
+              <p className="font-black text-primary-900">{isRw ? 'Ingano y\'Inyandiko' : 'Text Size'}</p>
+              <p className="text-xs text-neutral-500 font-medium">{isRw ? 'Hindura ingano y\'inyandiko mu porogaramu yose' : 'Change applies across the entire app'}</p>
+            </div>
+            <div className="flex bg-primary-50 p-1 rounded-2xl">
+              {(['sm', 'md', 'lg', 'xl'] as TextSize[]).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setTextSize(size)}
+                  className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${
+                    settings.textSize === size 
+                      ? 'bg-white text-primary shadow-md' 
+                      : 'text-primary-400 hover:text-primary-600'
+                  }`}
+                  aria-label={`Set text size to ${size === 'sm' ? 'Small' : size === 'md' ? 'Medium' : size === 'lg' ? 'Large' : 'Extra Large'}`}
+                >
+                  {size.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* High Contrast Mode */}
+          <div className="p-5 flex items-center justify-between border-b border-primary-50 min-h-[80px]">
+            <div className="flex-1 pr-4">
+              <p className="font-black text-primary-900">{isRw ? 'Ibara Rikomeye' : 'High Contrast Mode'}</p>
+              <p className="text-xs text-neutral-500 font-medium">{isRw ? 'Koresha umukara n\'umweru gusa' : 'Switches the full app UI to black & white'}</p>
             </div>
             <button
-              onClick={() => updateSetting('sounds' as any, !((settings as any).sounds))}
-              className={`w-12 h-6 rounded-full transition-colors relative ${(settings as any).sounds ? 'bg-primary' : 'bg-neutral-200'}`}
+              onClick={() => toggle('highContrast')}
+              className={`w-14 h-8 rounded-full transition-all relative ${settings.highContrast ? 'bg-primary shadow-inner' : 'bg-neutral-200'}`}
+              aria-checked={settings.highContrast}
+              role="switch"
+              aria-label="Toggle high contrast mode"
             >
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${(settings as any).sounds ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${settings.highContrast ? 'translate-x-7' : 'translate-x-1'}`} />
             </button>
           </div>
+
+          {/* Voice Navigation */}
+          <div className="p-5 flex items-center justify-between border-b border-primary-50 min-h-[80px]">
+            <div className="flex-1 pr-4">
+              <p className="font-black text-primary-900">{isRw ? 'Kuyobora n\'Ijwi' : 'Voice Navigation'}</p>
+              <p className="text-xs text-neutral-500 font-medium">{isRw ? 'Koresha ijwi mu gukoresha porogaramu' : 'Navigate the app using voice commands'}</p>
+            </div>
+            <button
+              onClick={() => toggle('voiceNav')}
+              className={`w-14 h-8 rounded-full transition-all relative ${settings.voiceNav ? 'bg-primary shadow-inner' : 'bg-neutral-200'}`}
+              aria-checked={settings.voiceNav}
+              role="switch"
+              aria-label="Toggle voice navigation"
+            >
+              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${settings.voiceNav ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
+          {/* Braille Shortcut */}
+          <button
+            onClick={() => navigate('/braille')}
+            className="w-full p-5 flex items-center justify-between hover:bg-primary-50 transition-colors group"
+            aria-label="Go to Braille Document Generator"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors shadow-inner">
+                <FileText size={24} />
+              </div>
+              <div className="text-left">
+                <p className="font-black text-primary-900">{isRw ? 'Inyandiko z’Impumyi' : 'Braille Document Generator'}</p>
+                <p className="text-xs text-neutral-500 font-medium">{isRw ? 'Hindura inyandiko mu buhumyi' : 'Convert and print Grade 1 Braille'}</p>
+              </div>
+            </div>
+            <ChevronRight size={24} className="text-neutral-300 group-hover:text-primary transition-colors" />
+          </button>
         </div>
-      </div>
+      </section>
 
-      {/* Quick Exit */}
-      <div className="pt-4">
-        <h2 className="font-bold text-primary-900 text-sm uppercase tracking-wide text-neutral-400 mb-3">
-          {isRw ? 'Gusohoka mu mutekano' : 'Privacy & Safety'}
-        </h2>
-        <a
-          href="https://google.com"
-          className="flex items-center justify-center gap-3 w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
-          aria-label="Quick exit to Google"
-        >
-          <Shield size={20} />
-          {isRw ? 'Sohoka Vuba — Jya kuri Google' : 'Quick Exit — Go to Google'}
-        </a>
-        <p className="text-xs text-neutral-400 text-center mt-3 leading-relaxed px-4">
-          {isRw 
-            ? 'Kanda hano kugira ngo uhite usohoka muri porogaramu maze ufungure Google. Ibi bituma nta muntu ubona ko wakoresheje uru rubuga.' 
-            : 'Instantly leaves the app and opens Google. This helps if you need to hide your activity quickly for your safety.'}
-        </p>
-      </div>
+      {/* 5. Privacy & Security */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <Shield size={18} className="text-neutral-400" />
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500">
+            {isRw ? 'Umutekano' : 'Privacy & Security'}
+          </h2>
+        </div>
+        <div className="bg-white rounded-3xl overflow-hidden border border-primary-50 shadow-sm">
+          <button
+            onClick={() => {
+              if (window.confirm(isRw ? 'Ushaka gusiba amateka yose?' : 'Are you sure you want to clear all history?')) {
+                localStorage.removeItem('Humura_chat_sessions');
+                alert(isRw ? 'Mateka yasibwe!' : 'History cleared!');
+                window.location.reload();
+              }
+            }}
+            className="w-full flex items-center justify-between p-5 hover:bg-red-50 transition-colors text-left"
+          >
+            <div>
+              <p className="font-bold text-red-600">{isRw ? 'Siba ibyabitswe' : 'Clear Chat History'}</p>
+              <p className="text-xs text-neutral-400">{isRw ? 'Siba amateka y\'ibiganiro byose' : 'Permanently delete all sessions'}</p>
+            </div>
+            <Shield size={20} className="text-red-200" />
+          </button>
+        </div>
+      </section>
 
-      {/* App info */}
-      <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-2xl">
-        <Info size={16} className="text-primary flex-shrink-0 mt-0.5" />
+      {/* Offline info */}
+      <div className="flex items-start gap-4 p-5 bg-primary-50 rounded-[2rem] border border-primary-100 shadow-inner">
+        <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+          <Info size={20} />
+        </div>
         <div>
-          <p className="text-xs font-semibold text-primary-900">Humura AI v1.0</p>
-          <p className="text-xs text-primary-600 mt-0.5">
+          <p className="text-xs font-black text-primary-900 uppercase tracking-widest mb-1">Humura AI v2.0</p>
+          <p className="text-[11px] text-primary-700 leading-relaxed font-medium">
             {isRw
-              ? 'Gufasha ubuzima bwo mu mutwe mu Rwanda · Nta makuru y\'umwirondoro abikwa nta mvano yawe'
-              : 'Mental wellness support for Rwanda · No personal data stored without your consent'}
+              ? 'Igenamiterere ryawe ribikwa kuri iyi foni gusa. Nta murandasi ukenewe kandi nta makuru y\'umwirondoro ajya hanze.'
+              : 'All settings work offline and are stored locally. No personal data is ever collected or transmitted.'}
           </p>
         </div>
       </div>
