@@ -13,6 +13,7 @@ import ProfessionalsPage from './pages/ProfessionalsPage';
 import SettingsPage from './pages/SettingsPage';
 import BrailleGeneratorPage from './pages/BrailleGeneratorPage';
 import NotificationsPage from './pages/NotificationsPage';
+import TranslatorPage from './pages/TranslatorPage';
 
 const App: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const App: React.FC = () => {
           <Route path="sign-language" element={<SignLanguagePage />} />
           <Route path="emergency" element={<EmergencyPage />} />
           <Route path="braille" element={<BrailleGeneratorPage />} />
+          <Route path="translator" element={<TranslatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

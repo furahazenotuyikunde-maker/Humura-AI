@@ -6,6 +6,8 @@ import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader
 
 import { supabase } from '../lib/supabaseClient';
 import { addNotification } from '../lib/notifications';
+import { translateText } from '../lib/translate';
+import { Languages } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────
 // TYPES
@@ -14,6 +16,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  translatedContent?: string;
   timestamp: Date;
 }
 
@@ -198,6 +201,21 @@ export default function AIChatPage() {
     recognition.start();
   };
 
+  const handleTranslate = async (messageId: string, text: string) => {
+    const target = isRw ? 'en' : 'rw';
+    const translated = await translateText(text, target);
+    
+    setSessions(prev => prev.map(s => {
+      if (s.id === currentSessionId) {
+        return {
+          ...s,
+          messages: s.messages.map(m => m.id === messageId ? { ...m, translatedContent: translated } : m)
+        };
+      }
+      return s;
+    }));
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-60px)] relative bg-[#F0F2F5]">
       {/* Header bar */}
@@ -259,9 +277,26 @@ export default function AIChatPage() {
                     : 'bg-white text-primary-900 rounded-tl-none border border-neutral-100'
                 }`}
               >
-                {m.content}
-                <div className={`text-[10px] mt-1.5 text-right opacity-60`}>
-                  {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {m.translatedContent ? (
+                  <div className="space-y-2">
+                    <p className="opacity-50 text-xs italic line-through">{m.content}</p>
+                    <p className="font-bold">{m.translatedContent}</p>
+                  </div>
+                ) : (
+                  m.content
+                )}
+                
+                <div className="flex items-center justify-between mt-1.5 border-t border-black/5 pt-1">
+                  <button 
+                    onClick={() => handleTranslate(m.id, m.content)}
+                    className="text-[10px] font-bold opacity-60 hover:opacity-100 flex items-center gap-1 uppercase tracking-wider"
+                  >
+                    <Languages size={10} />
+                    {isRw ? 'Translate to EN' : 'Semura mu Kinyarwanda'}
+                  </button>
+                  <div className={`text-[10px] opacity-60`}>
+                    {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
                 {/* Tail for bubbles */}
                 <div className={`absolute top-0 w-2 h-2 ${

@@ -128,6 +128,7 @@ export const Shell: React.FC<ShellProps> = () => {
         { to: '/professionals', icon: User, label: t('nav.professionals') },
         { to: '/sign-language', icon: HandMetal, label: t('nav.sign') },
         { to: '/braille', icon: Type, label: t('nav.braille') },
+        { to: '/translator', icon: Languages, label: isRw ? 'Semura' : 'Translator' },
       ],
     },
     {
