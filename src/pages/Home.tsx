@@ -66,7 +66,8 @@ export default function Home() {
     { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'hura ni inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "hura nabaganga b’inzobere ku buzima bwo mu mutwe" } },
     { path: '/community', icon: Users, en: 'Community Circles', rw: 'urubuga rwo kugirana inama', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
     { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'impinduka', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana impinduka ku buzimo bwawe bwo mu mutwe buri cyumweru.' } },
-    { path: '/braille', icon: Type, en: 'Braille Generator', rw: 'Inyandiko z\'abafite ubumuga bwo kutabona', color: 'bg-indigo-600', desc: { en: 'Convert text to Braille PDF', rw: 'Hindura inyandiko mu buryo bw\'abafite ubumuga bwo kutabona' } },
+    { path: '/braille', icon: Type, en: 'Braille Translator', rw: 'Inyandiko z\'abafite ubumuga bwo kutabona', color: 'bg-indigo-600', desc: { en: 'Convert text to UEB Braille PDF', rw: 'Hindura inyandiko mu buryo bw\'abafite ubumuga bwo kutabona' } },
+    { path: '/translator', icon: Languages, en: 'Language Translator', rw: 'Umu-semuzi', color: 'bg-sky-600', desc: { en: 'Translate between EN & RW', rw: 'Hindura inyandiko mu Kinyarwanda cyangwa Icyongereza' } },
   ];
 
 
