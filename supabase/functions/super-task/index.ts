@@ -90,8 +90,8 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               reply: isRw 
-                ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
-                : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support." 
+                ? "Umuburo: Umubare w'ubutumwa wemewe uyu munsi wageze ku mupaka. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
+                : "Quota reached: The AI service has reached its temporary limit. Please try again in 2 hours or call 114 for immediate support." 
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
