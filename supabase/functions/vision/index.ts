@@ -13,21 +13,33 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Read request early for language
+  let body: any = {}
+  try {
+    body = await req.json()
+  } catch (e) {
+    console.warn("Could not parse request JSON")
+  }
+
+  const { imageBase64, mimeType, prompt, apiKey: bodyApiKey, lang } = body
+  const isRw = lang?.startsWith('rw')
+
   // 1. Check Rate Limit (Global)
   const { allowed, count } = await checkRateLimit()
   if (!allowed) {
     console.warn(`Rate limit exceeded: ${count} requests in the last minute.`)
     return new Response(
       JSON.stringify({ 
-        error: "Rate limit exceeded. The system is limited to 20 requests per minute.",
-        reply: "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support."
+        error: "Rate limit exceeded.",
+        reply: isRw 
+          ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support."
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
     )
   }
 
   try {
-    const { imageBase64, mimeType, prompt, apiKey: bodyApiKey } = await req.json()
     const apiKey = bodyApiKey || Deno.env.get("GEMINI_API_KEY")
 
     if (!apiKey) {

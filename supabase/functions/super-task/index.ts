@@ -13,26 +13,34 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Read request early for language and API key
+  let body: any = {}
+  try {
+    body = await req.json()
+  } catch (e) {
+    console.warn("Could not parse request JSON")
+  }
+
+  const { userMessage, history, lang, apiKey: bodyApiKey } = body
+  const isRw = lang?.startsWith('rw')
+
   // 1. Check Rate Limit (Global)
   const { allowed, count } = await checkRateLimit()
   if (!allowed) {
     console.warn(`Rate limit exceeded: ${count} requests in the last minute.`)
     return new Response(
       JSON.stringify({ 
-        error: "Rate limit exceeded. The system is limited to 20 requests per minute.",
+        error: "Rate limit exceeded.",
         reply: isRw 
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
-          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support."
+          ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support."
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
     )
   }
 
   try {
-    const { userMessage, history, lang, apiKey: bodyApiKey } = await req.json()
     const apiKey = bodyApiKey || Deno.env.get("GEMINI_API_KEY")
-    
-    const isRw = lang?.startsWith('rw')
     const languageName = isRw ? 'Kinyarwanda' : 'English'
 
     if (!apiKey) {
@@ -90,8 +98,8 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               reply: isRw 
-                ? "Umuburo: Umubare w'ubutumwa wemewe uyu munsi wageze ku mupaka. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
-                : "Quota reached: The AI service has reached its temporary limit. Please try again in 2 hours or call 114 for immediate support." 
+                ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
+                : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support." 
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
