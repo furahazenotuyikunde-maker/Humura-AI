@@ -90,35 +90,24 @@ export default function TranslatorPage() {
 
       {/* Language Selector */}
       <div className="flex items-center justify-center gap-4 bg-white p-3 border-2 border-black rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <div className="flex-1 flex justify-center gap-2">
-          {(['en', 'rw'] as const).map(l => (
-            <button
-              key={l}
-              onClick={() => setSourceLang(l)}
-              className={`px-4 py-2 rounded-xl font-black text-[10px] border-2 border-black transition-all ${sourceLang === l ? 'bg-black text-white' : 'bg-white text-black opacity-40'}`}
-            >
-              {l === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
-            </button>
-          ))}
+        <div className="flex-1 flex justify-center">
+          <div className="px-6 py-2 rounded-xl font-black text-xs border-2 border-black bg-black text-white shadow-sm">
+            {sourceLang === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
+          </div>
         </div>
         
         <button 
           onClick={swapLanguages}
-          className="p-3 bg-black text-white rounded-full hover:scale-110 transition-transform active:rotate-180 duration-500"
+          className="p-3 bg-black text-white rounded-full hover:scale-110 transition-transform active:rotate-180 duration-500 shadow-lg"
+          title="Swap Languages"
         >
           <ArrowRightLeft size={20} />
         </button>
 
-        <div className="flex-1 flex justify-center gap-2">
-          {(['en', 'rw'] as const).map(l => (
-            <button
-              key={l}
-              onClick={() => setTargetLang(l)}
-              className={`px-4 py-2 rounded-xl font-black text-[10px] border-2 border-primary transition-all ${targetLang === l ? 'bg-primary text-white' : 'bg-white text-primary opacity-40'}`}
-            >
-              {l === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
-            </button>
-          ))}
+        <div className="flex-1 flex justify-center">
+          <div className="px-6 py-2 rounded-xl font-black text-xs border-2 border-primary bg-primary text-white shadow-sm">
+            {targetLang === 'en' ? 'ENGLISH' : 'KINYARWANDA'}
+          </div>
         </div>
       </div>
 

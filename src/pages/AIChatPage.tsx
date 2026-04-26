@@ -308,7 +308,7 @@ export default function AIChatPage() {
                     className="text-[10px] font-bold opacity-60 hover:opacity-100 flex items-center gap-1 uppercase tracking-wider"
                   >
                     <Languages size={10} />
-                    {isRw ? 'SURA TRANSLATOR (EN)' : 'SEMURA MU TRANSLATOR (RW)'}
+                    {isRw ? 'TRANSLATOR (EN)' : 'TRANSLATOR (RW)'}
                   </button>
                   <div className={`text-[10px] opacity-60`}>
                     {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
