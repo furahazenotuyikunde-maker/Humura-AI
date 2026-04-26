@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
-import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader2, MapPin } from 'lucide-react';
 
 import { supabase } from '../lib/supabaseClient';
 
@@ -28,6 +28,7 @@ export default function AIChatPage() {
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
 
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const sessionUrlId = searchParams.get('session');
 
@@ -273,11 +274,18 @@ export default function AIChatPage() {
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-3">
             <div className="bg-red-50 text-red-700 px-4 py-2 rounded-2xl text-xs flex items-center gap-2 border border-red-100 shadow-sm animate-shake">
               <AlertTriangle size={14} />
               {errorMessage}
             </div>
+            <button 
+              onClick={() => navigate('/centers')}
+              className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary-200 rounded-2xl text-xs font-black shadow-sm hover:bg-primary-50 transition-all active:scale-95"
+            >
+              <MapPin size={14} />
+              {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
+            </button>
           </div>
         )}
 

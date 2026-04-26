@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 // COMPONENT
 // ──────────────────────────────────────────────────────────────
 export default function SignLanguagePage() {
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
@@ -571,6 +573,18 @@ export default function SignLanguagePage() {
               <p className="text-sm text-primary-800 leading-relaxed font-medium">
                 {aiResponse}
               </p>
+            )}
+            
+            {tierUsed === 3 && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => navigate('/centers')}
+                className="mt-4 w-full flex items-center justify-center gap-2 py-3 bg-white text-primary border border-primary-200 rounded-xl font-bold text-xs shadow-sm hover:bg-primary-50 transition-all active:scale-95"
+              >
+                <MapPin size={14} />
+                {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
+              </motion.button>
             )}
             
             <div className="flex gap-2 mt-5">

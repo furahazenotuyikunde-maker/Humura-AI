@@ -17,6 +17,9 @@ const resources = {
       "nav.braille": "Braille Generator",
       "nav.settings": "Settings",
       
+      "common.call_directory": "Call Support Directory",
+      "common.view_directory": "View Centers Directory",
+      
       "home.greeting": "Hello, how are you feeling today?",
       "home.greeting.sub": "Humura AI is here to support you.",
       
@@ -46,6 +49,8 @@ const resources = {
       "nav.emergency": "ubufasha bw’ihutirwa",
       "nav.braille": "Inyandiko z’Impumyi",
       "nav.settings": "Igenamiterere",
+      "common.call_directory": "Hamagara Indangururamuntu",
+      "common.view_directory": "Reba Amavuriro",
       "history.title": "ibiganiro twagiranye",
 
       

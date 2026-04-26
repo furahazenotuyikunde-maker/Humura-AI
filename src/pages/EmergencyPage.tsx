@@ -238,27 +238,45 @@ export default function EmergencyPage() {
         </div>
       </div>
 
-      {/* Nearby help */}
-      <div className="glass-card rounded-2xl p-4 flex items-start gap-3">
-        <MapPin size={20} className="text-rose-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="font-semibold text-primary-900 text-sm">
-            {isRw ? 'Ibitaro bya Hafi Yawe' : 'Nearest Hospital'}
+      {/* Full Directory CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="bg-primary-900 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-800 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-primary-700 transition-colors" />
+        
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+              <MapPin size={24} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">
+                {isRw ? 'Indangururamuntu y\'Ubufasha' : 'Full Support Directory'}
+              </h2>
+              <p className="text-white/60 text-xs">
+                {isRw ? 'Ibigo 15+ byemejwe mu Rwanda' : '15+ verified centers across Rwanda'}
+              </p>
+            </div>
+          </div>
+          
+          <p className="text-sm text-white/80 leading-relaxed">
+            {isRw 
+              ? 'Reba amashamba, ibitaro, n\'inzobere zishobora kugufasha mu gace utuyemo. Hamagara ikigo icyo ari cyo cyose ako kanya.'
+              : 'Browse specialized clinics, hospitals, and support groups in every district. Call any center directly from our directory.'}
           </p>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            {isRw
-              ? 'Jenda mu gice cy\'ihutirwa cy\'ibitaro bya hafi yawe buri gihe'
-              : 'Walk into any hospital emergency room — they must help you regardless of payment.'}
-          </p>
+          
           <Link
             to="/centers"
-            className="inline-flex items-center gap-1.5 mt-2 text-rose-500 font-bold text-xs hover:underline"
+            className="flex items-center justify-center gap-2 w-full py-4 bg-white text-primary-900 rounded-2xl font-black text-sm hover:bg-primary-50 transition-colors shadow-lg active:scale-95"
           >
-            <MapPin size={13} />
-            {isRw ? 'Reba amavuriro' : 'Find centers'}
+            <Phone size={16} />
+            {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

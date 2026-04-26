@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart2, Flame, Smile, Calendar, BookOpen, Brain, PlusCircle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart2, Flame, Smile, Calendar, BookOpen, Brain, PlusCircle, Loader2, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 // ──────────────────────────────────────────────────────────────
@@ -114,6 +115,7 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
 // MAIN PROGRESS PAGE
 // ──────────────────────────────────────────────────────────────
 export default function ProgressPage() {
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
@@ -577,6 +579,18 @@ export default function ProgressPage() {
                   className="p-4 bg-primary-50 rounded-2xl border border-primary-100"
                 >
                   <p className="text-sm text-primary-900 leading-relaxed">{insightText}</p>
+                  
+                  {tierUsed === 3 && (
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      onClick={() => navigate('/centers')}
+                      className="mt-4 w-full flex items-center justify-center gap-2 py-3 bg-white text-primary border border-primary-200 rounded-xl font-bold text-xs shadow-sm hover:bg-primary-50 transition-all active:scale-95"
+                    >
+                      <MapPin size={14} />
+                      {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
+                    </motion.button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
