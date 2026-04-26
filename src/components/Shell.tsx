@@ -264,6 +264,10 @@ export const Shell: React.FC<ShellProps> = () => {
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
                     Multi-turn AI Memory
                   </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    LibreTranslate API
+                  </li>
                 </ul>
               </div>
 
@@ -285,12 +289,6 @@ export const Shell: React.FC<ShellProps> = () => {
                     </div>
                     tuyikundefzeno@gmail.com
                   </a>
-                  <div className="flex items-center gap-3 text-red-600">
-                    <div className="p-2 bg-red-50 rounded-xl animate-pulse">
-                      <AlertTriangle size={14} />
-                    </div>
-                    {isRw ? "Ubutabazi: 114 (RBC)" : "Emergency: 114 (RBC)"}
-                  </div>
                 </div>
               </div>
             </div>
