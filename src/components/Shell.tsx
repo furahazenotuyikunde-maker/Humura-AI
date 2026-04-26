@@ -105,6 +105,7 @@ export const Shell: React.FC<ShellProps> = () => {
         { to: '#', icon: RotateCcw, label: isRw ? 'ibiganiro twagiranye' : 'Chat History', onClick: () => setShowHistory(true) },
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
+        { to: '/notifications', icon: Bell, label: isRw ? 'Imenyesha' : 'Notifications' },
       ],
     },
     {
