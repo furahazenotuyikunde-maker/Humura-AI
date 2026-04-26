@@ -156,8 +156,8 @@ export const Shell: React.FC<ShellProps> = () => {
               </div>
               <p className="text-sm text-neutral-500 leading-relaxed">
                 {isRw 
-                  ? "Humura AI ni urubuga rw'ikoranabuhanga rurimo indimi ebyiri rugamije gutanga ubufasha mu buzima bwo mu mutwe, rwifashishije ikoranabuhanga rya AI, amarenga, n'uburyo bwo gufasha mu bibazo byihutirwa mu muryango nyarwanda."
-                  : "Humura AI is a bilingual mental health platform providing empathetic AI therapy, sign language support, and crisis intervention for the Rwandan community."}
+                  ? "Humura AI ni urubuga rw'ikoranabuhanga rurimo indimi ebyiri rugamije gutanga ubufasha mu buzima bwo mu mutwe kuri bose nta n’umwe uhejwe. Twibanda cyane ku gufasha abafite ubumuga: inzobere zishobora kwifashisha 'Braille Generator' mu gutanga inama ku bafite ubumuga bwo kutabona, hakaba n'uburyo bw'amarenga (Sign Language) n'ubutabazi bwihutirwa mu muryango nyarwanda."
+                  : "Humura AI is a bilingual mental health platform dedicated to inclusive and accessible support for everyone. We empower mental health professionals to provide guidance to visually impaired individuals through our Braille Generator, offer integrated Sign Language support for the deaf community, and provide empathetic AI therapy and crisis intervention for the entire Rwandan community."}
               </p>
             </div>
 
