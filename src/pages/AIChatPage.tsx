@@ -88,7 +88,7 @@ export default function AIChatPage() {
   const startNewChat = () => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
-      title: isRw ? 'Ikiganiro Gishya' : 'New Chat',
+      title: 'Humura AI Chat',
       messages: [],
       lastUpdated: new Date(),
     };
@@ -107,7 +107,7 @@ export default function AIChatPage() {
         // Create new session with the ID from URL
         const newSession: ChatSession = {
           id: sessionUrlId,
-          title: isRw ? 'Ikiganiro Gishya' : 'New Chat',
+          title: 'Humura AI Chat',
           messages: [],
           lastUpdated: new Date(),
         };
@@ -149,7 +149,7 @@ export default function AIChatPage() {
       // TIER 1: CALL SUPABASE EDGE FUNCTION 'super-task'
       console.log("Humura AI: Attempting Edge Function 'super-task'...");
       const { data, error } = await supabase.functions.invoke('super-task', {
-        body: { 
+        body: {
           userMessage: userText,
           history: messages.map(m => ({ role: m.role, content: m.content })),
           lang: lang,
@@ -158,8 +158,8 @@ export default function AIChatPage() {
       });
 
       if (error && (error as any).status === 429) {
-        const rateLimitMessage = isRw 
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+        const rateLimitMessage = isRw
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60."
           : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.";
         setErrorMessage(rateLimitMessage);
         return;
@@ -201,10 +201,10 @@ export default function AIChatPage() {
 
     } catch (err: any) {
       console.error("❌ Chat failed:", err);
-      const friendlyError = isRw 
+      const friendlyError = isRw
         ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
         : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support.";
-      
+
       setErrorMessage(friendlyError);
     } finally {
       setIsLoading(false);
@@ -228,7 +228,7 @@ export default function AIChatPage() {
   const handleTranslate = async (messageId: string, text: string) => {
     const target = isRw ? 'en' : 'rw';
     const translated = await translateText(text, target);
-    
+
     setSessions(prev => prev.map(s => {
       if (s.id === currentSessionId) {
         return {
@@ -295,11 +295,10 @@ export default function AIChatPage() {
               className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed relative ${
-                  m.role === 'user'
+                className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed relative ${m.role === 'user'
                     ? 'bg-primary text-white rounded-tr-none'
                     : 'bg-white text-primary-900 rounded-tl-none border border-neutral-100'
-                }`}
+                  }`}
               >
                 {m.translatedContent ? (
                   <div className="space-y-2">
@@ -309,9 +308,9 @@ export default function AIChatPage() {
                 ) : (
                   m.content
                 )}
-                
+
                 <div className="flex items-center justify-between mt-1.5 border-t border-black/5 pt-1">
-                  <button 
+                  <button
                     onClick={() => navigate(`/translator?text=${encodeURIComponent(m.content)}&target=${isRw ? 'rw' : 'en'}`)}
                     className="text-[10px] font-bold opacity-60 hover:opacity-100 flex items-center gap-1 uppercase tracking-wider"
                   >
@@ -323,11 +322,10 @@ export default function AIChatPage() {
                   </div>
                 </div>
                 {/* Tail for bubbles */}
-                <div className={`absolute top-0 w-2 h-2 ${
-                  m.role === 'user' 
-                    ? 'right-[-8px] border-l-[8px] border-l-primary border-b-[8px] border-b-transparent' 
+                <div className={`absolute top-0 w-2 h-2 ${m.role === 'user'
+                    ? 'right-[-8px] border-l-[8px] border-l-primary border-b-[8px] border-b-transparent'
                     : 'left-[-8px] border-r-[8px] border-r-white border-b-[8px] border-b-transparent'
-                }`} />
+                  }`} />
               </div>
             </motion.div>
           ))}
@@ -351,7 +349,7 @@ export default function AIChatPage() {
               <AlertTriangle size={14} />
               {errorMessage}
             </div>
-            <button 
+            <button
               onClick={() => navigate('/centers')}
               className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary-200 rounded-2xl text-xs font-black shadow-sm hover:bg-primary-50 transition-all active:scale-95"
             >
@@ -386,11 +384,10 @@ export default function AIChatPage() {
         <button
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
-          className={`p-3.5 rounded-full shadow-lg transition-all ${
-            !input.trim() || isLoading 
-              ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' 
+          className={`p-3.5 rounded-full shadow-lg transition-all ${!input.trim() || isLoading
+              ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               : 'bg-primary text-white hover:bg-primary-900 shadow-primary/20'
-          }`}
+            }`}
         >
           {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Send size={22} />}
         </button>
