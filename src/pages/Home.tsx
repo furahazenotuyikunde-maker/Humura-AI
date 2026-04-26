@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope, Type } from 'lucide-react';
+import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope, Type, Languages } from 'lucide-react';
 
 const MOODS = [
   { id: 'great', emoji: '🤩', en: 'Great', rw: 'Neza cyane', color: 'from-amber-400 to-yellow-500', tip: { en: 'Channel that energy into creativity or helping someone today!', rw: 'Shyira imbaraga zose mu gushyiraho ikintu gishya cyangwa gufasha umuntu uyu munsi!' } },
