@@ -1,18 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { Languages, ArrowRightLeft, Copy, Check, Loader2, Sparkles } from 'lucide-react';
 import { translateText } from '../lib/translate';
 
 export default function TranslatorPage() {
   const { i18n } = useTranslation();
   const isRw = i18n.language?.startsWith('rw');
+  const [searchParams] = useSearchParams();
+  const queryText = searchParams.get('text');
   
   const [text, setText] = useState('');
   const [translated, setTranslated] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [targetLang, setTargetLang] = useState<'rw' | 'en'>(isRw ? 'en' : 'rw');
   const [copied, setCopied] = useState(false);
+
+  // Auto-translate if text is provided via URL
+  useEffect(() => {
+    if (queryText) {
+      const decodedText = decodeURIComponent(queryText);
+      setText(decodedText);
+      
+      const autoTranslate = async () => {
+        setIsLoading(true);
+        try {
+          const res = await translateText(decodedText, targetLang);
+          setTranslated(res);
+        } catch (e) {
+          console.error("Auto-translate failed:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      autoTranslate();
+    }
+  }, [queryText]);
 
   const handleTranslate = async () => {
     if (!text.trim()) return;
