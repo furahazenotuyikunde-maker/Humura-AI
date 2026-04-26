@@ -19,91 +19,117 @@ const BRAILLE_MAP: Record<string, string> = {
   'p': '⠏', 'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞',
   'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 'y': '⠽', 'z': '⠵',
 
-  // Numbers (number indicator ⠼ must prefix)
+  // Numbers (numeric indicator ⠼ must prefix)
   '1': '⠁', '2': '⠃', '3': '⠉', '4': '⠙', '5': '⠑',
   '6': '⠋', '7': '⠛', '8': '⠓', '9': '⠊', '0': '⠚',
 
-  // Punctuation
-  '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖', ';': '⠆',
-  ':': '⠒', '-': '⠤', "'": '⠄', '"': '⠐⠦', '/': '⠌',
-  '(': '⠐⠣', ')': '⠐⠜',
-
-  // Space
+  // UEB Punctuation
+  '.': '⠲',
+  ',': '⠂',
+  '?': '⠦',
+  '!': '⠖',
+  ';': '⠆',
+  ':': '⠒',
+  '-': '⠤',
+  "'": '⠄',
+  '"': '⠐⠦', // UEB double quote opening is often ⠐⠦ or ⠘⠦
+  '“': '⠘⠦',
+  '”': '⠘⠴',
+  '‘': '⠠⠦',
+  '’': '⠠⠴',
+  '/': '⠸⠌',
+  '\\': '⠸⠡',
+  '(': '⠐⠣',
+  ')': '⠐⠜',
+  '[': '⠨⠣',
+  ']': '⠨⠜',
+  '{': '⠸⠣',
+  '}': '⠸⠜',
+  '•': '⠸⠲',
+  '*': '⠐⠔',
   ' ': '⠀',
 };
 
-// Special indicators
+// UEB Indicators
 const CAPITAL_INDICATOR = '⠠';
+const WORD_CAPITAL_INDICATOR = '⠠⠠';
 const NUMBER_INDICATOR  = '⠼';
 
 /**
- * Translate a plain English string to Grade 1 Braille Unicode tokens.
+ * Translate a plain English string to Grade 1 UEB Braille Unicode tokens.
  */
 export function translateToBraille(text: string): BrailleToken[] {
   const tokens: BrailleToken[] = [];
-  let i = 0;
+  const words = text.split(/(\s+)/); // Keep delimiters
+  
   let inNumberMode = false;
 
-  while (i < text.length) {
-    const char = text[i];
-    const lower = char.toLowerCase();
-
-    // Space
-    if (char === ' ') {
-      tokens.push({ english: ' ', braille: '⠀', type: 'space' });
+  for (const segment of words) {
+    // Handle whitespace
+    if (/^\s+$/.test(segment)) {
+      for (const char of segment) {
+        tokens.push({ english: char, braille: BRAILLE_MAP[char] || '⠀', type: 'space' });
+      }
       inNumberMode = false;
-      i++;
       continue;
     }
 
-    // Uppercase letter
-    if (char >= 'A' && char <= 'Z') {
-      const brailleChar = BRAILLE_MAP[lower] || '⠿';
-      tokens.push({
-        english: char,
-        braille: CAPITAL_INDICATOR + brailleChar,
-        type: 'letter',
-        capital: true
-      });
+    // Check if word is fully capitalized (UEB word capital indicator)
+    const isWordAllCaps = segment.length > 1 && /^[A-Z]+$/.test(segment.replace(/[^\w]/g, ''));
+    
+    if (isWordAllCaps) {
+      tokens.push({ english: '', braille: WORD_CAPITAL_INDICATOR, type: 'unknown' });
+    }
+
+    for (let j = 0; j < segment.length; j++) {
+      const char = segment[j];
+      const lower = char.toLowerCase();
+
+      // Letters
+      if (/[a-zA-Z]/.test(char)) {
+        const isUpper = char === char.toUpperCase();
+        const brailleChar = BRAILLE_MAP[lower] || '⠿';
+        
+        // If whole word is all caps, don't add single cap indicators
+        if (isUpper && !isWordAllCaps) {
+          tokens.push({
+            english: char,
+            braille: CAPITAL_INDICATOR + brailleChar,
+            type: 'letter',
+            capital: true
+          });
+        } else {
+          tokens.push({
+            english: char,
+            braille: brailleChar,
+            type: 'letter',
+            capital: isUpper
+          });
+        }
+        inNumberMode = false;
+        continue;
+      }
+
+      // Digits
+      if (/[0-9]/.test(char)) {
+        const prefix = inNumberMode ? '' : NUMBER_INDICATOR;
+        tokens.push({
+          english: char,
+          braille: prefix + (BRAILLE_MAP[char] || '⠿'),
+          type: 'number'
+        });
+        inNumberMode = true;
+        continue;
+      }
+
+      // Punctuation & other
+      if (BRAILLE_MAP[char]) {
+        tokens.push({ english: char, braille: BRAILLE_MAP[char], type: 'punct' });
+      } else {
+        tokens.push({ english: char, braille: '⠿', type: 'unknown' });
+      }
       inNumberMode = false;
-      i++;
-      continue;
     }
-
-    // Lowercase letter
-    if (char >= 'a' && char <= 'z') {
-      tokens.push({
-        english: char,
-        braille: BRAILLE_MAP[lower] || '⠿',
-        type: 'letter',
-        capital: false
-      });
-      inNumberMode = false;
-      i++;
-      continue;
-    }
-
-    // Digit
-    if (char >= '0' && char <= '9') {
-      const prefix = inNumberMode ? '' : NUMBER_INDICATOR;
-      tokens.push({
-        english: char,
-        braille: prefix + (BRAILLE_MAP[char] || '⠿'),
-        type: 'number'
-      });
-      inNumberMode = true;
-      i++;
-      continue;
-    }
-
-    // Punctuation & other
-    if (BRAILLE_MAP[char]) {
-      tokens.push({ english: char, braille: BRAILLE_MAP[char], type: 'punct' });
-    } else {
-      tokens.push({ english: char, braille: '⠿', type: 'unknown' });
-    }
-    inNumberMode = false;
-    i++;
   }
 
   return tokens;
