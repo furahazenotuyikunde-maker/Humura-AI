@@ -252,7 +252,7 @@ export default function ProgressPage() {
       console.log("Humura AI (Insight): Attempting Edge Function 'chat'...");
       const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
       
-      const { data, error, status } = await supabase.functions.invoke('super-task', {
+      const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: `I am a mental health app user in Rwanda. Here are my last 7 mood entries: ${last7Str || 'no data yet'}. Please give me a personalized, warm 3-sentence wellness insight based on these patterns. Be specific, empathetic and actionable. Mention at least one specific mood I logged if available.`,
           history: [],
@@ -261,7 +261,7 @@ export default function ProgressPage() {
         }
       });
 
-      if (status === 429) {
+      if (error && (error as any).status === 429) {
         setInsightText(isRw 
           ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
           : "Rate limit reached (20 requests/min). Please try again in 60 seconds.");

@@ -148,7 +148,7 @@ export default function AIChatPage() {
     try {
       // TIER 1: CALL SUPABASE EDGE FUNCTION 'super-task'
       console.log("Humura AI: Attempting Edge Function 'super-task'...");
-      const { data, error, status } = await supabase.functions.invoke('super-task', {
+      const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: userText,
           history: messages.map(m => ({ role: m.role, content: m.content })),
@@ -157,7 +157,7 @@ export default function AIChatPage() {
         }
       });
 
-      if (status === 429) {
+      if (error && (error as any).status === 429) {
         const rateLimitMessage = isRw 
           ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
           : "Rate limit reached (20 requests/min). Please try again in 60 seconds.";

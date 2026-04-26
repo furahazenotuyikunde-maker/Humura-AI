@@ -146,7 +146,7 @@ export default function SignLanguagePage() {
     // Call Gemini via 'vision' edge function
     try {
       console.log("Humura AI (Vision): Attempting Edge Function 'vision'...");
-      const { data, error, status } = await supabase.functions.invoke('vision', {
+      const { data, error } = await supabase.functions.invoke('vision', {
         body: {
           imageBase64,
           mimeType: 'image/jpeg',
@@ -164,7 +164,7 @@ export default function SignLanguagePage() {
         }
       });
 
-      if (status === 429) {
+      if (error && (error as any).status === 429) {
         setScanResult({
           detectedSign: isRw ? "Umuburo" : "Rate Limit",
           explanation: isRw 
@@ -232,7 +232,7 @@ export default function SignLanguagePage() {
     try {
       // TIER 1: TRY EDGE FUNCTION
       console.log("Humura AI (Sign): Attempting Edge Function 'chat'...");
-      const { data, error, status } = await supabase.functions.invoke('super-task', {
+      const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: `User is communicating via sign language. Selected signs: ${message}`,
           history: [],
@@ -242,7 +242,7 @@ export default function SignLanguagePage() {
         }
       });
 
-      if (status === 429) {
+      if (error && (error as any).status === 429) {
         setAiResponse(isRw 
           ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
           : "Rate limit reached (20 requests/min). Please try again in 60 seconds.");
@@ -338,7 +338,7 @@ export default function SignLanguagePage() {
       const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
       // Route through Edge Function to ensure rate limiting
-      const { data, status } = await supabase.functions.invoke('vision', {
+      const { data, error } = await supabase.functions.invoke('vision', {
         body: {
           imageBase64: base64Data,
           mimeType: 'image/jpeg',
@@ -347,7 +347,7 @@ export default function SignLanguagePage() {
         }
       });
 
-      if (status === 429) {
+      if (error && (error as any).status === 429) {
         console.warn("Auto-detect rate limited.");
         return;
       }
