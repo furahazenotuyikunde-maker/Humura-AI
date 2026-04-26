@@ -1,15 +1,19 @@
 import glossary from './kinyarwanda_glossary.json';
 
-const LIBRE_TRANSLATE_URL = 'https://libretranslate-production-06e3.up.railway.app/translate';
+const LIBRE_TRANSLATE_URL = 'https://translate.argosopentech.com/translate';
 
 export async function translateText(text: string, target: 'rw' | 'en', source?: 'rw' | 'en'): Promise<string> {
   if (!text) return '';
+  console.log(`Translating: "${text}" | From: ${source || 'auto'} | To: ${target}`);
   
   const normalizedText = text.toLowerCase().trim();
   const effectiveSource = source || (target === 'rw' ? 'en' : 'rw');
 
   // Skip if source and target are the same
-  if (effectiveSource === target) return text;
+  if (effectiveSource === target) {
+    console.log("Source and target are the same, skipping API call.");
+    return text;
+  }
 
   if (target === 'rw') {
     // English -> Kinyarwanda lookup

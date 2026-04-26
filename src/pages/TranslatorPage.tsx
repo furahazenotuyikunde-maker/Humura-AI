@@ -90,17 +90,35 @@ export default function TranslatorPage() {
 
       {/* Language Selector */}
       <div className="flex items-center justify-center gap-4 bg-white p-3 border-2 border-black rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <div className="flex-1 text-center font-black text-lg">
-          {sourceLang === 'rw' ? 'Kinyarwanda' : 'English'}
+        <div className="flex-1 flex justify-center gap-2">
+          {(['en', 'rw'] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => setSourceLang(l)}
+              className={`px-3 py-1 rounded-xl font-black text-sm border-2 border-black transition-all ${sourceLang === l ? 'bg-black text-white' : 'bg-white text-black opacity-40'}`}
+            >
+              {l === 'en' ? 'EN' : 'RW'}
+            </button>
+          ))}
         </div>
+        
         <button 
           onClick={swapLanguages}
           className="p-3 bg-black text-white rounded-full hover:scale-110 transition-transform active:rotate-180 duration-500"
         >
           <ArrowRightLeft size={20} />
         </button>
-        <div className="flex-1 text-center font-black text-lg text-primary">
-          {targetLang === 'rw' ? 'Kinyarwanda' : 'English'}
+
+        <div className="flex-1 flex justify-center gap-2">
+          {(['en', 'rw'] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => setTargetLang(l)}
+              className={`px-3 py-1 rounded-xl font-black text-sm border-2 border-primary transition-all ${targetLang === l ? 'bg-primary text-white' : 'bg-white text-primary opacity-40'}`}
+            >
+              {l === 'en' ? 'EN' : 'RW'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -173,9 +191,9 @@ export default function TranslatorPage() {
           🚀
         </div>
         <div>
-          <p className="font-black text-sm uppercase tracking-tighter">Railway Production API</p>
+          <p className="font-black text-sm uppercase tracking-tighter">Argos Open Tech API</p>
           <p className="text-xs font-medium text-neutral-500 italic">
-            libretranslate-production-06e3.up.railway.app
+            translate.argosopentech.com
           </p>
         </div>
       </motion.div>
