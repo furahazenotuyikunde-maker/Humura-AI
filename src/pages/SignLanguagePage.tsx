@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { addNotification } from '../lib/notifications';
 
 // ──────────────────────────────────────────────────────────────
 // 22-SIGN DATA ACROSS 4 CATEGORIES
@@ -167,12 +168,25 @@ export default function SignLanguagePage() {
         const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
         setScanResult(parsed);
       } catch {
-        setScanResult({
-          detectedSign: "Error",
-          explanation: data.reply || "Could not analyze the image. Please try again."
-        });
-      }
-    } catch (err: any) {
+          setScanResult({
+            detectedSign: "Error",
+            explanation: data.reply || "Could not analyze the image. Please try again."
+          });
+        }
+
+        if (data.reply) {
+          addNotification({
+            type: 'info',
+            titleEn: 'Sign Detected',
+            titleRw: 'Amarenga Yamenyekanye',
+            messageEn: 'AI has successfully interpreted your sign language gesture.',
+            messageRw: 'AI yashoboye gusobanura amarenga yawe.',
+            icon: 'ScanEye',
+            color: 'text-primary bg-primary-50',
+            link: '/sign-language'
+          });
+        }
+      } catch (err: any) {
       console.error("Vision scan failed:", err);
       setScanResult({
         detectedSign: "Connection Error",
@@ -260,6 +274,17 @@ export default function SignLanguagePage() {
         setAiResponse(generateFallback());
         setTierUsed(3);
       }
+
+      addNotification({
+        type: 'therapy',
+        titleEn: 'Sign Language AI Response',
+        titleRw: 'Igisubizo cya AI ku Marenga',
+        messageEn: 'Humura AI has provided a supportive response to your signs.',
+        messageRw: 'Humura AI yatanze igisubizo gifasha ku marenga yawe.',
+        icon: 'MessageCircle',
+        color: 'text-primary bg-primary-50',
+        link: '/sign-language'
+      });
     } finally {
       setIsAnalyzing(false);
       setIsLoading(false);

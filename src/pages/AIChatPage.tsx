@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader2, MapPin } from 'lucide-react';
 
 import { supabase } from '../lib/supabaseClient';
+import { addNotification } from '../lib/notifications';
 
 // ──────────────────────────────────────────────────────────────
 // TYPES
@@ -158,6 +159,18 @@ export default function AIChatPage() {
         }
         return s;
       }));
+
+      // Add a notification for the AI response
+      addNotification({
+        type: 'therapy',
+        titleEn: 'AI Response Received',
+        titleRw: 'Ubutumwa bwa AI Mwagezeho',
+        messageEn: 'Humura AI has responded to your message. Tap to view.',
+        messageRw: 'Humura AI yasubije ubutumwa bwawe. Kanda hano urebe.',
+        icon: 'MessageCircle',
+        color: 'text-primary bg-primary-50',
+        link: `/chat?session=${currentSessionId}`
+      });
 
     } catch (err: any) {
       console.error("❌ Chat failed:", err);

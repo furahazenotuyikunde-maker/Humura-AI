@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { BarChart2, Flame, Smile, Calendar, BookOpen, Brain, PlusCircle, Loader2, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { addNotification } from '../lib/notifications';
 
 // ──────────────────────────────────────────────────────────────
 // TYPES & CONSTANTS
@@ -195,6 +196,17 @@ export default function ProgressPage() {
     } catch (e) {
       console.warn("Supabase sync failed (likely offline):", e);
     }
+
+    addNotification({
+      type: 'wellness',
+      titleEn: 'Mood Logged',
+      titleRw: 'Uko umeze Kwabitswe',
+      messageEn: `You logged your mood as "${mood.en}". Keep it up!`,
+      messageRw: `Wanditse ko umeze "${mood.rw}". Komeza utyo!`,
+      icon: 'Heart',
+      color: 'text-blue-500 bg-blue-50',
+      link: '/progress'
+    });
   };
 
   const saveJournal = async () => {
@@ -218,6 +230,17 @@ export default function ProgressPage() {
     } catch (e) {
       console.warn("Supabase journal sync failed:", e);
     }
+
+    addNotification({
+      type: 'progress',
+      titleEn: 'Journal Entry Saved',
+      titleRw: 'Inkuru yawe Yabitswe',
+      messageEn: 'Your thoughts have been safely stored in your journal.',
+      messageRw: 'Ibitekerezo byawe byabitswe neza mu nkurunzira yawe.',
+      icon: 'TrendingUp',
+      color: 'text-green-500 bg-green-50',
+      link: '/progress'
+    });
   };
 
   const getInsight = async () => {

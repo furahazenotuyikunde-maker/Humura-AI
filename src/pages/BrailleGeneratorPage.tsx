@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MoreHorizontal, FileText, Download, Trash2, Languages, Type } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { addNotification } from '../lib/notifications';
 
 // ──────────────────────────────────────────────────────────────
 // BRAILLE MAPPING (Grade 1 English)
@@ -76,6 +77,17 @@ export default function BrailleGeneratorPage() {
       const splitBraille = doc.splitTextToSize(brailleText, 170);
       doc.text(splitBraille, 20, 45);
       doc.save(`braille-document-${Date.now()}.pdf`);
+      
+      addNotification({
+        type: 'info',
+        titleEn: 'Braille Document Ready',
+        titleRw: 'Inyandiko y\'Impumyi Yarangiye',
+        messageEn: 'Your Braille PDF has been generated and saved successfully.',
+        messageRw: 'Inyandiko yawe ya PDF mu mpumyi yateguwe kandi yabitswe neza.',
+        icon: 'FileText',
+        color: 'text-blue-500 bg-blue-50',
+        link: '/braille'
+      });
     } catch (error) {
       console.error("PDF generation failed:", error);
     } finally {
