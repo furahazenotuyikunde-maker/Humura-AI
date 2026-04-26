@@ -233,6 +233,10 @@ export const Shell: React.FC<ShellProps> = () => {
                   </li>
                   <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    {isRw ? "Gusobanura Indimi (Translator)" : "Language Translator"}
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
                     {isRw ? "Ubutabazi bw'ihutirwa" : "Emergency Help (114)"}
                   </li>
                 </ul>
