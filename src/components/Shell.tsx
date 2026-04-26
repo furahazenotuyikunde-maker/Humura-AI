@@ -173,6 +173,7 @@ export const Shell: React.FC<ShellProps> = () => {
                 <li>• Google Gemini 3 Flash Preview</li>
                 <li>• Supabase Edge (super-task)</li>
                 <li>• Sign Language Vision AI</li>
+                <li>• {isRw ? 'Ikoranabuhanga rya Braille (Grade 1)' : 'Braille Document Tech (Grade 1)'}</li>
                 <li>• Multi-turn AI Memory</li>
               </ul>
             </div>
