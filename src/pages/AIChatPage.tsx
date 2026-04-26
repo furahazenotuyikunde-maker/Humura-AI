@@ -96,14 +96,30 @@ export default function AIChatPage() {
     setCurrentSessionId(newSession.id);
   };
 
-  // Initialize first chat
+  // Initialize first chat or handle new session from URL
   useEffect(() => {
     if (sessions.length === 0) {
       startNewChat();
+    } else if (sessionUrlId) {
+      // Check if sessionUrlId exists in sessions
+      const exists = sessions.some(s => s.id === sessionUrlId);
+      if (!exists) {
+        // Create new session with the ID from URL
+        const newSession: ChatSession = {
+          id: sessionUrlId,
+          title: isRw ? 'Ikiganiro Gishya' : 'New Chat',
+          messages: [],
+          lastUpdated: new Date(),
+        };
+        setSessions(prev => [newSession, ...prev]);
+        setCurrentSessionId(sessionUrlId);
+      } else {
+        setCurrentSessionId(sessionUrlId);
+      }
     } else if (!currentSessionId) {
       setCurrentSessionId(sessions[0].id);
     }
-  }, []);
+  }, [sessionUrlId]);
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
