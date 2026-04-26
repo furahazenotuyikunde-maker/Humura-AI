@@ -5,56 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MoreHorizontal, FileText, Download, Trash2, Languages, Type, Copy, Check, Info } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { addNotification } from '../lib/notifications';
-
-// ──────────────────────────────────────────────────────────────
-// BRAILLE MAPPING (UEB Grade 1)
-// ──────────────────────────────────────────────────────────────
-const BRAILLE_MAP: Record<string, string> = {
-  // Letters
-  'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 'i': '⠊', 'j': '⠚',
-  'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞',
-  'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 'y': '⠽', 'z': '⠵',
-  // Numbers (shared with a-j)
-  '1': '⠁', '2': '⠃', '3': '⠉', '4': '⠙', '5': '⠑', '6': '⠋', '7': '⠛', '8': '⠓', '9': '⠊', '0': '⠚',
-  // Punctuation & Symbols
-  ' ': '⠀', 
-  '.': '⠲', ',': '⠂', ';': '⠆', ':': '⠒', '!': '⠖', '?': '⠦', 
-  '(': '⠦', ')': '⠴', '[': '⠨⠦', ']': '⠨⠴', '{': '⠸⠦', '}': '⠸⠴',
-  '"': '⠶', "'": '⠄', '-': '⠤', '_': '⠨⠤', '/': '⠸⠌', '\\': '⠸⠡',
-  '@': '⠈⠁', '#': '⠼', '$': '⠈⠎', '%': '⠨⠏', '&': '⠯', '*': '⠐⠔',
-  '+': '⠐⠖', '=': '⠐⠶', '<': '⠨⠣', '>': '⠨⠜', '^': '⠈⠮'
-};
-
-const NUMBER_PREFIX = '⠼';
-const CAPITAL_PREFIX = '⠠';
-
-function convertToBraille(text: string): string {
-  if (!text) return '';
-  let result = '';
-  
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const lowerChar = char.toLowerCase();
-    
-    // Handle Numbers
-    if (/[0-9]/.test(char)) {
-      if (i === 0 || !/[0-9]/.test(text[i - 1])) {
-        result += NUMBER_PREFIX;
-      }
-      result += BRAILLE_MAP[char] || char;
-      continue;
-    }
-    
-    // Handle Capitals
-    if (char !== lowerChar && /[a-z]/i.test(char)) {
-      result += CAPITAL_PREFIX;
-    }
-    
-    result += BRAILLE_MAP[lowerChar] || char;
-  }
-  
-  return result;
-}
+import { translateToBraille, toBrailleString } from '../lib/braille';
 
 export default function BrailleGeneratorPage() {
   const { i18n } = useTranslation();
@@ -66,7 +17,8 @@ export default function BrailleGeneratorPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const brailleText = useMemo(() => convertToBraille(inputText), [inputText]);
+  const brailleTokens = useMemo(() => translateToBraille(inputText), [inputText]);
+  const brailleText = useMemo(() => toBrailleString(inputText), [inputText]);
 
   const handleClear = () => {
     setInputText('');
@@ -113,18 +65,15 @@ export default function BrailleGeneratorPage() {
         const char = brailleText[i];
         const code = char.charCodeAt(0);
         
-        // Unicode Braille starts at 0x2800
         if (code >= 0x2800 && code <= 0x28FF) {
           const dots = code - 0x2800;
-          
-          // 2x3 Grid Mapping (Dots 1-6)
           const dotPositions = [
-            { bit: 0x01, dx: 0, dy: 0 },             // Dot 1
-            { bit: 0x02, dx: 0, dy: dotSpacing },    // Dot 2
-            { bit: 0x04, dx: 0, dy: dotSpacing * 2 },// Dot 3
-            { bit: 0x08, dx: dotSpacing, dy: 0 },    // Dot 4
-            { bit: 0x10, dx: dotSpacing, dy: dotSpacing }, // Dot 5
-            { bit: 0x20, dx: dotSpacing, dy: dotSpacing * 2 } // Dot 6
+            { bit: 0x01, dx: 0, dy: 0 },
+            { bit: 0x02, dx: 0, dy: dotSpacing },
+            { bit: 0x04, dx: 0, dy: dotSpacing * 2 },
+            { bit: 0x08, dx: dotSpacing, dy: 0 },
+            { bit: 0x10, dx: dotSpacing, dy: dotSpacing },
+            { bit: 0x20, dx: dotSpacing, dy: dotSpacing * 2 }
           ];
 
           dotPositions.forEach(pos => {
@@ -134,16 +83,11 @@ export default function BrailleGeneratorPage() {
           });
         }
 
-        // Advance X position
         x += cellSpacing;
-
-        // Wrap text
         if (x > 180 || char === '\n') {
           x = margin;
           y += lineHeight;
         }
-
-        // Add new page if needed
         if (y > 270) {
           doc.addPage();
           y = margin;
@@ -173,7 +117,7 @@ export default function BrailleGeneratorPage() {
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans pb-10">
       {/* Header */}
       <div className="bg-white border-b border-neutral-200 p-4 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
@@ -191,7 +135,7 @@ export default function BrailleGeneratorPage() {
         </div>
       </div>
 
-      <div className="p-4 space-y-6 flex-1 max-w-2xl mx-auto w-full pt-8">
+      <div className="p-4 space-y-6 flex-1 max-w-3xl mx-auto w-full pt-8">
         {/* Input Card */}
         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-neutral-200 space-y-4">
           <div className="flex items-center justify-between">
@@ -250,10 +194,34 @@ export default function BrailleGeneratorPage() {
               </div>
             )}
           </div>
-
-          {/* Decorative background circle */}
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         </div>
+
+        {/* Breakdown Table Card */}
+        {brailleTokens.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-[2rem] shadow-sm border border-neutral-200 overflow-hidden"
+          >
+            <div className="bg-primary px-6 py-3">
+              <h3 className="text-white text-xs font-black uppercase tracking-widest">
+                {isRw ? 'Ibisobanuro by\'inyuguti' : 'Letter-by-Letter Breakdown'}
+              </h3>
+            </div>
+            <div className="flex overflow-x-auto p-4 scrollbar-none gap-px bg-neutral-200">
+              {brailleTokens.map((token, idx) => (
+                <div key={idx} className="flex-shrink-0 min-w-[50px] flex flex-col bg-white">
+                  <div className={`p-4 flex items-center justify-center text-2xl font-braille border-b border-neutral-100 ${idx % 2 === 0 ? 'bg-primary-50/30 text-primary' : 'bg-white text-neutral-900'}`}>
+                    {token.braille}
+                  </div>
+                  <div className={`p-2 flex items-center justify-center text-sm font-black ${idx % 2 === 0 ? 'bg-primary-50/30 text-primary-900' : 'bg-white text-neutral-400'}`}>
+                    {token.english === ' ' ? 'SPC' : token.english}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 gap-3 pt-4">
@@ -280,4 +248,5 @@ export default function BrailleGeneratorPage() {
     </div>
   );
 }
+
 
