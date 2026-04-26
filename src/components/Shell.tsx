@@ -195,77 +195,103 @@ export const Shell: React.FC<ShellProps> = () => {
         </div>
 
         {/* Premium Footer */}
-        <footer className="mt-32 pt-16 pb-12 border-t border-primary-50 bg-white/50 backdrop-blur-sm rounded-t-[4rem]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
-            {/* About */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="Humura AI" className="h-8 object-contain" />
-                <span className="font-bold text-primary-900 tracking-tight">Humura AI</span>
-              </div>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                {isRw 
-                  ? "Humura AI ni urubuga rw'ikoranabuhanga rurimo indimi ebyiri rugamije gutanga ubufasha mu buzima bwo mu mutwe kuri bose nta n’umwe uhejwe. Twibanda cyane ku gufasha abafite ubumuga: inzobere zishobora kwifashisha 'Braille Generator' mu gutanga inama ku bafite ubumuga bwo kutabona, hakaba n'uburyo bw'amarenga (Sign Language) n'ubutabazi bwihutirwa mu muryango nyarwanda."
-                  : "Humura AI is a bilingual mental health platform dedicated to inclusive and accessible support for everyone. We empower mental health professionals to provide guidance to visually impaired individuals through our Braille Generator, offer integrated Sign Language support for the deaf community, and provide empathetic AI therapy and crisis intervention for the entire Rwandan community."}
-              </p>
-            </div>
-
-            {/* Tech Stack */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
-                {isRw ? "Ikoranabuhanga rya Humura" : "Humura Tech Stack"}
-              </h4>
-              <ul className="text-sm text-neutral-500 space-y-2">
-                <li className="font-bold text-primary-600">
-                  {isRw ? "• Porogaramu igendanwa (React & Vite)" : "• Mobile-First App (React & Vite)"}
-                </li>
-                <li className="font-bold text-primary-600">• {isRw ? 'Ikoranabuhanga rya Braille (Grade 1)' : 'Braille Document Tech (Grade 1)'}</li>
-                <li>• Google Gemini 3 Flash Preview</li>
-                <li>• Supabase Edge (super-task)</li>
-                <li>• Sign Language Vision AI</li>
-                <li>• Multi-turn AI Memory</li>
-              </ul>
-            </div>
-
-            {/* Testimonials */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
-                {isRw ? "Ubuhamya" : "Testimonies"}
-              </h4>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="italic text-xs text-neutral-500 border-l-2 border-primary-100 pl-3 leading-relaxed">
-                    "{isRw ? "uru rubuga rwamfashije mu bihe bikomeye. AI ya humura irumva cyane" : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+        <footer className="mt-32 pt-20 pb-16 border-t border-primary-50 bg-white/40 backdrop-blur-md rounded-t-[5rem] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.05)]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {/* Column 1: Our Mission */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-2xl">
+                    <img src="/logo.png" alt="Humura AI" className="h-8 w-8 object-contain" />
                   </div>
-                  <p className="text-xs font-bold text-primary-600 pl-3">— {isRw ? "Kamana john" : "Kamana John"}</p>
+                  <span className="font-black text-primary-900 text-xl tracking-tighter">Humura AI</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="italic text-xs text-neutral-500 border-l-2 border-primary-100 pl-3 leading-relaxed">
-                    "{isRw ? "Uburyo bw’amarenga nibwo nshobora gukoresha kuko ntumva si ntavuge. Urakoze humura AI" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
-                  </div>
-                  <p className="text-xs font-bold text-primary-600 pl-3">— {isRw ? "Kanyange ancilla" : "Kanyange Ancilla"}</p>
-                </div>
+                <p className="text-sm text-neutral-500 leading-relaxed font-medium">
+                  {isRw 
+                    ? "Humura AI ni urubuga rw'ikoranabuhanga rugamije gutanga ubufasha mu buzima bwo mu mutwe. Twishimiye gufasha Abanyarwanda bose binyuze mu buryo bugezweho n'ikoranabuhanga ridakumira bwa mbere mu Rwanda."
+                    : "Humura AI is a bilingual mental health ecosystem providing inclusive and empathetic support. We bridge the gap in mental wellness through innovative AI and accessibility tools for the entire Rwandan community."}
+                </p>
               </div>
-            </div>
 
+              {/* Column 2: Core Services */}
+              <div className="space-y-6">
+                <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
+                  {isRw ? "Serivisi Zacu" : "Core Services"}
+                </h4>
+                <ul className="text-sm text-neutral-500 space-y-3 font-semibold">
+                  <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    {isRw ? "Ubuvuzi bwa AI bumva umuntu" : "Empathetic AI Therapy"}
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    {isRw ? "Gufasha mu marenga" : "Sign Language Support"}
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    {isRw ? "Inyandiko z'impumyi (Braille)" : "Braille Document Tool"}
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    {isRw ? "Ubutabazi bw'ihutirwa" : "Emergency Help (114)"}
+                  </li>
+                </ul>
+              </div>
 
-            {/* Contact */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
-                {isRw ? "Twandikire" : "Contact"}
-              </h4>
-              <div className="text-sm text-neutral-500 space-y-2">
-                <p className="flex items-center gap-2">
-                  <Phone size={16} className="text-primary-400" />
-                  +250 790 723 406
-                </p>
-                <p className="flex items-center gap-2">
-                  <ShieldAlert size={16} className="text-primary-400" />
-                  tuyikundefzeno@gmail.com
-                </p>
+              {/* Column 3: Innovation */}
+              <div className="space-y-6">
+                <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
+                  {isRw ? "Ikoranabuhanga" : "Innovation"}
+                </h4>
+                <ul className="text-sm text-neutral-500 space-y-3 font-semibold">
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Gemini 3 Flash Preview
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Supabase Edge (super-task)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Sign Language Vision AI
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Multi-turn AI Memory
+                  </li>
+                </ul>
+              </div>
+
+              {/* Column 4: Get in Touch */}
+              <div className="space-y-6">
+                <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
+                  {isRw ? "Twandikire" : "Get in Touch"}
+                </h4>
+                <div className="text-sm text-neutral-500 space-y-4 font-semibold">
+                  <a href="tel:+250790723406" className="flex items-center gap-3 hover:text-primary transition-colors group">
+                    <div className="p-2 bg-primary-50 rounded-xl group-hover:bg-primary-100 transition-colors">
+                      <Phone size={14} className="text-primary-600" />
+                    </div>
+                    +250 790 723 406
+                  </a>
+                  <a href="mailto:tuyikundefzeno@gmail.com" className="flex items-center gap-3 hover:text-primary transition-colors group">
+                    <div className="p-2 bg-primary-50 rounded-xl group-hover:bg-primary-100 transition-colors">
+                      <ShieldAlert size={14} className="text-primary-600" />
+                    </div>
+                    tuyikundefzeno@gmail.com
+                  </a>
+                  <div className="flex items-center gap-3 text-red-600">
+                    <div className="p-2 bg-red-50 rounded-xl animate-pulse">
+                      <AlertTriangle size={14} />
+                    </div>
+                    {isRw ? "Ubutabazi: 114 (RBC)" : "Emergency: 114 (RBC)"}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
 
           <div className="mt-10 pt-6 border-t border-primary-50 flex flex-col items-center gap-6 text-center">
             <p className="text-[10px] text-neutral-400 font-medium tracking-widest uppercase">
