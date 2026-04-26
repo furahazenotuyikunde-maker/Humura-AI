@@ -103,40 +103,6 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
       : "We don't have enough data to give you an insight yet. Try logging your mood for a few days!";
   }
 
-  const last7 = moodEntries.slice(-7);
-  const moods = last7.map(e => e.mood);
-  const counts: Record<string, number> = {};
-  moods.forEach(m => counts[m] = (counts[m] || 0) + 1);
-  const dominantMood = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as MoodLevel;
-
-  const insights: Record<string, { en: string; rw: string }> = {
-    great: {
-      en: "Your mood has been excellent lately! This is a great time to tackle new challenges or share your positive energy with others. Keep up the habits that are making you feel this way.",
-      rw: "Akanyamuneza kawe kashitse ku rugero rwo hejuru! Iki ni igihe cyiza cyo gukora imishinga mishya cyangwa gusangira ibyishimo n'abandi. Komeza imigenzo igutera kumva ameze neza."
-    },
-    good: {
-      en: "You've been feeling good consistently. Maintaining this balance is key. Try to identify what's contributing to this stability and keep those practices in your daily routine.",
-      rw: "Umeze neza mu buryo buhoraho. Kubungabunga aya mahirwe ni ingenzi. Gerageza kumenya ibigufasha kumva utuje maze ubikomeze mu buzima bwawe bwa buri munsi."
-    },
-    neutral: {
-      en: "Your mood has been steady. This is a good baseline for reflection. Maybe try introducing one small new positive activity today to see if it gives you a gentle lift.",
-      rw: "Umutima wawe uratuje. Iki ni igihe cyiza cyo gutekereza. Gerageza gukora igikorwa kimwe gito gishya gishimishije uyu munsi urebe ko cyakwongerera ibyishimo."
-    },
-    anxious: {
-      en: "I've noticed some patterns of anxiety recently. Remember that feelings aren't facts. Focusing on your breath for just 2 minutes can help ground you when things feel overwhelming.",
-      rw: "Nabonye ibimenyetso by'impungenge mu minsi ishize. Ibuka ko ibyo wumva atari ko kuri kose. Kwibanda ku guhumeka neza iminota 2 gusa bishobora kugufasha gutuza."
-    },
-    sad: {
-      en: "You've been through a bit of a low period. Please be very gentle with yourself right now. Small steps like getting 10 minutes of sunlight can help shift your perspective slowly.",
-      rw: "Wanyuze mu bihe bikunze kuguhangayikisha. Nyabuneka rero, wiroroheje cyane ubu. Intambwe nto nko kumara iminota 10 ku zuba bishobora kugufasha guhindura imitekerereze buhoro buhoro."
-    },
-    mixed: {
-      en: "Your moods have been fluctuating recently. This is completely normal on the path to wellness. Focus on consistent self-care and notice which activities help you feel most centered.",
-      rw: "Ibyo wumva mu mutima byagiye bihinduka vuba aha. Ibi ni bisanzwe mu ruzinduko rwo gukira. Ibande ku kwitaho no kumenya ibikorwa bigufasha kumva utuje cyane."
-    }
-  };
-
-  const result = isMixed ? insights.mixed : (insights[dominantMood] || insights.neutral);
   const quotaMessage = lang.startsWith('rw')
     ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
     : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
