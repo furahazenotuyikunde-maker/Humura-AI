@@ -159,8 +159,8 @@ export default function AIChatPage() {
 
       if (error && (error as any).status === 429) {
         const rateLimitMessage = isRw
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60."
-          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.";
+          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
         setErrorMessage(rateLimitMessage);
         return;
       }
@@ -202,8 +202,8 @@ export default function AIChatPage() {
     } catch (err: any) {
       console.error("❌ Chat failed:", err);
       const friendlyError = isRw
-        ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
-        : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support.";
+        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
 
       setErrorMessage(friendlyError);
     } finally {
