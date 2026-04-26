@@ -29,6 +29,15 @@ export async function translateText(text: string, target: 'rw' | 'en', source?: 
   }
 
   
+  // Handle long texts by chunking (MyMemory has a 500-char limit for free tier)
+  if (text.length > 450) {
+    const chunks = text.match(/.{1,450}(\s|$)/g) || [];
+    const translatedChunks = await Promise.all(
+      chunks.map(chunk => translateText(chunk.trim(), target, source))
+    );
+    return translatedChunks.join(' ');
+  }
+
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${effectiveSource}|${target}`;
     const response = await fetch(url);
@@ -38,6 +47,13 @@ export async function translateText(text: string, target: 'rw' | 'en', source?: 
     }
 
     const data = await response.json();
+    
+    // Check for API errors in response body
+    if (data.responseStatus !== 200 && data.responseStatus !== "200") {
+      console.warn("MyMemory API status error:", data.responseStatus, data.responseDetails);
+      return text;
+    }
+
     return data.responseData?.translatedText || text;
   } catch (error) {
     console.error('Translation error:', error);
