@@ -188,8 +188,10 @@ export default function SignLanguagePage() {
       } catch (err: any) {
       console.error("❌ Vision Edge Function failed:", err);
       setScanResult({
-        detectedSign: "Connection Error",
-        explanation: "Make sure your internet is active and try again."
+        detectedSign: isRw ? "Umuburo" : "Rate Limit",
+        explanation: isRw 
+          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
+          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds."
       });
     } finally {
       setIsAnalyzing(false);
@@ -264,8 +266,8 @@ export default function SignLanguagePage() {
         type: 'therapy',
         titleEn: 'Sign Language AI Error',
         titleRw: 'Ikosa rya AI ku Marenga',
-        messageEn: 'Humura AI is currently unavailable. Please check your connection.',
-        messageRw: 'Humura AI ntabwo iri kuboneka ubu. Reba niba ufite interineti.',
+        messageEn: 'You may have hit the system limit (20 requests/min). Please try again in 60 seconds.',
+        messageRw: 'Ushobora kuba wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y\'amasegonda 60.',
         icon: 'MessageCircle',
         color: 'text-red-500 bg-red-50',
         link: '/sign-language'
