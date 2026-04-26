@@ -11,6 +11,7 @@ import ProgressPage from './pages/ProgressPage';
 import EmergencyPage from './pages/EmergencyPage';
 import ProfessionalsPage from './pages/ProfessionalsPage';
 import SettingsPage from './pages/SettingsPage';
+import BrailleGeneratorPage from './pages/BrailleGeneratorPage';
 
 const App: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const App: React.FC = () => {
           <Route path="progress" element={<ProgressPage />} />
           <Route path="sign-language" element={<SignLanguagePage />} />
           <Route path="emergency" element={<EmergencyPage />} />
+          <Route path="braille" element={<BrailleGeneratorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

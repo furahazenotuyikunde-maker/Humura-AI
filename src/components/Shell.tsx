@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -87,6 +87,7 @@ export const Shell: React.FC<ShellProps> = () => {
         { to: '/centers', icon: MapPin, label: t('nav.centers') },
         { to: '/professionals', icon: User, label: t('nav.professionals') },
         { to: '/sign-language', icon: HandMetal, label: t('nav.sign') },
+        { to: '/braille', icon: Type, label: t('nav.braille') },
       ],
     },
     {

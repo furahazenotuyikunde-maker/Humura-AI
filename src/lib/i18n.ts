@@ -14,6 +14,7 @@ const resources = {
       "nav.sign": "Sign Language",
       "nav.professionals": "Professionals",
       "nav.emergency": "Emergency",
+      "nav.braille": "Braille Generator",
       "nav.settings": "Settings",
       
       "home.greeting": "Hello, how are you feeling today?",
@@ -43,6 +44,7 @@ const resources = {
       "nav.sign": "Amarenga",
       "nav.professionals": "hura ni inzobere",
       "nav.emergency": "ubufasha bw’ihutirwa",
+      "nav.braille": "Inyandiko z’Impumyi",
       "nav.settings": "Igenamiterere",
       "history.title": "ibiganiro twagiranye",
 
