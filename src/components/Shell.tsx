@@ -164,16 +164,16 @@ export const Shell: React.FC<ShellProps> = () => {
             {/* Tech Stack */}
             <div className="space-y-4">
               <h4 className="font-bold text-primary-900 text-sm uppercase tracking-wider">
-                {isRw ? "Ikoranabuhanga" : "Technology"}
+                {isRw ? "Ikoranabuhanga rya Humura" : "Humura Tech Stack"}
               </h4>
               <ul className="text-sm text-neutral-500 space-y-2">
                 <li className="font-bold text-primary-600">
                   {isRw ? "• Porogaramu igendanwa (React & Vite)" : "• Mobile-First App (React & Vite)"}
                 </li>
+                <li className="font-bold text-primary-600">• {isRw ? 'Ikoranabuhanga rya Braille (Grade 1)' : 'Braille Document Tech (Grade 1)'}</li>
                 <li>• Google Gemini 3 Flash Preview</li>
                 <li>• Supabase Edge (super-task)</li>
                 <li>• Sign Language Vision AI</li>
-                <li>• {isRw ? 'Ikoranabuhanga rya Braille (Grade 1)' : 'Braille Document Tech (Grade 1)'}</li>
                 <li>• Multi-turn AI Memory</li>
               </ul>
             </div>
