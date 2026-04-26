@@ -145,15 +145,6 @@ export const Shell: React.FC<ShellProps> = () => {
 
 
         <div className="flex items-center gap-3">
-          <button 
-            onClick={handleSafetyExit}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-full text-xs font-black shadow-sm active:scale-95 transition-transform"
-            aria-label={isRw ? "Sohoka vuba" : "Safety Exit"}
-          >
-            <X size={14} />
-            <span>{isRw ? "Sohoka" : "Exit"}</span>
-          </button>
-          
           <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm mr-2">
             <button 
               onClick={() => i18n.changeLanguage('en')}

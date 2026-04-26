@@ -61,16 +61,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-white text-black pb-24">
-      {/* Safety Exit Button - Persistent and Quick */}
-      <button 
-        onClick={handleSafetyExit}
-        className="fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition-transform"
-        aria-label={isRw ? "Sohoka vuba" : "Safety Exit"}
-      >
-        <X size={18} />
-        <span>{isRw ? "Sohoka" : "Exit"}</span>
-      </button>
-
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-10">
         {/* Header */}
         <header className="flex items-center gap-3">
@@ -295,6 +285,27 @@ export default function SettingsPage() {
               <Shield size={24} className="text-red-600" />
             </button>
           </div>
+        </section>
+
+        {/* 6. Safety Exit Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 border-b-2 border-red-600 pb-2">
+            <LogOut size={20} className="text-red-600" />
+            <h2 className="text-lg font-black uppercase text-red-600">
+              {isRw ? 'Sohoka Vuba' : 'Safety Exit'}
+            </h2>
+          </div>
+          <button
+            onClick={handleSafetyExit}
+            className="w-full flex items-center justify-between p-6 border-2 border-red-600 rounded-2xl bg-red-600 text-white shadow-[4px_4px_0px_0px_rgba(153,27,27,1)] active:scale-[0.98] transition-all"
+            aria-label={isRw ? "Sohoka kuri porogaramu vuba" : "Immediate exit to Google"}
+          >
+            <div className="text-left">
+              <p className="font-black text-xl">{isRw ? 'Sohoka mu masegonda' : 'Exit Immediately'}</p>
+              <p className="text-sm font-bold opacity-90">{isRw ? 'Guhagarika porogaramu vuba' : 'Instantly switches to Google'}</p>
+            </div>
+            <X size={28} className="text-white" />
+          </button>
         </section>
 
         {/* Offline Info */}
