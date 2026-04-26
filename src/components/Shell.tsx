@@ -271,24 +271,24 @@ export const Shell: React.FC<ShellProps> = () => {
                 </ul>
               </div>
 
-              {/* Column 4: Get in Touch */}
+              {/* Column 4: Testimonies */}
               <div className="space-y-6">
                 <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
-                  {isRw ? "Twandikire" : "Get in Touch"}
+                  {isRw ? "Ubuhamya" : "Testimonies"}
                 </h4>
-                <div className="text-sm text-neutral-500 space-y-4 font-semibold">
-                  <a href="tel:+250790723406" className="flex items-center gap-3 hover:text-primary transition-colors group">
-                    <div className="p-2 bg-primary-50 rounded-xl group-hover:bg-primary-100 transition-colors">
-                      <Phone size={14} className="text-primary-600" />
-                    </div>
-                    +250 790 723 406
-                  </a>
-                  <a href="mailto:tuyikundefzeno@gmail.com" className="flex items-center gap-3 hover:text-primary transition-colors group">
-                    <div className="p-2 bg-primary-50 rounded-xl group-hover:bg-primary-100 transition-colors">
-                      <ShieldAlert size={14} className="text-primary-600" />
-                    </div>
-                    tuyikundefzeno@gmail.com
-                  </a>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
+                      "{isRw ? "uru rubuga rwamfashije mu bihe bikomeye. AI ya humura irumva cyane" : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+                    </p>
+                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Kamana John</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
+                      "{isRw ? "Uburyo bw’amarenga nibwo nshobora gukoresha kuko ntumva si ntavuge. Urakoze humura AI" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
+                    </p>
+                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Kanyange Ancilla</p>
+                  </div>
                 </div>
               </div>
             </div>
