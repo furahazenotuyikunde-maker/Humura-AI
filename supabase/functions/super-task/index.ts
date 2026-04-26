@@ -68,6 +68,18 @@ serve(async (req) => {
       
       if (!response.ok) {
         console.error("Gemini API Error:", data)
+        const isQuotaError = response.status === 429 || data.error?.message?.toLowerCase().includes('quota')
+        
+        if (isQuotaError) {
+          return new Response(
+            JSON.stringify({ 
+              reply: isRw 
+                ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)" 
+                : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)" 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          )
+        }
         throw new Error(data.error?.message || "Failed to fetch from Gemini API")
       }
 

@@ -160,11 +160,11 @@ export default function AIChatPage() {
 
     } catch (err: any) {
       console.error("❌ Chat failed:", err);
-      setErrorMessage(
-        isRw 
-          ? `Ikibazo: ${err.message || 'Ntabwo nshoboye kugusubiza ubu. Ongera ugerageze.'}`
-          : `Error: ${err.message || 'I am unable to respond right now. Please try again.'}`
-      );
+      const friendlyError = isRw 
+        ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
+        : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
+      
+      setErrorMessage(friendlyError);
     } finally {
       setIsLoading(false);
     }

@@ -136,9 +136,12 @@ function getOfflineInsight(moodEntries: MoodEntry[], lang: string): string {
     }
   };
 
-  const isMixed = Object.keys(counts).length > 2;
   const result = isMixed ? insights.mixed : (insights[dominantMood] || insights.neutral);
-  return lang.startsWith('rw') ? result.rw : result.en;
+  const quotaMessage = lang.startsWith('rw')
+    ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
+    : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
+  
+  return quotaMessage;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -296,11 +299,7 @@ export default function ProgressPage() {
         }
       } catch (geminiError: any) {
         console.error("❌ Both connection tiers failed:", geminiError);
-        setInsightText(
-          edgeError.message?.includes('404')
-            ? (isRw ? 'Porogaramu ya AI ntabwo yashyizweho (404). Hamagara umukozi wacu.' : 'AI Function not deployed (404).')
-            : getOfflineInsight(moodEntries, lang)
-        );
+        setInsightText(getOfflineInsight(moodEntries, lang));
         setTierUsed(3);
       }
     } finally {

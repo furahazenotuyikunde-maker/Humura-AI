@@ -202,15 +202,16 @@ export default function SignLanguagePage() {
     ];
 
     const generateFallback = () => {
+      const quotaMessage = isRw
+        ? "Gerageza nyuma gato cyangwa niba ukeneye ubufasha bwihutirwa hamagara 114 (Rwanda Biomedical Centres)"
+        : "Try again later or if you want immediate support call 114 (Rwanda Biomedical Centres)";
+
       if (selected.some(s => s.isCrisis)) {
         return isRw
-          ? 'Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.'
-          : 'I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.';
+          ? `Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.`
+          : `I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.`;
       }
-      const randomResponse = OFFLINE_RESPONSES[Math.floor(Math.random() * OFFLINE_RESPONSES.length)];
-      return isRw 
-        ? `${randomResponse.rw} (Ibyo wasabye: ${message})`
-        : `${randomResponse.en} (You signed: ${message})`;
+      return quotaMessage;
     };
 
     try {
@@ -254,11 +255,7 @@ export default function SignLanguagePage() {
         }
       } catch (geminiError: any) {
         console.error("❌ Both connection tiers failed:", geminiError);
-        setAiResponse(
-          edgeError.message?.includes('404')
-            ? (isRw ? 'Porogaramu ya AI ntabwo yashyizweho (404). Hamagara umukozi wacu.' : 'AI Function not deployed (404).')
-            : generateFallback()
-        );
+        setAiResponse(generateFallback());
         setTierUsed(3);
       }
     } finally {
@@ -640,9 +637,55 @@ export default function SignLanguagePage() {
         )}
       </AnimatePresence>
 
-      {/* The Grid and categories have been removed for a purely vision-driven experience */}
+      {/* Categories */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {(Object.entries(CATEGORY_CONFIG) as [keyof typeof CATEGORY_CONFIG, any][]).map(([id, config]) => (
+          <button
+            key={id}
+            onClick={() => setActiveCategory(id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl whitespace-nowrap text-xs font-bold transition-all ${
+              activeCategory === id
+                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105'
+                : 'bg-white text-primary-600 hover:bg-primary-50 border border-primary-50'
+            }`}
+          >
+            <span>{config.emoji}</span>
+            <span>{isRw ? config.rw : config.en}</span>
+          </button>
+        ))}
+      </div>
 
-      {/* Signs grid removed as requested */}
+      {/* Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {categoryFiltered.map(sign => {
+          const isSelected = selected.find(s => s.id === sign.id);
+          return (
+            <motion.button
+              key={sign.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => toggleSign(sign)}
+              className={`relative flex flex-col items-center justify-center p-4 rounded-3xl transition-all border-2 ${
+                isSelected
+                  ? 'bg-primary border-primary shadow-xl scale-105'
+                  : 'bg-white border-primary-50 hover:border-primary-100 hover:bg-primary-50/30'
+              }`}
+            >
+              <span className="text-4xl mb-2">{sign.emoji}</span>
+              <span className={`text-[11px] font-black uppercase tracking-tight text-center leading-tight ${isSelected ? 'text-white' : 'text-primary-900'}`}>
+                {isRw ? sign.rw : sign.en}
+              </span>
+              {isSelected && (
+                <motion.div
+                  layoutId="selected-check"
+                  className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm"
+                >
+                  <span className="text-primary text-[10px] font-bold">✓</span>
+                </motion.div>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
 
       {/* Composed message */}
       <AnimatePresence>
