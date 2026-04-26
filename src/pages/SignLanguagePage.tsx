@@ -439,6 +439,7 @@ export default function SignLanguagePage() {
           <div className="space-y-3">
             <div className="relative rounded-xl overflow-hidden bg-black max-h-64 flex justify-center">
               <video ref={videoRef} autoPlay muted playsInline className="h-full max-h-64 object-cover" />
+              
               {isDetecting && (
                 <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5">
                   <div className="flex items-center gap-1.5 bg-black/60 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-bold">
@@ -449,10 +450,11 @@ export default function SignLanguagePage() {
               )}
               
               {!isDetecting && autoDetectActive && (
-                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-white/20 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-medium border border-white/10">
-                    {isRw ? 'AI iri kumva...' : 'AI Listening...'}
-                 </div>
+                <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-white/20 text-white px-2 py-1 rounded-lg backdrop-blur text-[10px] font-medium border border-white/10">
+                  {isRw ? 'AI iri kumva...' : 'AI Listening...'}
+                </div>
               )}
+              
               {/* Done & Send overlay button */}
               {selected.length > 0 && (
                 <div className="absolute bottom-4 inset-x-4 z-20">
