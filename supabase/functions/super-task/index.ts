@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { checkRateLimit } from "../_shared/rateLimiter.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,19 @@ serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // 1. Check Rate Limit (Global)
+  const { allowed, count } = await checkRateLimit()
+  if (!allowed) {
+    console.warn(`Rate limit exceeded: ${count} requests in the last minute.`)
+    return new Response(
+      JSON.stringify({ 
+        error: "Rate limit exceeded. The system is limited to 20 requests per minute to ensure stability. Please try again in a moment.",
+        reply: "Too many requests. Please wait a minute before trying again."
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+    )
   }
 
   try {

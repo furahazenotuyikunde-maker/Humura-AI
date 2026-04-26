@@ -146,7 +146,7 @@ export default function SignLanguagePage() {
     // Call Gemini via 'vision' edge function
     try {
       console.log("Humura AI (Vision): Attempting Edge Function 'vision'...");
-      const { data, error } = await supabase.functions.invoke('vision', {
+      const { data, error, status } = await supabase.functions.invoke('vision', {
         body: {
           imageBase64,
           mimeType: 'image/jpeg',
@@ -164,6 +164,16 @@ export default function SignLanguagePage() {
         }
       });
 
+      if (status === 429) {
+        setScanResult({
+          detectedSign: isRw ? "Umuburo" : "Rate Limit",
+          explanation: isRw 
+            ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
+            : "The system has reached its limit of 20 requests per minute. Please wait a moment."
+        });
+        return;
+      }
+
       if (error) throw error;
 
       try {
@@ -176,46 +186,11 @@ export default function SignLanguagePage() {
           });
         }
       } catch (err: any) {
-      console.warn("⚠️ Vision Edge Function failed, trying direct Gemini fallback...", err);
-      
-      // TIER 2: DIRECT GEMINI VISION FALLBACK
-      try {
-        const cleanKey = GEMINI_API_KEY.trim();
-        if (!cleanKey || cleanKey.length < 20) throw new Error("Invalid API Key");
-
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(cleanKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
-
-        const prompt = `You are Humura AI, an expert in sign language and mental health support.
-          Analyze this image and respond in JSON format:
-          {
-            "detectedSign": "the emotion or need detected",
-            "explanation": "a compassionate 2-sentence response."
-          }`;
-
-        const result = await model.generateContent([
-          prompt,
-          { inlineData: { data: imageBase64, mimeType: 'image/jpeg' } }
-        ]);
-
-        const responseText = result.response.text();
-        // Extract JSON
-        let jsonStr = responseText;
-        const firstBrace = responseText.indexOf('{');
-        const lastBrace = responseText.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          jsonStr = responseText.substring(firstBrace, lastBrace + 1);
-        }
-        
-        setScanResult(JSON.parse(jsonStr));
-      } catch (fallbackErr) {
-        console.error("❌ Both Vision tiers failed:", fallbackErr);
-        setScanResult({
-          detectedSign: "Connection Error",
-          explanation: "Make sure your Gemini API key is valid and your internet is active."
-        });
-      }
+      console.error("❌ Vision Edge Function failed:", err);
+      setScanResult({
+        detectedSign: "Connection Error",
+        explanation: "Make sure your internet is active and try again."
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -257,7 +232,7 @@ export default function SignLanguagePage() {
     try {
       // TIER 1: TRY EDGE FUNCTION
       console.log("Humura AI (Sign): Attempting Edge Function 'chat'...");
-      const { data, error } = await supabase.functions.invoke('super-task', {
+      const { data, error, status } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: `User is communicating via sign language. Selected signs: ${message}`,
           history: [],
@@ -267,6 +242,13 @@ export default function SignLanguagePage() {
         }
       });
 
+      if (status === 429) {
+        setAiResponse(isRw 
+          ? "Sisitemu yakiriye ubusabe bwinshi (20/min). Gerageza nyuma y'umunota umwe." 
+          : "Rate limit reached (20 requests/min). Please try again in 60 seconds.");
+        return;
+      }
+
       if (error) throw error;
       if (!data?.reply) throw new Error('No reply received from Edge Function');
       
@@ -274,39 +256,18 @@ export default function SignLanguagePage() {
       setTierUsed(2);
       console.log("✅ Humura AI (Sign): Response received from Edge Function.");
     } catch (edgeError: any) {
-      console.warn("⚠️ Humura AI (Sign): Edge Function failed, falling back to direct API.", edgeError);
-      
-      // TIER 2: FALLBACK TO DIRECT GEMINI
-      try {
-        const cleanKey = GEMINI_API_KEY.trim();
-        if (cleanKey && cleanKey.length > 20) {
-          const { GoogleGenerativeAI } = await import('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(cleanKey);
-          const model = genAI.getGenerativeModel({
-            model: 'gemini-3-flash-preview',
-            systemInstruction: `You are Humura AI, a compassionate mental health support assistant for Rwanda. The user is communicating via sign language symbols. Respond with warmth and care. Respond in ${isRw ? 'Kinyarwanda' : 'English'}. Keep response to 3-5 sentences. Address their specific signs directly.`,
-          });
-          const result = await model.generateContent(message);
-          setAiResponse(result.response.text());
-          setTierUsed(1);
-          console.log("✅ Humura AI (Sign): Response received from direct Gemini API.");
-        } else {
-          throw new Error('No local API key found for fallback');
-        }
-      } catch (geminiError: any) {
-        console.error("❌ Both connection tiers failed:", geminiError);
-        setAiResponse(generateFallback());
-        setTierUsed(3);
-      }
+      console.error("❌ Humura AI (Sign): Edge Function failed.", edgeError);
+      setAiResponse(generateFallback());
+      setTierUsed(3);
 
       addNotification({
         type: 'therapy',
-        titleEn: 'Sign Language AI Response',
-        titleRw: 'Igisubizo cya AI ku Marenga',
-        messageEn: 'Humura AI has provided a supportive response to your signs.',
-        messageRw: 'Humura AI yatanze igisubizo gifasha ku marenga yawe.',
+        titleEn: 'Sign Language AI Error',
+        titleRw: 'Ikosa rya AI ku Marenga',
+        messageEn: 'Humura AI is currently unavailable. Please check your connection.',
+        messageRw: 'Humura AI ntabwo iri kuboneka ubu. Reba niba ufite interineti.',
         icon: 'MessageCircle',
-        color: 'text-primary bg-primary-50',
+        color: 'text-red-500 bg-red-50',
         link: '/sign-language'
       });
     } finally {
@@ -376,19 +337,22 @@ export default function SignLanguagePage() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.trim());
-      const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+      // Route through Edge Function to ensure rate limiting
+      const { data, status } = await supabase.functions.invoke('vision', {
+        body: {
+          imageBase64: base64Data,
+          mimeType: 'image/jpeg',
+          apiKey: GEMINI_API_KEY.trim(),
+          prompt: `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`
+        }
+      });
+
+      if (status === 429) {
+        console.warn("Auto-detect rate limited.");
+        return;
+      }
       
-      const availableIds = signs.map(s => s.id).join(', ');
-      const prompt = `You are Humura AI, a compassionate observer. Look at the user's gesture and facial expression. Pick ONE exact keyword from this list that best matches their state: [${availableIds}]. If they look neutral or no clear sign is made, output "none". Respond ONLY with the keyword. No other text.`;
-      
-      const result = await model.generateContent([
-        prompt,
-        { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }
-      ]);
-      
-      const detectedId = result.response.text().trim().toLowerCase();
+      const detectedId = (data?.reply || '').trim().toLowerCase();
       
       const matchedSign = signs.find(s => s.id.toLowerCase() === detectedId);
       if (matchedSign && !selected.find(s => s.id === matchedSign.id)) {
