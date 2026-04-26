@@ -81,9 +81,9 @@ export default function BrailleGeneratorPage() {
       addNotification({
         type: 'info',
         titleEn: 'Braille Document Ready',
-        titleRw: 'Inyandiko y\'Impumyi Yarangiye',
+        titleRw: 'Inyandiko y\'abafite ubumuga bwo kutabona Yarangiye',
         messageEn: 'Your Braille PDF has been generated and saved successfully.',
-        messageRw: 'Inyandiko yawe ya PDF mu mpumyi yateguwe kandi yabitswe neza.',
+        messageRw: 'Inyandiko yawe ya PDF y\'abafite ubumuga bwo kutabona yateguwe kandi yabitswe neza.',
         icon: 'FileText',
         color: 'text-blue-500 bg-blue-50',
         link: '/braille'
@@ -107,7 +107,7 @@ export default function BrailleGeneratorPage() {
           <ArrowLeft size={24} />
         </button>
         <h1 className="text-white text-xl font-bold tracking-tight">
-          {isRw ? 'Gukora Inyandiko mu Nyuguti z’Impumyi' : 'Braille Document Generator'}
+          {isRw ? 'Gukora Inyandiko mu buryo bw’abafite ubumuga bwo kutabona' : 'Braille Document Generator'}
         </h1>
         <div className="ml-auto">
           <button className="text-white p-1 opacity-60">
@@ -138,7 +138,7 @@ export default function BrailleGeneratorPage() {
         {/* Preview Section */}
         <div className="space-y-2">
           <label className="block text-neutral-700 font-bold text-sm ml-1">
-            {isRw ? 'Icyitegererezo cy’impumyi' : 'Braille preview'}
+            {isRw ? 'Icyitegererezo cy’abafite ubumuga bwo kutabona' : 'Braille preview'}
           </label>
           <div 
             className={`w-full min-h-[120px] p-6 rounded-xl border border-neutral-200 flex items-center justify-center text-center transition-all ${
@@ -151,7 +151,7 @@ export default function BrailleGeneratorPage() {
               </p>
             ) : (
               <p className="text-neutral-400 italic">
-                {isRw ? 'Inyuguti z’impumyi zizagaragara hano' : 'Braille symbols will appear here'}
+                {isRw ? 'Inyuguti z’abafite ubumuga bwo kutabona zizagaragara hano' : 'Braille symbols will appear here'}
               </p>
             )}
           </div>

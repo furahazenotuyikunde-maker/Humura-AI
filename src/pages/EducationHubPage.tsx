@@ -58,7 +58,7 @@ Ibuka: ubwoba si umwanzi wawe. Ni ikimenyetso gikwiye kumva — n'umubiri ushobo
       { en: 'Use 5-4-3-2-1 grounding when anxiety spikes', rw: 'Koresha uburyo bwa 5-4-3-2-1 iyo ubwoba bwiyongera' },
       { en: 'Challenge anxious thoughts: "Is this fact or fear?"', rw: 'Baza ibibazo amitekerereze: "Ese ni ukuri cyangwa ubwoba?"' },
       { en: 'Limit caffeine and prioritize 7-9 hours of sleep', rw: 'Gabanya kafeine kandi ushake amasaha 7-9 y\'itiro' },
-      { en: 'Exercise releases natural anti-anxiety chemicals', rw: 'Imyitozo y\'umubiri ikuraho impumyi z\'ubwoba' },
+      { en: 'Exercise releases natural anti-anxiety chemicals', rw: 'Imyitozo y\'umubiri igabanya ubwoba' },
     ]
   },
   {
@@ -128,7 +128,7 @@ Tekereza kureba inzobere iyo ingorane zikurengeye. Rwanda ifite abahanga mu buzi
       { en: 'Use progressive muscle relaxation before bed', rw: 'Koresha kwitonda kw\'imitsi mbere yo kuryama' },
       { en: 'Schedule a daily "worry window" — 15 minutes only', rw: 'Teganya "igihe cy\'ingorane" buri munsi — iminota 15 gusa' },
       { en: 'Talk to someone you trust — it measurably lowers cortisol', rw: 'Vuga n\'umuntu uizeye — bigabanya cortisol bikurikirana' },
-      { en: 'Nature exposure for 20+ minutes reduces stress hormones', rw: 'Kuba mu kamere iminota 20+ bigabanya impumyi z\'ingorane' },
+      { en: 'Nature exposure for 20+ minutes reduces stress hormones', rw: 'Kuba mu kamere iminota 20+ bigabanya imisemburo y\'ingorane' },
     ]
   },
   {

@@ -243,15 +243,15 @@ export default function SettingsPage() {
             <button
               onClick={() => navigate('/braille')}
               className="w-full p-6 flex items-center justify-between hover:bg-neutral-100 transition-colors group min-h-[88px]"
-              aria-label={isRw ? "Jya kuri Inyandiko z'Impumyi" : "Go to Braille Document Generator"}
+              aria-label={isRw ? "Jya kuri Inyandiko z'abafite ubumuga bwo kutabona" : "Go to Braille Document Generator"}
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                   <FileText size={24} />
                 </div>
                 <div className="text-left">
-                  <p className="text-lg font-black">{isRw ? 'Inyandiko z’Impumyi' : 'Braille Document Generator'}</p>
-                  <p className="text-sm font-medium text-neutral-600">{isRw ? 'Hindura inyandiko mu buhumyi' : 'Shortcut to the Braille Generator page'}</p>
+                  <p className="text-lg font-black">{isRw ? "Inyandiko z'abafite ubumuga bwo kutabona" : 'Braille Document Generator'}</p>
+                  <p className="text-sm font-medium text-neutral-600">{isRw ? "Hindura inyandiko mu buryo bw'abafite ubumuga bwo kutabona" : 'Shortcut to the Braille Generator page'}</p>
                 </div>
               </div>
               <ChevronRight size={28} />

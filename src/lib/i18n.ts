@@ -98,7 +98,7 @@ const resources = {
       "nav.sign": "Amarenga",
       "nav.professionals": "hura ni inzobere",
       "nav.emergency": "ubufasha bw’ihutirwa",
-      "nav.braille": "Inyandiko z’Impumyi",
+      "nav.braille": "Inyandiko z'abafite ubumuga bwo kutabona",
       "nav.settings": "Igenamiterere",
       "common.call_directory": "Hamagara Indangururamuntu",
       "common.view_directory": "Reba Amavuriro",
