@@ -145,10 +145,12 @@ export default function SignLanguagePage() {
 
     // Call Gemini via 'vision' edge function
     try {
+      console.log("Humura AI (Vision): Attempting Edge Function 'vision'...");
       const { data, error } = await supabase.functions.invoke('vision', {
         body: {
           imageBase64,
           mimeType: 'image/jpeg',
+          apiKey: GEMINI_API_KEY.trim(),
           prompt: `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
             1. Identify the specific sign language gesture, body language, or facial expression.
             2. Interpret the emotional meaning or specific need (e.g., "I feel alone", "I need help").
@@ -169,29 +171,51 @@ export default function SignLanguagePage() {
         setScanResult(parsed);
       } catch {
           setScanResult({
-            detectedSign: "Error",
+            detectedSign: "Analysis Complete",
             explanation: data.reply || "Could not analyze the image. Please try again."
           });
         }
-
-        if (data.reply) {
-          addNotification({
-            type: 'info',
-            titleEn: 'Sign Detected',
-            titleRw: 'Amarenga Yamenyekanye',
-            messageEn: 'AI has successfully interpreted your sign language gesture.',
-            messageRw: 'AI yashoboye gusobanura amarenga yawe.',
-            icon: 'ScanEye',
-            color: 'text-primary bg-primary-50',
-            link: '/sign-language'
-          });
-        }
       } catch (err: any) {
-      console.error("Vision scan failed:", err);
-      setScanResult({
-        detectedSign: "Connection Error",
-        explanation: "Make sure the 'vision' edge function is deployed and your internet is active."
-      });
+      console.warn("⚠️ Vision Edge Function failed, trying direct Gemini fallback...", err);
+      
+      // TIER 2: DIRECT GEMINI VISION FALLBACK
+      try {
+        const cleanKey = GEMINI_API_KEY.trim();
+        if (!cleanKey || cleanKey.length < 20) throw new Error("Invalid API Key");
+
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(cleanKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+
+        const prompt = `You are Humura AI, an expert in sign language and mental health support.
+          Analyze this image and respond in JSON format:
+          {
+            "detectedSign": "the emotion or need detected",
+            "explanation": "a compassionate 2-sentence response."
+          }`;
+
+        const result = await model.generateContent([
+          prompt,
+          { inlineData: { data: imageBase64, mimeType: 'image/jpeg' } }
+        ]);
+
+        const responseText = result.response.text();
+        // Extract JSON
+        let jsonStr = responseText;
+        const firstBrace = responseText.indexOf('{');
+        const lastBrace = responseText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          jsonStr = responseText.substring(firstBrace, lastBrace + 1);
+        }
+        
+        setScanResult(JSON.parse(jsonStr));
+      } catch (fallbackErr) {
+        console.error("❌ Both Vision tiers failed:", fallbackErr);
+        setScanResult({
+          detectedSign: "Connection Error",
+          explanation: "Make sure your Gemini API key is valid and your internet is active."
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
