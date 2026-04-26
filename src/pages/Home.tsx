@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope } from 'lucide-react';
+import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope, Type } from 'lucide-react';
 
 const MOODS = [
   { id: 'great', emoji: '🤩', en: 'Great', rw: 'Neza cyane', color: 'from-amber-400 to-yellow-500', tip: { en: 'Channel that energy into creativity or helping someone today!', rw: 'Shyira imbaraga zose mu gushyiraho ikintu gishya cyangwa gufasha umuntu uyu munsi!' } },
@@ -66,6 +66,7 @@ export default function Home() {
     { path: '/professionals', icon: Stethoscope, en: 'Find Professionals', rw: 'hura ni inzobere', color: 'bg-teal-500', desc: { en: 'Connect with therapists', rw: "hura nabaganga b’inzobere ku buzima bwo mu mutwe" } },
     { path: '/community', icon: Users, en: 'Community Circles', rw: 'urubuga rwo kugirana inama', color: 'bg-purple-600', desc: { en: 'Anonymous peer support', rw: 'Ubufasha bw\'inshuti' } },
     { path: '/progress', icon: BarChart2, en: 'My Progress', rw: 'impinduka', color: 'bg-orange-500', desc: { en: 'Track mood & journal', rw: 'Kurikirana impinduka ku buzimo bwawe bwo mu mutwe buri cyumweru.' } },
+    { path: '/braille', icon: Type, en: 'Braille Generator', rw: 'Inyandiko z’Impumyi', color: 'bg-indigo-600', desc: { en: 'Convert text to Braille PDF', rw: 'Hindura inyandiko mu buhumyi' } },
   ];
 
 
