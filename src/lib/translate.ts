@@ -2,10 +2,14 @@ import glossary from './kinyarwanda_glossary.json';
 
 const LIBRE_TRANSLATE_URL = 'https://libretranslate-production-06e3.up.railway.app/translate';
 
-export async function translateText(text: string, target: 'rw' | 'en'): Promise<string> {
+export async function translateText(text: string, target: 'rw' | 'en', source?: 'rw' | 'en'): Promise<string> {
   if (!text) return '';
   
   const normalizedText = text.toLowerCase().trim();
+  const effectiveSource = source || (target === 'rw' ? 'en' : 'rw');
+
+  // Skip if source and target are the same
+  if (effectiveSource === target) return text;
 
   if (target === 'rw') {
     // English -> Kinyarwanda lookup
@@ -23,13 +27,11 @@ export async function translateText(text: string, target: 'rw' | 'en'): Promise<
 
   
   try {
-    const source = target === 'rw' ? 'en' : 'rw';
-    
     const response = await fetch(LIBRE_TRANSLATE_URL, {
       method: 'POST',
       body: JSON.stringify({
         q: text,
-        source: source,
+        source: effectiveSource,
         target: target,
         format: 'text',
         api_key: ''

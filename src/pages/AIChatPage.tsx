@@ -288,7 +288,7 @@ export default function AIChatPage() {
                 
                 <div className="flex items-center justify-between mt-1.5 border-t border-black/5 pt-1">
                   <button 
-                    onClick={() => navigate(`/translator?text=${encodeURIComponent(m.content)}`)}
+                    onClick={() => navigate(`/translator?text=${encodeURIComponent(m.content)}&target=${isRw ? 'rw' : 'en'}`)}
                     className="text-[10px] font-bold opacity-60 hover:opacity-100 flex items-center gap-1 uppercase tracking-wider"
                   >
                     <Languages size={10} />

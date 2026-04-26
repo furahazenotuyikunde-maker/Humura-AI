@@ -10,11 +10,13 @@ export default function TranslatorPage() {
   const isRw = i18n.language?.startsWith('rw');
   const [searchParams] = useSearchParams();
   const queryText = searchParams.get('text');
+  const queryTarget = searchParams.get('target') as 'rw' | 'en' | null;
   
   const [text, setText] = useState('');
   const [translated, setTranslated] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [targetLang, setTargetLang] = useState<'rw' | 'en'>(isRw ? 'en' : 'rw');
+  const [targetLang, setTargetLang] = useState<'rw' | 'en'>(queryTarget || (isRw ? 'en' : 'rw'));
+  const [sourceLang, setSourceLang] = useState<'rw' | 'en'>(targetLang === 'rw' ? 'en' : 'rw');
   const [copied, setCopied] = useState(false);
 
   // Auto-translate if text is provided via URL
@@ -26,7 +28,7 @@ export default function TranslatorPage() {
       const autoTranslate = async () => {
         setIsLoading(true);
         try {
-          const res = await translateText(decodedText, targetLang);
+          const res = await translateText(decodedText, targetLang, sourceLang);
           setTranslated(res);
         } catch (e) {
           console.error("Auto-translate failed:", e);
@@ -36,13 +38,13 @@ export default function TranslatorPage() {
       };
       autoTranslate();
     }
-  }, [queryText]);
+  }, [queryText, targetLang, sourceLang]);
 
   const handleTranslate = async () => {
     if (!text.trim()) return;
     setIsLoading(true);
     try {
-      const res = await translateText(text, targetLang);
+      const res = await translateText(text, targetLang, sourceLang);
       setTranslated(res);
     } catch (e) {
       console.error(e);
@@ -52,7 +54,10 @@ export default function TranslatorPage() {
   };
 
   const swapLanguages = () => {
-    setTargetLang(prev => prev === 'rw' ? 'en' : 'rw');
+    const oldTarget = targetLang;
+    const oldSource = sourceLang;
+    setTargetLang(oldSource);
+    setSourceLang(oldTarget);
     setText(translated);
     setTranslated(text);
   };
@@ -86,7 +91,7 @@ export default function TranslatorPage() {
       {/* Language Selector */}
       <div className="flex items-center justify-center gap-4 bg-white p-3 border-2 border-black rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex-1 text-center font-black text-lg">
-          {targetLang === 'rw' ? 'English' : 'Kinyarwanda'}
+          {sourceLang === 'rw' ? 'Kinyarwanda' : 'English'}
         </div>
         <button 
           onClick={swapLanguages}
