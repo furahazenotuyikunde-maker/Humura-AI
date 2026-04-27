@@ -561,6 +561,12 @@ export default function SignLanguagePage() {
             <p className="text-sm font-bold text-primary-900">
               🤔 {isRw ? 'Gusesengura amarenga...' : 'Analyzing sign language...'}
             </p>
+            <div className="mt-2 flex items-center gap-1.5 px-3 py-1 bg-primary-50 rounded-full border border-primary-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <p className="text-[9px] font-black text-primary-700 uppercase tracking-widest">
+                {isRw ? 'Ikoranabuhanga: Gemini 3 Flash & Supabase' : 'Powered by Gemini 3 Flash & Supabase'}
+              </p>
+            </div>
           </motion.div>
         )}
 

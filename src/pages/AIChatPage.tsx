@@ -336,8 +336,12 @@ export default function AIChatPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
               <span className="think-dot bg-primary-400" />
-              <span className="think-dot bg-primary-400" />
-              <span className="think-dot bg-primary-400" />
+            </div>
+            <div className="mt-1 flex items-center gap-1 px-1">
+              <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></span>
+              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                {isRw ? 'Ikoranabuhanga: Gemini 3 Flash & Supabase' : 'Powered by Gemini 3 Flash & Supabase'}
+              </p>
             </div>
           </motion.div>
         )}

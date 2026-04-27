@@ -573,7 +573,15 @@ export default function ProgressPage() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold rounded-2xl hover:bg-primary-900 disabled:opacity-60 transition-colors shadow-lg shadow-primary/20"
             >
               {insightLoading ? (
-                <><Loader2 size={18} className="animate-spin" /> {isRw ? 'AI iratekereza...' : 'AI is thinking...'}</>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <Loader2 size={18} className="animate-spin" /> 
+                    {isRw ? 'AI iratekereza...' : 'AI is thinking...'}
+                  </div>
+                  <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mt-1">
+                    {isRw ? 'Gemini 3 Flash & Supabase' : 'Powered by Gemini 3 Flash & Supabase'}
+                  </p>
+                </div>
               ) : (
                 <><Brain size={18} /> {isRw ? 'Bona Inama y\'Ubuzima' : 'Get Wellness Insight'}</>
               )}
