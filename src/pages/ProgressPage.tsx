@@ -579,7 +579,7 @@ export default function ProgressPage() {
                     {isRw ? 'AI iratekereza...' : 'AI is thinking...'}
                   </div>
                   <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mt-1">
-                    {isRw ? 'Gemini 3 Flash & Supabase' : 'Powered by Gemini 3 Flash & Supabase'}
+                    {isRw ? 'CBT (Cognitive Behavioural Therapy)' : 'CBT (Cognitive Behavioural Therapy)'}
                   </p>
                 </div>
               ) : (

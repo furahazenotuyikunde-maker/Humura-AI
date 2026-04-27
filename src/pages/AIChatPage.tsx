@@ -340,7 +340,7 @@ export default function AIChatPage() {
             <div className="mt-1 flex items-center gap-1 px-1">
               <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></span>
               <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
-                {isRw ? 'Ikoranabuhanga: Gemini 3 Flash & Supabase' : 'Powered by Gemini 3 Flash & Supabase'}
+                {isRw ? 'Ubufasha bwa CBT (Cognitive Behavioural Therapy)' : 'CBT (Cognitive Behavioural Therapy)'}
               </p>
             </div>
           </motion.div>
