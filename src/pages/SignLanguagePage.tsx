@@ -143,7 +143,7 @@ export default function SignLanguagePage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(videoRef.current, 0, 0);
-    const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+    const imageBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
 
     // Call Gemini via 'vision' edge function
     try {
@@ -235,7 +235,7 @@ export default function SignLanguagePage() {
       console.log("Humura AI (Sign): Attempting Edge Function 'chat'...");
       const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
-          userMessage: `User is communicating via sign language. Selected signs: ${message}`,
+          userMessage: `[SIGN LANGUAGE COMMUNICATION] The user selected these emotional/needs signs: ${message}. Please provide a supportive response.`,
           history: [],
           lang: lang,
           isSignLanguage: true,
