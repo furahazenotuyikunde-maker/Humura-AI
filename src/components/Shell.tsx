@@ -221,7 +221,7 @@ export const Shell: React.FC<ShellProps> = () => {
                 <ul className="text-sm text-neutral-500 space-y-3 font-semibold">
                   <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-                    {isRw ? "Ubuvuzi bwa AI bumva umuntu" : "Empathetic AI Therapy"}
+                    {isRw ? "Ubuvuzi bwa CBT bumva umuntu" : "Empathetic CBT Therapy"}
                   </li>
                   <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
