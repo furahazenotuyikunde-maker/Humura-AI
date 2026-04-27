@@ -83,7 +83,9 @@ serve(async (req) => {
         if (isQuotaError) {
           return new Response(
             JSON.stringify({ 
-              reply: "Quota reached: The AI service has reached its temporary limit. Please try again in 2 hours or call 114 for immediate support." 
+              reply: isRw 
+                ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
+                : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support." 
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )

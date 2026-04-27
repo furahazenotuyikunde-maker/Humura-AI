@@ -134,6 +134,7 @@ export default function SignLanguagePage() {
     setIsAnalyzing(true);
     setScanResult(null);
     setAiResponse('');
+    setErrorMessage('');
 
     // Capture frame from video
     const canvas = document.createElement('canvas');
@@ -186,10 +187,9 @@ export default function SignLanguagePage() {
         }
       } catch (err: any) {
       console.error("❌ Vision Edge Function failed:", err);
-      const rateLimitMessage = isRw
-        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-      setErrorMessage(rateLimitMessage);
+      setErrorMessage(isRw 
+        ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone." 
+        : "Failed to analyze the image. Please try again.");
 
     } finally {
       setIsAnalyzing(false);
@@ -201,6 +201,7 @@ export default function SignLanguagePage() {
     const message = composeMessage();
     setIsAnalyzing(true);
     setAiResponse('');
+    setErrorMessage('');
 
     const OFFLINE_RESPONSES = [
       { en: "Thank you for sharing your feelings. Your emotions are completely valid, and I am here to hold space for you.", rw: "Urakoze gusangira ibyiyumviro byawe. Ibyo wumva ni ukuri, kandi ndi hano kugira ngo nkumve." },
@@ -218,8 +219,8 @@ export default function SignLanguagePage() {
 
     const generateFallback = () => {
       const quotaMessage = isRw
-        ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
-        : "You've hit the system limit (20 requests/min). Please try again in 60 seconds or call 114 for immediate support.";
+        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
 
       if (selected.some(s => s.isCrisis)) {
         return isRw
@@ -238,7 +239,7 @@ export default function SignLanguagePage() {
           history: [],
           lang: lang,
           isSignLanguage: true,
-          apiKey: GEMINI_API_KEY.trim()
+          apiKey: GEMINI_API_KEY.trim() || undefined
         }
       });
 
@@ -258,7 +259,11 @@ export default function SignLanguagePage() {
       console.log("✅ Humura AI (Sign): Response received from Edge Function.");
     } catch (edgeError: any) {
       console.error("❌ Humura AI (Sign): Edge Function failed.", edgeError);
-      setAiResponse(generateFallback());
+      if ((edgeError as any).status === 429) {
+        setErrorMessage(generateFallback());
+      } else {
+        setAiResponse(generateFallback());
+      }
       setTierUsed(3);
 
       addNotification({
