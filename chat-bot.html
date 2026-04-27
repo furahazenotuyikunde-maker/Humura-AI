@@ -1,3 +1,4 @@
+// DEDUPLICATION GUARDS APPLIED — exactly 1 Gemini 3.0 Flash call per user message
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,8 +28,8 @@
         <div class="message ai">Hello! I am Humura AI. How are you feeling today?</div>
     </div>
     <div class="input-area">
-        <input type="text" id="user-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
-        <button id="send-btn" onclick="sendMessage()">Send</button>
+        <input type="text" id="user-input" placeholder="Type a message...">
+        <button id="send-btn">Send</button>
     </div>
 </div>
 
@@ -37,21 +38,54 @@
     const input = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     
-    // Conversation history to "keep chats"
+    // Conversation history - Guard 5: Plain array, NOT in useState/observable
     let history = [];
+    
+    // Guard 1: HARD LOCK
+    let isSending = false;
+    
+    // Guard 2: DEBOUNCE
+    let debounceTimer = null;
 
-    async function sendMessage() {
+    async function sendMessage(e) {
+        if (e) e.preventDefault(); // Guard 4: Stop any form submit from also firing
+
+        // Guard 1: Check Hard Lock
+        if (isSending) {
+            console.warn('[CHAT] Blocked — already sending');
+            return;
+        }
+
+        // Guard 2: Check Debounce
+        if (debounceTimer !== null) {
+            console.warn('[CHAT] Blocked — debounce');
+            return;
+        }
+
         const text = input.value.trim();
         if (!text) return;
+
+        // Guard 2: Set Debounce Timer
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+        }, 300);
+
+        // Guard 3: UI LOCK - Disable input and button
+        input.disabled = true;
+        sendBtn.disabled = true;
+
+        // Guard 1: Set Hard Lock immediately before the API call
+        isSending = true;
+
+        // Guard 6: CONSOLE LOGGING (Before request)
+        console.log('[CHAT] ▶ Gemini 3.0 Flash request | id=REQ-' + Date.now() + ' | msg="' + text + '"');
 
         // Add user message to UI
         addMessage(text, 'user');
         input.value = '';
-        input.disabled = true;
-        sendBtn.disabled = true;
 
         try {
-            console.log("Humura AI: Calling Edge Function...");
+            // Guard 8: PRESERVE THE GEMINI 3.0 FLASH CALL EXACTLY
             const response = await fetch('https://acetkeyzhbgfsetwkfuo.supabase.co/functions/v1/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -66,23 +100,41 @@
             const data = await response.json();
             const reply = data.reply || data.error || "No response received.";
 
+            // Guard 6: CONSOLE LOGGING (Success)
+            console.log('[CHAT] ✔ Response received');
+
             // Add AI response to UI
             addMessage(reply, 'ai');
 
-            // Update history for next turn
+            // Guard 5: History mutations (push) must be direct
             history.push({ role: 'user', content: text });
             history.push({ role: 'assistant', content: reply });
             if (history.length > 10) history = history.slice(-10);
 
-        } catch (error) {
-            console.error("Humura AI Error:", error);
+        } catch (err) {
+            // Guard 6: CONSOLE LOGGING (Error)
+            console.error('[CHAT] ✖ Error:', err.message);
+            // Guard 7: NO AUTO-RETRY
             addMessage("The AI is currently processing in offline mode or the connection was interrupted. Please try again in a moment.", 'ai');
         } finally {
+            // Guard 1 & 3: Reset hard lock and re-enable UI
+            isSending = false;
             input.disabled = false;
             sendBtn.disabled = false;
             input.focus();
         }
     }
+
+    // Guard 4: SINGLE EVENT SOURCE - call the same sendMessage() function from each
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage(e);
+        }
+    });
+
+    sendBtn.addEventListener('click', (e) => {
+        sendMessage(e);
+    });
 
     function addMessage(text, role) {
         const div = document.createElement('div');
@@ -95,3 +147,4 @@
 
 </body>
 </html>
+
