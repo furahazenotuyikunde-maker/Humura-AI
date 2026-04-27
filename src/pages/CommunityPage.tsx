@@ -598,14 +598,6 @@ const CommunityPage: React.FC = () => {
               </div>
             </a>
 
-            <a className="group-card" href="https://chat.whatsapp.com/JY6lQTj2oH8KhRnzyvZiDK" target="_blank" rel="noreferrer">
-              <div className="group-emoji" style={{ background: '#FDF5EA' }}>🤝</div>
-              <div>
-                <div className="group-name">Relationships & Family</div>
-                <div className="group-desc">Struggling with marriage, family conflict, or loneliness? Our counselors are here.</div>
-                <span className="group-badge badge-pro"><span className="badge-dot" style={{ background: 'var(--green)' }}></span>Professionals active</span>
-              </div>
-            </a>
 
             <a className="group-card" href="https://chat.whatsapp.com/JY6lQTj2oH8KhRnzyvZiDK" target="_blank" rel="noreferrer">
               <div className="group-emoji" style={{ background: '#E6F5F2' }}>📚</div>
