@@ -289,6 +289,12 @@ export const Shell: React.FC<ShellProps> = () => {
                     </p>
                     <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Kanyange Ancilla</p>
                   </div>
+                  <div className="space-y-2">
+                    <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
+                      "{isRw ? "Uburyo bwa braille bwaramfashije cyane kuko mfite ubumuga bwo kutabona, ubu nshobora kubona ubufasha bw'inzobere mu buryo bworoshye." : "The Braille generator is a lifesaver. As someone with a visual impairment, I can finally access professional help independently."}"
+                    </p>
+                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Mugabo Eric</p>
+                  </div>
                 </div>
               </div>
             </div>
