@@ -25,7 +25,6 @@ const App: React.FC = () => {
           <Route path="education" element={<EducationHubPage />} />
           <Route path="centers" element={<SupportCentersPage />} />
           <Route path="professionals" element={<ProfessionalsPage />} />
-          <Route path="community" element={<CommunityPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="sign-language" element={<SignLanguagePage />} />
@@ -34,6 +33,8 @@ const App: React.FC = () => {
           <Route path="translator" element={<TranslatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
+        <Route path="/community" element={<CommunityPage />} />
+
       </Routes>
     </BrowserRouter>
   );
