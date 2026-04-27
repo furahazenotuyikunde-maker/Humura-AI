@@ -32,7 +32,8 @@ export async function checkRateLimit(): Promise<{ allowed: boolean; count: numbe
     }
 
     const currentCount = count || 0
-    const limit = 20
+    const limit = 60
+
 
     if (currentCount >= limit) {
       return { allowed: false, count: currentCount }

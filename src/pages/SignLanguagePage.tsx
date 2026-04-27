@@ -76,6 +76,7 @@ export default function SignLanguagePage() {
   const [autoDetectActive, setAutoDetectActive] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [tierUsed, setTierUsed] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
@@ -165,12 +166,10 @@ export default function SignLanguagePage() {
       });
 
       if (error && (error as any).status === 429) {
-        setScanResult({
-          detectedSign: isRw ? "Umuburo" : "Rate Limit",
-          explanation: isRw 
-            ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
-            : "You've hit the system limit (20 requests/min). Please try again in 60 seconds."
-        });
+        const rateLimitMessage = isRw
+          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+        setErrorMessage(rateLimitMessage);
         return;
       }
 
@@ -187,12 +186,11 @@ export default function SignLanguagePage() {
         }
       } catch (err: any) {
       console.error("❌ Vision Edge Function failed:", err);
-      setScanResult({
-        detectedSign: isRw ? "Umuburo" : "Rate Limit",
-        explanation: isRw 
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
-          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds."
-      });
+      const rateLimitMessage = isRw
+        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+      setErrorMessage(rateLimitMessage);
+
     } finally {
       setIsAnalyzing(false);
     }
@@ -245,9 +243,10 @@ export default function SignLanguagePage() {
       });
 
       if (error && (error as any).status === 429) {
-        setAiResponse(isRw 
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
-          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.");
+        const rateLimitMessage = isRw
+          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+        setErrorMessage(rateLimitMessage);
         return;
       }
 
@@ -266,8 +265,8 @@ export default function SignLanguagePage() {
         type: 'therapy',
         titleEn: 'Sign Language AI Error',
         titleRw: 'Ikosa rya AI ku Marenga',
-        messageEn: 'You may have hit the system limit (20 requests/min). Please try again in 60 seconds.',
-        messageRw: 'Ushobora kuba wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y\'amasegonda 60.',
+        messageEn: 'You may have hit the system limit. Please try again in 2 hours.',
+        messageRw: 'Ushobora kuba wageze ku mupaka wa sisitemu. Gerageza nyuma y\'amasaha 2.',
         icon: 'MessageCircle',
         color: 'text-red-500 bg-red-50',
         link: '/sign-language'
@@ -638,10 +637,22 @@ export default function SignLanguagePage() {
 
         {/* Show before any scan */}
         {!isAnalyzing && !aiResponse && !scanResult && (
-          <div className="text-center p-6 bg-white/40 rounded-2xl border border-dashed border-primary-100">
-            <p className="text-sm text-neutral-400 italic">
-              📷 {isRw ? 'Erekeza kamera ku kimenyetso cy’amarenga maze ukande Sikanira' : 'Point camera at a sign language gesture and tap Scan'}
-            </p>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="bg-red-50 text-red-700 px-4 py-2 rounded-2xl text-xs flex items-center gap-2 border border-red-100 shadow-sm">
+              <AlertTriangle size={14} />
+              {errorMessage}
+            </div>
+            <button
+              onClick={() => navigate('/centers')}
+              className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary-200 rounded-2xl text-xs font-black shadow-sm hover:bg-primary-50 transition-all active:scale-95"
+            >
+              <MapPin size={14} />
+              {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
+            </button>
           </div>
         )}
       </div>
