@@ -637,7 +637,13 @@ export default function SignLanguagePage() {
 
         {/* Show before any scan */}
         {!isAnalyzing && !aiResponse && !scanResult && (
+          <div className="text-center p-6 bg-white/40 rounded-2xl border border-dashed border-primary-100">
+            <p className="text-sm text-neutral-400 italic">
+              📷 {isRw ? 'Erekeza kamera ku kimenyetso cy’amarenga maze ukande Sikanira' : 'Point camera at a sign language gesture and tap Scan'}
+            </p>
+          </div>
         )}
+
 
         {/* Error Message */}
         {errorMessage && (
