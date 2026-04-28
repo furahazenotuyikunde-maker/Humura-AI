@@ -19,9 +19,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// 3. Initialize Gemini 3 Flash
+// 3. Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // 4. Image Analysis Endpoint (Multipart)
 app.post('/analyze-sign', upload.single('image'), async (req, res) => {
