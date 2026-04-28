@@ -10,8 +10,8 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // 1. Setup Middleware
-app.use(cors());
-app.use(express.json()); // Added JSON parsing for text endpoints
+app.use(cors({ origin: "*" })); // Allow all origins for simplicity in dev
+app.use(express.json());
 
 // 2. Setup Multer (for Image Analysis)
 const upload = multer({
