@@ -70,6 +70,11 @@ const ProgressPage: React.FC = () => {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
+
       const dataResult = await response.json();
       if (dataResult.success) {
         setAnalysis({

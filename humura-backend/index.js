@@ -43,7 +43,9 @@ app.post('/chat', async (req, res) => {
     const { message, history, lang } = req.body;
     const isRw = lang?.startsWith('rw');
 
-    if (!message) return res.status(400).json({ error: "Message is required" });
+    if (!message) {
+      return res.status(400).json({ error: "No message provided" });
+    }
 
     // Format history for Gemini
     const contents = (history || []).map(m => ({
@@ -67,7 +69,7 @@ app.post('/chat', async (req, res) => {
     return res.status(200).json({ success: true, reply: chatResponse.text() });
   } catch (error) {
     console.error("[CHAT ERROR]", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || "Chat failed" });
   }
 });
 
@@ -104,9 +106,15 @@ app.post('/analyze-progress', async (req, res) => {
     });
   } catch (error) {
     console.error("[PROGRESS ERROR]", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || "Analysis failed" });
   }
 });
 
-app.get('/', (req, res) => res.send('Humura AI Backend is Live!'));
+app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!' }));
+
+// 7. Catch-all 404 Route (JSON)
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
+});
+
 app.listen(port, () => console.log(`Backend running on port ${port}`));

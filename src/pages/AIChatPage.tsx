@@ -45,8 +45,12 @@ const AIChatPage: React.FC = () => {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to get AI response");
 
       const aiReply = data.reply;
       if (aiReply) {

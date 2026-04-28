@@ -255,9 +255,12 @@ export default function SignLanguagePage() {
         })
       });
 
-      const dataResult = await response.json();
-      if (!response.ok) throw new Error(dataResult.error || "Failed to get AI response");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server returned ${response.status}`);
+      }
 
+      const dataResult = await response.json();
       setAiResponse(dataResult.reply);
     } catch (err: any) {
       console.error('[RENDER] ✖ Error:', err.message);
