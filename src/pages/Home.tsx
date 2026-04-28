@@ -45,18 +45,33 @@ export default function Home() {
     });
   })();
 
-  const handleMoodSelect = (mood: typeof MOODS[0]) => {
+  const handleMoodSelect = async (mood: typeof MOODS[0]) => {
     if (selectedMood) return; // Already logged today
     setSelectedMood(mood.id);
     setMoodTip(isRw ? mood.tip.rw : mood.tip.en);
     setShowTip(true);
 
     const today = new Date().toISOString().split('T')[0];
-    const entry = { date: today, mood: mood.id, emoji: mood.emoji, score: MOODS.indexOf(mood) === 0 ? 5 : MOODS.length - MOODS.indexOf(mood) };
+    const score = MOODS.indexOf(mood) === 0 ? 5 : MOODS.length - MOODS.indexOf(mood);
+    const entry = { date: today, mood: mood.id, emoji: mood.emoji, score };
+    
+    // 1. Save to LocalStorage (Immediate feedback)
     const stored = localStorage.getItem('Humura_moods');
     const entries = stored ? JSON.parse(stored) : [];
     const updated = [...entries.filter((e: any) => e.date !== today), entry];
     localStorage.setItem('Humura_moods', JSON.stringify(updated));
+
+    // 2. Save to Supabase (For Progress Page analysis)
+    try {
+      const { supabase } = await import('../lib/supabaseClient');
+      await supabase.from('mood_logs').insert([{
+        mood: mood.id,
+        emoji: mood.emoji,
+        score: score
+      }]);
+    } catch (err) {
+      console.error("Supabase Mood Log Error:", err);
+    }
   };
 
   const navCards = [

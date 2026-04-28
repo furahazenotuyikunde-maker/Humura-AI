@@ -1,420 +1,192 @@
-// AUDITED — max 1 Gemini 3.0 Flash call per user message
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Send, Mic, MicOff, AlertTriangle, X, MessageCircle, Phone, Plus, Loader2, MapPin } from 'lucide-react';
+import { Send, User, Bot, AlertCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import { supabase } from '../lib/supabaseClient';
-import { addNotification } from '../lib/notifications';
-import { translateText } from '../lib/translate';
-import { Languages } from 'lucide-react';
-
-// ──────────────────────────────────────────────────────────────
-// TYPES
-// ──────────────────────────────────────────────────────────────
 interface Message {
-  id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'model';
   content: string;
-  translatedContent?: string;
-  timestamp: Date;
 }
 
-interface ChatSession {
-  id: string;
-  title: string;
-  messages: Message[];
-  lastUpdated: Date;
-}
-
-export default function AIChatPage() {
+const AIChatPage: React.FC = () => {
   const { i18n } = useTranslation();
-  const lang = i18n.language || 'en';
-  const isRw = lang.startsWith('rw');
-
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const sessionUrlId = searchParams.get('session');
-
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    const saved = localStorage.getItem('Humura_chat_sessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.map((s: any) => ({
-          ...s,
-          lastUpdated: new Date(s.lastUpdated),
-          messages: s.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
-        }));
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
-
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionUrlId);
+  const isRw = i18n.language?.startsWith('rw');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const isSendingRef = useRef(false);
-  const messagesRef = useRef<Message[]>([]);
-
-  // Sync with URL and local storage
-  useEffect(() => {
-    if (sessionUrlId && sessionUrlId !== currentSessionId) {
-      setCurrentSessionId(sessionUrlId);
-    }
-  }, [sessionUrlId]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    localStorage.setItem('Humura_chat_sessions', JSON.stringify(sessions));
-    if (currentSessionId && searchParams.get('session') !== currentSessionId) {
-      setSearchParams({ session: currentSessionId });
-    }
-  }, [sessions, currentSessionId]);
-
-  // Derived current session
-  const currentSession = sessions.find(s => s.id === currentSessionId) || null;
-  const messages = currentSession?.messages || [];
-
-  // Sync messagesRef with state for API consistency
-  useEffect(() => {
-    messagesRef.current = messages;
+    scrollToBottom();
   }, [messages]);
 
-  // Auto-scroll
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
-  const startNewChat = () => {
-    const newSession: ChatSession = {
-      id: Date.now().toString(),
-      title: 'Humura AI Chat',
-      messages: [],
-      lastUpdated: new Date(),
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setCurrentSessionId(newSession.id);
-  };
-
-  // Initialize first chat or handle new session from URL
-  useEffect(() => {
-    if (sessions.length === 0) {
-      startNewChat();
-    } else if (sessionUrlId) {
-      // Check if sessionUrlId exists in sessions
-      const exists = sessions.some(s => s.id === sessionUrlId);
-      if (!exists) {
-        // Create new session with the ID from URL
-        const newSession: ChatSession = {
-          id: sessionUrlId,
-          title: 'Humura AI Chat',
-          messages: [],
-          lastUpdated: new Date(),
-        };
-        setSessions(prev => [newSession, ...prev]);
-        setCurrentSessionId(sessionUrlId);
-      } else {
-        setCurrentSessionId(sessionUrlId);
-      }
-    } else if (!currentSessionId) {
-      setCurrentSessionId(sessions[0].id);
-    }
-  }, [sessionUrlId]);
-
-  const handleSend = useCallback(async () => {
-    // PREVENT DUPLICATES
-    if (!input.trim() || isLoading || isSendingRef.current) {
-      if (isSendingRef.current) console.warn('[GEMINI] ⚠ Blocked duplicate request attempt.');
-      return;
-    }
-
-    const userText = input.trim();
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setErrorMessage('');
-    isSendingRef.current = true;
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: userText,
-      timestamp: new Date(),
-    };
-
-    // Optimistic update
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSessionId) {
-        return { ...s, messages: [...s.messages, userMsg], lastUpdated: new Date() };
-      }
-      return s;
-    }));
-
     setIsLoading(true);
+    setError(null);
 
     try {
-      console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now() + ' | session=' + currentSessionId);
-      
-      // TIER 1: CALL SUPABASE EDGE FUNCTION 'super-task'
-      const { data, error } = await supabase.functions.invoke('super-task', {
-        body: {
-          userMessage: userText,
-          history: messagesRef.current.map(m => ({ role: m.role, content: m.content })),
-          lang: lang,
-          apiKey: import.meta.env.VITE_GEMINI_API_KEY
-        }
-      });
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("Gemini API Key missing");
 
-      if (error && (error as any).status === 429) {
-        console.error('[GEMINI] ✖ Rate limit hit (429)');
-        const rateLimitMessage = isRw
-          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-        setErrorMessage(rateLimitMessage);
-        return;
-      }
-
-      if (error) throw error;
-      if (!data?.reply) throw new Error('No reply received from AI service');
-
-      console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
-
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.reply,
-        timestamp: new Date(),
-      };
-
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSessionId) {
-          const updatedMessages = [...s.messages, aiMsg];
-          let newTitle = s.title;
-          if (s.messages.length === 1) {
-            newTitle = userText.slice(0, 30) + (userText.length > 30 ? '...' : '');
-          }
-          return { ...s, messages: updatedMessages, title: newTitle, lastUpdated: new Date() };
-        }
-        return s;
+      // Build context from history
+      const history = messages.map(m => ({
+        role: m.role,
+        parts: [{ text: m.content }]
       }));
 
-      addNotification({
-        type: 'therapy',
-        titleEn: 'AI Response Received',
-        titleRw: 'Ubutumwa bwa AI Mwagezeho',
-        messageEn: 'Humura AI has responded to your message. Tap to view.',
-        messageRw: 'Humura AI yasubije ubutumwa bwawe. Kanda hano urebe.',
-        icon: 'MessageCircle',
-        color: 'text-primary bg-primary-50',
-        link: `/chat?session=${currentSessionId}`
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            ...history,
+            { role: 'user', parts: [{ text: input }] }
+          ],
+          systemInstruction: {
+            parts: [{
+              text: `You are Humura AI, a compassionate mental health assistant dedicated to supporting young people in Rwanda. 
+              Your tone is warm, non-judgmental, and culturally sensitive. 
+              You understand the Rwandan context, including local values (Ubumuntu, Ubupfura) and challenges.
+              Support the user in ${isRw ? 'Kinyarwanda' : 'English'}. 
+              If the user is in crisis, prioritize empathy and gently suggest professional help (like calling 114).
+              Keep responses concise but deeply empathetic.`
+            }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+          }
+        })
       });
 
-    } catch (err: any) {
-      console.error('[GEMINI] ✖ Error:', err.message);
-      const friendlyError = isRw
-        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || "Failed to get AI response");
 
-      setErrorMessage(friendlyError);
+      const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (aiReply) {
+        setMessages(prev => [...prev, { role: 'model', content: aiReply }]);
+      }
+    } catch (err: any) {
+      console.error("Chat Error:", err);
+      setError(isRw ? "Habaye ikosa. Nyamuneka gerageza nanone." : "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
-      isSendingRef.current = false;
     }
-  }, [input, isLoading, currentSessionId, lang, isRw]);
-
-  // Voice Input
-  const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-    const recognition = new SpeechRecognition();
-    recognition.lang = isRw ? 'rw-RW' : 'en-US';
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (e: any) => setInput(e.results[0][0].transcript);
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  const handleTranslate = async (messageId: string, text: string) => {
-    const target = isRw ? 'en' : 'rw';
-    const translated = await translateText(text, target);
-
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSessionId) {
-        return {
-          ...s,
-          messages: s.messages.map(m => m.id === messageId ? { ...m, translatedContent: translated } : m)
-        };
-      }
-      return s;
-    }));
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-60px)] relative bg-[#F0F2F5]">
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-primary text-white shadow-md z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-            <MessageCircle size={24} />
+    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-12 px-4">
+      <div className="max-w-3xl mx-auto flex flex-col h-[80vh] bg-white rounded-3xl shadow-xl border border-[#E8E1DB] overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-[#E8E1DB] bg-[#FDFCFB] flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#8B5E3C] rounded-2xl flex items-center justify-center text-white">
+            <Bot size={28} />
           </div>
           <div>
-            <p className="font-bold text-sm truncate max-w-[150px]">{currentSession?.title || 'Humura AI'}</p>
-            <p className="text-[10px] opacity-80 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              {isRw ? 'Ndi hano' : 'Online'}
-            </p>
+            <h1 className="text-xl font-bold text-[#4A2C1A]">Humura AI</h1>
+            <p className="text-sm text-[#8B5E3C]">{isRw ? 'Ubufasha mu mutima' : 'Emotional Support Assistant'}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={startNewChat} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-            <Plus size={20} />
-          </button>
-          <a href="tel:114" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 rounded-xl text-xs font-black hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20">
-            <Phone size={14} />
-            114
-          </a>
-        </div>
-      </div>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat opacity-90">
-        {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-white/40 backdrop-blur-sm rounded-3xl mx-4 my-10 border border-white/50 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <MessageCircle size={32} className="text-primary" />
-            </div>
-            <h3 className="font-extrabold text-primary-900 text-xl mb-2">
-              {isRw ? 'Muraho! Ndi Humura AI' : 'Hello! I\'m Humura AI'}
-            </h3>
-            <p className="text-primary-600 text-sm max-w-xs leading-relaxed">
-              {isRw
-                ? 'Ndi inshuti yawe yo gufasha mu buzima bwo mu mutwe. Vuga ibyo umva mu mutima.'
-                : 'Your compassionate mental wellness companion. Share what\'s on your mind — I\'m here to listen.'}
-            </p>
-          </div>
-        )}
-
-        <AnimatePresence>
-          {messages.map((m) => (
-            <motion.div
-              key={m.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed relative ${m.role === 'user'
-                    ? 'bg-primary text-white rounded-tr-none'
-                    : 'bg-white text-primary-900 rounded-tl-none border border-neutral-100'
-                  }`}
-              >
-                {m.translatedContent ? (
-                  <div className="space-y-2">
-                    <p className="opacity-50 text-xs italic line-through">{m.content}</p>
-                    <p className="font-bold">{m.translatedContent}</p>
-                  </div>
-                ) : (
-                  m.content
-                )}
-
-                <div className="flex items-center justify-between mt-1.5 border-t border-black/5 pt-1">
-                  <button
-                    onClick={() => navigate(`/translator?text=${encodeURIComponent(m.content)}&target=${isRw ? 'rw' : 'en'}`)}
-                    className="text-[10px] font-bold opacity-60 hover:opacity-100 flex items-center gap-1 uppercase tracking-wider"
-                  >
-                    <Languages size={10} />
-                    {isRw ? 'TRANSLATOR (EN)' : 'TRANSLATOR (RW)'}
-                  </button>
-                  <div className={`text-[10px] opacity-60`}>
-                    {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
-                {/* Tail for bubbles */}
-                <div className={`absolute top-0 w-2 h-2 ${m.role === 'user'
-                    ? 'right-[-8px] border-l-[8px] border-l-primary border-b-[8px] border-b-transparent'
-                    : 'left-[-8px] border-r-[8px] border-r-white border-b-[8px] border-b-transparent'
-                  }`} />
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Typing indicator */}
-        {isLoading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
-              <span className="think-dot bg-primary-400" />
-            </div>
-            <div className="mt-1 flex items-center gap-1 px-1">
-              <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></span>
-              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
-                {isRw ? 'Ubufasha bwa CBT (Cognitive Behavioural Therapy)' : 'CBT (Cognitive Behavioural Therapy)'}
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <Bot className="mx-auto text-[#E8E1DB] mb-4" size={48} />
+              <h2 className="text-[#8B5E3C] font-medium mb-2">
+                {isRw ? 'Muraho! Nakufasha iki uyu munsi?' : 'Hello! How can I support you today?'}
+              </h2>
+              <p className="text-sm text-gray-400 max-w-xs mx-auto">
+                {isRw ? 'Humura AI iri hano kugutegeka amatwi no kugufasha.' : 'Humura AI is here to listen and support you in a safe space.'}
               </p>
             </div>
-          </motion.div>
-        )}
+          )}
 
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="flex flex-col items-center gap-3">
-            <div className="bg-red-50 text-red-700 px-4 py-2 rounded-2xl text-xs flex items-center gap-2 border border-red-100 shadow-sm animate-shake">
-              <AlertTriangle size={14} />
-              {errorMessage}
+          <AnimatePresence initial={false}>
+            {messages.map((msg, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-[#8B5E3C]'
+                  }`}>
+                    {msg.role === 'user' ? <User size={18} className="text-white" /> : <Bot size={18} className="text-white" />}
+                  </div>
+                  <div className={`p-4 rounded-2xl ${
+                    msg.role === 'user' 
+                      ? 'bg-[#8B5E3C] text-white rounded-tr-none' 
+                      : 'bg-[#FDFCFB] border border-[#E8E1DB] text-[#4A2C1A] rounded-tl-none'
+                  }`}>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="flex gap-3 items-center text-[#8B5E3C]">
+                <div className="w-8 h-8 rounded-full bg-[#8B5E3C] flex items-center justify-center">
+                  <Bot size={18} className="text-white" />
+                </div>
+                <Loader2 className="animate-spin" size={18} />
+                <span className="text-xs italic">{isRw ? 'Humura AI aratekereza...' : 'Humura AI is thinking...'}</span>
+              </div>
             </div>
-            <button
-              onClick={() => navigate('/centers')}
-              className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary-200 rounded-2xl text-xs font-black shadow-sm hover:bg-primary-50 transition-all active:scale-95"
-            >
-              <MapPin size={14} />
-              {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
-            </button>
-          </div>
-        )}
+          )}
 
-        <div ref={scrollRef} />
-      </div>
-
-      {/* Input Bar */}
-      <div className="p-3 bg-white border-t border-neutral-200 flex items-center gap-2 pb-safe">
-        <button
-          onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
-          className={`p-3 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-neutral-400 hover:bg-neutral-100'}`}
-        >
-          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
-        </button>
-
-        <div className="flex-1 relative">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder={isRw ? 'Andika ubutumwa...' : 'Type a message...'}
-            className="w-full pl-4 pr-12 py-3.5 bg-[#F0F2F5] rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
-          />
+          {error && (
+            <div className="flex justify-center">
+              <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs">
+                <AlertCircle size={14} />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || isLoading}
-          className={`p-3.5 rounded-full shadow-lg transition-all ${!input.trim() || isLoading
-              ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-              : 'bg-primary text-white hover:bg-primary-900 shadow-primary/20'
-            }`}
-        >
-          {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Send size={22} />}
-        </button>
+        {/* Input Area */}
+        <div className="p-6 bg-white border-t border-[#E8E1DB]">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              placeholder={isRw ? 'Andika ubutumwa bwawe...' : 'Type your message...'}
+              className="flex-1 px-6 py-3 bg-[#FDFCFB] border border-[#E8E1DB] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8B5E3C] text-[#4A2C1A]"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="w-12 h-12 bg-[#8B5E3C] text-white rounded-2xl flex items-center justify-center hover:bg-[#4A2C1A] transition-colors disabled:opacity-50"
+            >
+              <Send size={20} />
+            </button>
+          </div>
+          <p className="text-[10px] text-center text-gray-400 mt-3">
+            {isRw ? 'Humura AI ntisimbura ubufasha bw’inzobere mu buzima bwo mu mutwe.' : 'Humura AI is not a replacement for professional mental health care.'}
+          </p>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-
+export default AIChatPage;
