@@ -24,9 +24,9 @@ serve(async (req) => {
 
     console.log('[GEMINI] ▶ Request fired (Sign-Detect) | timestamp=' + Date.now());
 
-    // Call Gemini 3.0 Flash Vision
+    // Call Gemini 3-Flash Vision
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
