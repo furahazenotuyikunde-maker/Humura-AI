@@ -10,8 +10,8 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // 1. Setup Middleware
-app.use(cors({ origin: "*" })); // Allow all origins for simplicity in dev
-app.use(express.json());
+app.use(cors({ origin: "*" })); 
+app.use(express.json()); // Body parser MUST be before routes
 
 // 2. Setup Multer (for Image Analysis)
 const upload = multer({
@@ -33,83 +33,59 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
     const response = await result.response;
     return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || "Image analysis failed" });
   }
 });
 
-// 5. AI Chat Endpoint
+// 5. AI Chat Endpoint (Updated with your template)
 app.post('/chat', async (req, res) => {
   try {
     const { message, history, lang } = req.body;
-    const isRw = lang?.startsWith('rw');
-
     if (!message) {
       return res.status(400).json({ error: "No message provided" });
     }
-
-    // Format history for Gemini
-    const contents = (history || []).map(m => ({
+    
+    const isRw = lang?.startsWith('rw');
+    // Map history to Gemini format: { role, parts: [{ text }] }
+    const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }));
 
-    // Add current message
-    contents.push({ role: 'user', parts: [{ text: message }] });
-
-    const chatResult = await model.generateContent({
-      contents,
-      systemInstruction: {
-        parts: [{
-          text: `You are Humura AI, a compassionate mental health assistant in Rwanda. Support the user in ${isRw ? 'Kinyarwanda' : 'English'}. Be warm and empathetic.`
-        }]
-      }
-    });
-
-    const chatResponse = await chatResult.response;
-    return res.status(200).json({ success: true, reply: chatResponse.text() });
+    const result = await model.generateContent([
+      ...chatHistory,
+      { role: "user", parts: [{ text: message }] }
+    ]);
+    const response = await result.response;
+    return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
     console.error("[CHAT ERROR]", error);
     return res.status(500).json({ error: error.message || "Chat failed" });
   }
 });
 
-// 6. Progress Tracker Endpoint
+// 6. Progress Tracker Endpoint (Updated with your template)
 app.post('/analyze-progress', async (req, res) => {
   try {
     const { moods, lang } = req.body;
-    const isRw = lang?.startsWith('rw');
-
-    if (!moods || !Array.isArray(moods)) {
-      return res.status(400).json({ error: "Mood data is required" });
+    if (!moods || moods.length === 0) {
+      return res.status(400).json({ error: "No mood data provided" });
     }
 
-    const moodSummary = moods.map(m => `${m.date}: ${m.mood}`).join(', ');
-
-    const result = await model.generateContent({
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `Analyze these moods: [${moodSummary}]. Respond in ${isRw ? 'Kinyarwanda' : 'English'} in JSON:
-          { "summary": "2-sentence warm overview", "recommendations": ["tip 1", "tip 2", "tip 3"] }`
-        }]
-      }]
-    });
-
+    const prompt = `Analyze this week's mood data and return a JSON object with "summary" (string) and "recommendations" (array of 3 strings). Mood data: ${JSON.stringify(moods)}. Language: ${lang || 'en'}`;
+    const result = await model.generateContent(prompt);
     const response = await result.response;
-    const aiText = response.text().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(aiText);
-
-    return res.status(200).json({ 
-      success: true, 
-      summary: parsed.summary, 
-      recommendations: parsed.recommendations 
-    });
+    
+    const text = response.text().replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+    return res.status(200).json({ success: true, ...parsed });
   } catch (error) {
     console.error("[PROGRESS ERROR]", error);
-    return res.status(500).json({ error: error.message || "Analysis failed" });
+    return res.status(500).json({ error: error.message || "Progress analysis failed" });
   }
 });
 
+// Health check root
 app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!' }));
 
 // 7. Catch-all 404 Route (JSON)
