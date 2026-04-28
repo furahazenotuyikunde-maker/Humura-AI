@@ -32,39 +32,38 @@ const AIChatPage: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setError(null);
-
     try {
+      // FIX 1: Ensure URL is absolute and correctly formatted
       const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      const backendUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
-      console.log("Backend URL:", backendUrl);
+      if (!rawUrl) throw new Error("Backend URL is not defined in environment variables.");
       
-      const response = await fetch(`${backendUrl}/chat`, {
+      const backendUrl = rawUrl.replace(/\/$/, '');
+      const targetEndpoint = `${backendUrl}/chat`; 
+      console.log("[DEBUG] Calling Target:", targetEndpoint);
+
+      const response = await fetch(targetEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: input,
+          message: userMessage,
           history: messages,
           lang: i18n.language
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server returned ${response.status}`);
+        // FIX 2: Better error parsing
+        const errorText = await response.text();
+        throw new Error(`Server Error (${response.status}): ${errorText || 'Endpoint not found'}`);
       }
 
       const data = await response.json();
-
-      const aiReply = data.reply;
-      if (aiReply) {
-        setMessages(prev => [...prev, { role: 'model', content: aiReply }]);
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
       }
     } catch (err: any) {
       console.error("Chat Error:", err);
-      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      const backendUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
-      setError(`Chat Error: ${err.message}. (ACTUAL CALL: ${backendUrl}/chat)`);
+      setError(`${isRw ? 'Ikibazo cyateganyijwe' : 'Chat Error'}: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
