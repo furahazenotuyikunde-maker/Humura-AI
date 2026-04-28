@@ -142,8 +142,16 @@ export default function SignLanguagePage() {
 
     // Capture frame from video
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) {
+      setErrorMessage(isRw ? "Kamera ntiyiteguye. Tegereza akanya..." : "Camera is not ready. Please wait a moment...");
+      setIsAnalyzing(false);
+      isSendingRef.current = false;
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       isSendingRef.current = false;
