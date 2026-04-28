@@ -35,7 +35,11 @@ const AIChatPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
+      const backendUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
+      console.log("Backend URL:", backendUrl);
+      
+      const response = await fetch(`${backendUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
