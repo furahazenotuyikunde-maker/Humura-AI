@@ -1,16 +1,16 @@
-// Humura AI - Production Backend (Render Web Service) - v1.0.3
+// Humura AI - Production Backend (Render Web Service) - v1.0.4
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 dotenv.config();
+
 const app = express();
 const port = process.env.PORT || 3001;
 
 // 1. Setup Middleware
-app.use(cors({ origin: "*" })); 
+app.use(cors({ origin: "*" }));
 app.use(express.json()); // Body parser MUST be before routes
 
 // 2. Setup Multer (for Image Analysis)
@@ -38,9 +38,8 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
 });
 
 // 5. AI Chat Endpoint
-// GET handler added just for browser verification
 app.get('/chat', (req, res) => {
-  res.json({ status: "Chat endpoint is live. Use POST to send messages.", version: "1.0.3" });
+  res.json({ status: "Chat endpoint is live. Use POST to send messages.", version: "1.0.4" });
 });
 
 app.post('/chat', async (req, res) => {
@@ -49,13 +48,10 @@ app.post('/chat', async (req, res) => {
     if (!message) {
       return res.status(400).json({ error: "No message provided" });
     }
-    
-    const isRw = lang?.startsWith('rw');
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }));
-
     const result = await model.generateContent([
       ...chatHistory,
       { role: "user", parts: [{ text: message }] }
@@ -75,11 +71,9 @@ app.post('/analyze-progress', async (req, res) => {
     if (!moods || moods.length === 0) {
       return res.status(400).json({ error: "No mood data provided" });
     }
-
     const prompt = `Analyze this week's mood data and return a JSON object with "summary" (string) and "recommendations" (array of 3 strings). Mood data: ${JSON.stringify(moods)}. Language: ${lang || 'en'}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    
     const text = response.text().replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(text);
     return res.status(200).json({ success: true, ...parsed });
@@ -89,12 +83,12 @@ app.post('/analyze-progress', async (req, res) => {
   }
 });
 
-// Health check root
-app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!', version: "1.0.3" }));
+// 7. Health Check
+app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!', version: "1.0.4" }));
 
-// 7. Catch-all 404 Route (JSON)
+// 8. Catch-all 404 Route (JSON)
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
 });
 
-app.listen(port, () => console.log(`Backend running on port ${port}`));
+app.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
