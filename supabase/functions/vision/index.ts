@@ -1,4 +1,5 @@
 
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { checkRateLimit } from "../_shared/rateLimiter.ts"
 
@@ -52,6 +53,8 @@ serve(async (req) => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 40000)
 
+    console.log('[GEMINI] ▶ Request fired (Vision) | timestamp=' + Date.now());
+
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -74,6 +77,7 @@ serve(async (req) => {
 
       clearTimeout(timeoutId)
 
+      console.log('[GEMINI] ✔ Response received (Vision) | timestamp=' + Date.now());
       const data = await response.json()
       
       if (!response.ok) {
@@ -81,6 +85,7 @@ serve(async (req) => {
         const isQuotaError = response.status === 429 || data.error?.message?.toLowerCase().includes('quota')
         
         if (isQuotaError) {
+          console.error('[GEMINI] ✖ Rate limit hit (429)');
           return new Response(
             JSON.stringify({ 
               reply: isRw 
@@ -90,6 +95,7 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
         }
+        console.error('[GEMINI] ✖ Error:', data.error?.message || "Failed to analyze image with Gemini Vision");
         throw new Error(data.error?.message || "Failed to analyze image with Gemini Vision")
       }
 

@@ -1,3 +1,4 @@
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,6 +88,7 @@ export default function SignLanguagePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     // Cleanup camera strictly when component unmounts to prevent privacy leaks
@@ -130,24 +132,30 @@ export default function SignLanguagePage() {
   };
 
   const handleScan = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isSendingRef.current) return;
+    
     setIsAnalyzing(true);
     setScanResult(null);
     setAiResponse('');
     setErrorMessage('');
+    isSendingRef.current = true;
 
     // Capture frame from video
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      isSendingRef.current = false;
+      return;
+    }
     ctx.drawImage(videoRef.current, 0, 0);
     const imageBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
 
     // Call Gemini via 'vision' edge function
     try {
-      console.log("Humura AI (Vision): Attempting Edge Function 'vision'...");
+      console.log('[GEMINI] ▶ Request fired (Vision) | timestamp=' + Date.now());
+      
       const { data, error } = await supabase.functions.invoke('vision', {
         body: {
           imageBase64,
@@ -167,6 +175,7 @@ export default function SignLanguagePage() {
       });
 
       if (error && (error as any).status === 429) {
+        console.error('[GEMINI] ✖ Rate limit hit (429)');
         const rateLimitMessage = isRw
           ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
           : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
@@ -175,6 +184,8 @@ export default function SignLanguagePage() {
       }
 
       if (error) throw error;
+
+      console.log('[GEMINI] ✔ Response received (Vision) | timestamp=' + Date.now());
 
       try {
         const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
@@ -186,36 +197,24 @@ export default function SignLanguagePage() {
           });
         }
       } catch (err: any) {
-      console.error("❌ Vision Edge Function failed:", err);
+      console.error('[GEMINI] ✖ Error:', err.message);
       setErrorMessage(isRw 
         ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone." 
         : "Failed to analyze the image. Please try again.");
 
     } finally {
       setIsAnalyzing(false);
+      isSendingRef.current = false;
     }
   };
 
   const handleSend = async () => {
-    if (selected.length === 0) return;
+    if (selected.length === 0 || isSendingRef.current) return;
     const message = composeMessage();
     setIsAnalyzing(true);
     setAiResponse('');
     setErrorMessage('');
-
-    const OFFLINE_RESPONSES = [
-      { en: "Thank you for sharing your feelings. Your emotions are completely valid, and I am here to hold space for you.", rw: "Urakoze gusangira ibyiyumviro byawe. Ibyo wumva ni ukuri, kandi ndi hano kugira ngo nkumve." },
-      { en: "It takes courage to express what you're going through. Take a deep breath, and remember you don't have to carry this alone.", rw: "Bisaba ubutwari kuvuga ibyo urimo kunyuramo. Fata umwuka wimbitse, wibuke ko udashobora kwikorera ibi wenyine." },
-      { en: "I see you and I hear you. Even on the hardest days, your resilience shines through. Let's take this one step at a time.", rw: "Ndagukubita imboni kandi ndakumva. Na mu minsi igoye cyane, ubushobozi bwawe bwo kwihangana buragaragara. Reka tubyitwaremo gake gake." },
-      { en: "Your voice matters, and I am listening carefully to what your signs are telling me. You are safe here.", rw: "Ijwi ryawe ni ingenzi, kandi ndakumva witonze ibyo amarenga yawe arikumbwira. Ufite umutekano hano." },
-      { en: "I can sense that things feel heavy right now. Please know that it is absolutely okay to feel this way, and support is always available.", rw: "Nshobora kumva ko ibintu bikuremereye ubu. Ndagusaba kumenya ko ari byiza rwose kwiyumva gutya, kandi ubufasha buhoraho." },
-      { en: "Thank you for trusting me with your thoughts. You are surrounded by a community that cares deeply about your well-being.", rw: "Urakoze kunyizera mu bitekerezo byawe. Uhanzwe n'umuryango wita cyane ku buzima bwawe." },
-      { en: "Every emotion you express is a stepping stone toward healing. I appreciate you opening up.", rw: "Buri cyiyumviro ugaragaje ni intambwe iganisha ku gukira. Ndashima ko wifunguye." },
-      { en: "You don't have to explain everything perfectly. I understand your signs and I am here to support you without judgment.", rw: "Ntugomba gusobanura buri kimwe byatunganye. Ndasobanukirwa amarenga yawe kandi ndi hano kugufasha ntagucira urubanza." },
-      { en: "It's completely normal to have days that feel overwhelming. Let me know how I can best support you in this exact moment.", rw: "Birasanzwe kugira iminsi isaba byinshi. Mbwira uko nshobora kugufasha neza muri aka kanya." },
-      { en: "I acknowledge your pain and your feelings. Remember to show yourself the same compassion you would show to a good friend.", rw: "Ndemera ububabare bwawe n'ibyiyumviro byawe. Ibuka kwiyereka impuhwe wagaragariza inshuti nziza." },
-      { en: "Whenever you feel ready, we can breathe deeply together. You have survived all of your hard days so far.", rw: "Igihe cyose witeguye, dushobora guhumekera hamwe byimbitse. Warokotse iminsi yawe yose igoye kugeza ubu." }
-    ];
+    isSendingRef.current = true;
 
     const generateFallback = () => {
       const quotaMessage = isRw
@@ -231,8 +230,9 @@ export default function SignLanguagePage() {
     };
 
     try {
+      console.log('[GEMINI] ▶ Request fired (Sign) | timestamp=' + Date.now());
+      
       // TIER 1: TRY EDGE FUNCTION
-      console.log("Humura AI (Sign): Attempting Edge Function 'chat'...");
       const { data, error } = await supabase.functions.invoke('super-task', {
         body: { 
           userMessage: `[SIGN LANGUAGE COMMUNICATION] The user selected these emotional/needs signs: ${message}. Please provide a supportive response.`,
@@ -244,6 +244,7 @@ export default function SignLanguagePage() {
       });
 
       if (error && (error as any).status === 429) {
+        console.error('[GEMINI] ✖ Rate limit hit (429)');
         const rateLimitMessage = isRw
           ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
           : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
@@ -254,11 +255,11 @@ export default function SignLanguagePage() {
       if (error) throw error;
       if (!data?.reply) throw new Error('No reply received from Edge Function');
       
+      console.log('[GEMINI] ✔ Response received (Sign) | timestamp=' + Date.now());
       setAiResponse(data.reply);
       setTierUsed(2);
-      console.log("✅ Humura AI (Sign): Response received from Edge Function.");
     } catch (edgeError: any) {
-      console.error("❌ Humura AI (Sign): Edge Function failed.", edgeError);
+      console.error('[GEMINI] ✖ Error:', edgeError.message);
       if ((edgeError as any).status === 429) {
         setErrorMessage(generateFallback());
       } else {
@@ -279,6 +280,7 @@ export default function SignLanguagePage() {
     } finally {
       setIsAnalyzing(false);
       setIsLoading(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -329,19 +331,25 @@ export default function SignLanguagePage() {
   }, [autoDetectActive, cameraActive, selected]);
 
   const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || !GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_key') return;
+    if (!videoRef.current || !canvasRef.current || !GEMINI_API_KEY || isSendingRef.current) return;
     
     setIsDetecting(true);
+    isSendingRef.current = true;
     try {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        isSendingRef.current = false;
+        return;
+      }
       
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+      console.log('[GEMINI] ▶ Request fired (Auto-Detect) | timestamp=' + Date.now());
 
       // Route through Edge Function to ensure rate limiting
       const { data, error } = await supabase.functions.invoke('vision', {
@@ -354,10 +362,12 @@ export default function SignLanguagePage() {
       });
 
       if (error && (error as any).status === 429) {
-        console.warn("Auto-detect rate limited.");
+        console.error('[GEMINI] ✖ Rate limit hit (Auto-Detect)');
         return;
       }
       
+      console.log('[GEMINI] ✔ Response received (Auto-Detect) | timestamp=' + Date.now());
+
       const detectedId = (data?.reply || '').trim().toLowerCase();
       
       const matchedSign = signs.find(s => s.id.toLowerCase() === detectedId);
@@ -367,10 +377,11 @@ export default function SignLanguagePage() {
           if (matchedSign.isCrisis) setShowCrisisWarning(true);
         }
       }
-    } catch (e) {
-      console.error("Vision detection failed:", e);
+    } catch (e: any) {
+      console.error('[GEMINI] ✖ Error:', e.message);
     } finally {
       setIsDetecting(false);
+      isSendingRef.current = false;
     }
   };
 

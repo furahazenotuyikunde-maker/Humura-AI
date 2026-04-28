@@ -1,4 +1,4 @@
-// SINGLE Gemini 3.0 Flash call — deduplication guards applied
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,6 +21,8 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY is not set')
     }
 
+    console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now() + ' | user=' + userId);
+
     // Call Gemini 3.0 Flash
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${apiKey}`,
@@ -39,9 +41,11 @@ serve(async (req) => {
     const data = await geminiResponse.json()
     
     if (data.error) {
+      console.error('[GEMINI] ✖ Error:', data.error.message || 'Gemini API Error');
       throw new Error(data.error.message || 'Gemini API Error')
     }
 
+    console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
     const reply = data.candidates[0].content.parts[0].text
 
     // Save to DB using the user's JWT for RLS

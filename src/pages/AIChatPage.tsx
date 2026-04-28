@@ -1,3 +1,4 @@
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,6 +62,8 @@ export default function AIChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const isSendingRef = useRef(false);
+  const messagesRef = useRef<Message[]>([]);
 
   // Sync with URL and local storage
   useEffect(() => {
@@ -79,6 +82,11 @@ export default function AIChatPage() {
   // Derived current session
   const currentSession = sessions.find(s => s.id === currentSessionId) || null;
   const messages = currentSession?.messages || [];
+
+  // Sync messagesRef with state for API consistency
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Auto-scroll
   useEffect(() => {
@@ -122,11 +130,16 @@ export default function AIChatPage() {
   }, [sessionUrlId]);
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() || isLoading) return;
+    // PREVENT DUPLICATES
+    if (!input.trim() || isLoading || isSendingRef.current) {
+      if (isSendingRef.current) console.warn('[GEMINI] ⚠ Blocked duplicate request attempt.');
+      return;
+    }
 
     const userText = input.trim();
     setInput('');
     setErrorMessage('');
+    isSendingRef.current = true;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -146,18 +159,20 @@ export default function AIChatPage() {
     setIsLoading(true);
 
     try {
+      console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now() + ' | session=' + currentSessionId);
+      
       // TIER 1: CALL SUPABASE EDGE FUNCTION 'super-task'
-      console.log("Humura AI: Attempting Edge Function 'super-task'...");
       const { data, error } = await supabase.functions.invoke('super-task', {
         body: {
           userMessage: userText,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
+          history: messagesRef.current.map(m => ({ role: m.role, content: m.content })),
           lang: lang,
           apiKey: import.meta.env.VITE_GEMINI_API_KEY
         }
       });
 
       if (error && (error as any).status === 429) {
+        console.error('[GEMINI] ✖ Rate limit hit (429)');
         const rateLimitMessage = isRw
           ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
           : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
@@ -167,6 +182,8 @@ export default function AIChatPage() {
 
       if (error) throw error;
       if (!data?.reply) throw new Error('No reply received from AI service');
+
+      console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -187,7 +204,6 @@ export default function AIChatPage() {
         return s;
       }));
 
-      // Add a notification for the AI response
       addNotification({
         type: 'therapy',
         titleEn: 'AI Response Received',
@@ -200,7 +216,7 @@ export default function AIChatPage() {
       });
 
     } catch (err: any) {
-      console.error("❌ Chat failed:", err);
+      console.error('[GEMINI] ✖ Error:', err.message);
       const friendlyError = isRw
         ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
         : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
@@ -208,8 +224,9 @@ export default function AIChatPage() {
       setErrorMessage(friendlyError);
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
-  }, [input, isLoading, currentSessionId, sessions, lang, isRw, messages]);
+  }, [input, isLoading, currentSessionId, lang, isRw]);
 
   // Voice Input
   const startListening = () => {

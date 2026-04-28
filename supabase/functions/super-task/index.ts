@@ -1,4 +1,5 @@
 
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { checkRateLimit } from "../_shared/rateLimiter.ts"
 
@@ -62,6 +63,8 @@ serve(async (req) => {
         ? "The user is communicating using a Sign Language interface. Their message consists of selected keywords representing their signs. Be extra compassionate and validating of their non-verbal expression." 
         : "";
 
+      console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now());
+
       try {
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -96,6 +99,7 @@ serve(async (req) => {
 
       clearTimeout(timeoutId)
 
+      console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
       const data = await response.json()
       
       if (!response.ok) {
@@ -103,6 +107,7 @@ serve(async (req) => {
         const isQuotaError = response.status === 429 || data.error?.message?.toLowerCase().includes('quota')
         
         if (isQuotaError) {
+          console.error('[GEMINI] ✖ Rate limit hit (429)');
           return new Response(
             JSON.stringify({ 
               reply: isRw 
@@ -112,6 +117,7 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
         }
+        console.error('[GEMINI] ✖ Error:', data.error?.message || "Failed to fetch from Gemini API");
         throw new Error(data.error?.message || "Failed to fetch from Gemini API")
       }
 
