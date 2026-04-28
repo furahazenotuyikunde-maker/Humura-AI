@@ -54,7 +54,7 @@ const AIChatPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Chat Error:", err);
-      setError(isRw ? "Habaye ikosa. Nyamuneka gerageza nanone." : "Something went wrong. Please try again.");
+      setError(`Chat Error: ${err.message}. (URL: ${import.meta.env.VITE_RENDER_BACKEND_URL})`);
     } finally {
       setIsLoading(false);
     }
