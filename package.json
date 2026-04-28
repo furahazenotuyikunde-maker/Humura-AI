@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "start": "vite preview --port $PORT --host",
     "ai-login": "npx supabase login",
     "ai-link": "npx supabase link --project-ref acetkeyzhbgfsetwkfuo",
     "ai-deploy": "npx supabase functions deploy",
