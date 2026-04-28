@@ -245,40 +245,29 @@ export default function SignLanguagePage() {
     try {
       console.log('[GEMINI] ▶ Request fired (Sign) | timestamp=' + Date.now());
       
-      // TIER 1: TRY EDGE FUNCTION
-      const { data, error } = await supabase.functions.invoke('super-task', {
-        body: { 
-          userMessage: `[SIGN LANGUAGE COMMUNICATION] The user selected these emotional/needs signs: ${message}. Please provide a supportive response.`,
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `[SIGN LANGUAGE COMMUNICATION] The user selected these emotional/needs signs: ${message}. Please provide a supportive response.`,
           history: [],
-          lang: lang,
-          isSignLanguage: true,
-          apiKey: GEMINI_API_KEY.trim() || undefined
-        }
+          lang: i18n.language
+        })
       });
 
-      if (error && (error as any).status === 429) {
-        console.error('[GEMINI] ✖ Rate limit hit (429)');
-        const rateLimitMessage = isRw
-          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-        setErrorMessage(rateLimitMessage);
-        return;
-      }
+      const dataResult = await response.json();
+      if (!response.ok) throw new Error(dataResult.error || "Failed to get AI response");
 
-      if (error) throw error;
-      if (!data?.reply) throw new Error('No reply received from Edge Function');
-      
-      console.log('[GEMINI] ✔ Response received (Sign) | timestamp=' + Date.now());
-      setAiResponse(data.reply);
-      setTierUsed(2);
-    } catch (edgeError: any) {
-      console.error('[GEMINI] ✖ Error:', edgeError.message);
-      if ((edgeError as any).status === 429) {
-        setErrorMessage(generateFallback());
-      } else {
-        setAiResponse(generateFallback());
-      }
-      setTierUsed(3);
+      setAiResponse(dataResult.reply);
+    } catch (err: any) {
+      console.error('[RENDER] ✖ Error:', err.message);
+      setAiResponse(generateFallback());
+      setErrorMessage(err.message);
+    } finally {
+      setIsAnalyzing(false);
+      setIsLoading(false);
+      isSendingRef.current = false;
+    }
 
       addNotification({
         type: 'therapy',
