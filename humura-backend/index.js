@@ -1,4 +1,4 @@
-// Humura AI - Production Backend (Render Web Service) - v1.0.2
+// Humura AI - Production Backend (Render Web Service) - v1.0.3
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -37,7 +37,12 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
   }
 });
 
-// 5. AI Chat Endpoint (Updated with your template)
+// 5. AI Chat Endpoint
+// GET handler added just for browser verification
+app.get('/chat', (req, res) => {
+  res.json({ status: "Chat endpoint is live. Use POST to send messages.", version: "1.0.3" });
+});
+
 app.post('/chat', async (req, res) => {
   try {
     const { message, history, lang } = req.body;
@@ -46,7 +51,6 @@ app.post('/chat', async (req, res) => {
     }
     
     const isRw = lang?.startsWith('rw');
-    // Map history to Gemini format: { role, parts: [{ text }] }
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
@@ -64,7 +68,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-// 6. Progress Tracker Endpoint (Updated with your template)
+// 6. Progress Tracker Endpoint
 app.post('/analyze-progress', async (req, res) => {
   try {
     const { moods, lang } = req.body;
@@ -86,7 +90,7 @@ app.post('/analyze-progress', async (req, res) => {
 });
 
 // Health check root
-app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!' }));
+app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!', version: "1.0.3" }));
 
 // 7. Catch-all 404 Route (JSON)
 app.use((req, res) => {
