@@ -48,12 +48,10 @@ serve(async (req) => {
     console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
     const reply = data.candidates[0].content.parts[0].text
 
-    // Save to DB using the user's JWT for RLS
-    const authHeader = req.headers.get('Authorization')!
+    // Save to DB using service role (No Auth)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const lastUserMessage = messages[messages.length - 1].content

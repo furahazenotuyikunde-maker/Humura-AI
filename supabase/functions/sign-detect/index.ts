@@ -50,12 +50,10 @@ serve(async (req) => {
     console.log('[GEMINI] ✔ Response received (Sign-Detect) | timestamp=' + Date.now());
     const detectedSign = data.candidates[0].content.parts[0].text.trim()
 
-    // Save to DB
-    const authHeader = req.headers.get('Authorization')!
+    // Save to DB using service role (No Auth)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const { error: dbError } = await supabaseClient.from('sign_detections').insert([
