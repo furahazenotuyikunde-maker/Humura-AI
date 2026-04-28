@@ -10,7 +10,6 @@ import { useAuth } from '../layout';
  * useRef for history management, and premium dark-mode design.
  */
 export default function ChatPage() {
-  const { session } = useAuth();
   const [input, setInput] = useState('');
   const [uiMessages, setUiMessages] = useState<{role: string, content: string}[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +29,7 @@ export default function ChatPage() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     
     debounceTimer.current = setTimeout(async () => {
-      if (!input.trim() || !session?.user) return;
+      if (!input.trim()) return;
 
       isSending.current = true;
       setLoading(true);
@@ -48,17 +47,14 @@ export default function ChatPage() {
       console.log('[CHAT] ▶ Gemini 3.0 Flash request fired | id=REQ-' + Date.now());
 
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
         const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/chat-ai`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentSession?.access_token}`,
           },
           body: JSON.stringify({
             messages: historyRef.current,
-            userId: session.user.id
+            userId: 'guest-' + Date.now()
           }),
         });
 
