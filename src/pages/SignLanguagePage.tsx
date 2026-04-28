@@ -157,22 +157,20 @@ export default function SignLanguagePage() {
       isSendingRef.current = false;
       return;
     }
-    ctx.drawImage(videoRef.current, 0, 0);
-    const imageBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+    ctx.drawImage(video, 0, 0);
 
-      // Call Gemini via 'vision' edge function using direct fetch for reliability
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          imageBase64,
-          mimeType: 'image/jpeg',
-          apiKey: GEMINI_API_KEY.trim() || undefined,
-          prompt: `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
+    // Convert Canvas to Blob and Send via FormData
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setErrorMessage(isRw ? "Ikosa mu gufata ishusho." : "Failed to capture image.");
+        setIsAnalyzing(false);
+        isSendingRef.current = false;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', blob, 'capture.jpg');
+      formData.append('prompt', `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
             1. Identify the specific sign language gesture, body language, or facial expression.
             2. Interpret the emotional meaning or specific need (e.g., "I feel alone", "I need help").
             3. Provide a warm, empathetic explanation in the user's context (Rwanda).
@@ -181,45 +179,49 @@ export default function SignLanguagePage() {
               "detectedSign": "the emotion or need detected",
               "explanation": "a compassionate 2-sentence explanation of what you see and a validating response."
             }
-            If no clear gesture is visible, guide them to position their hands better.`
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          console.error('[GEMINI] ✖ Rate limit hit (429)');
-          const rateLimitMessage = isRw
-            ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-            : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-          setErrorMessage(rateLimitMessage);
-          return;
-        }
-        throw new Error(data.error || 'Failed to analyze image');
-      }
-
-      console.log('[GEMINI] ✔ Response received (Vision) | timestamp=' + Date.now());
+            If no clear gesture is visible, guide them to position their hands better.`);
+      formData.append('lang', lang);
+      formData.append('apiKey', GEMINI_API_KEY.trim());
 
       try {
-        const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
-        setScanResult(parsed);
-      } catch {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          },
+          body: formData // Browser automatically sets Content-Type to multipart/form-data with boundary
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+           if (response.status === 429) {
+             setErrorMessage(isRw ? "Wageze ku mupaka. Gerageza nyuma." : "Rate limit hit. Try later.");
+             return;
+           }
+           throw new Error(data.error || 'Failed to analyze image');
+        }
+
+        try {
+          const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
+          setScanResult(parsed);
+        } catch {
           setScanResult({
             detectedSign: "Analysis Complete",
             explanation: data.reply || "Could not analyze the image. Please try again."
           });
         }
       } catch (err: any) {
-      console.error('[GEMINI] ✖ Error:', err.message);
-      setErrorMessage(isRw 
-        ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone." 
-        : "Failed to analyze the image. Please try again.");
-
-    } finally {
-      setIsAnalyzing(false);
-      isSendingRef.current = false;
-    }
+        console.error('[GEMINI] ✖ Error:', err.message);
+        setErrorMessage(isRw 
+          ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone." 
+          : "Failed to analyze the image. Please try again.");
+      } finally {
+        setIsAnalyzing(false);
+        isSendingRef.current = false;
+      }
+    }, 'image/jpeg', 0.8);
   };
 
   const handleSend = async () => {
@@ -365,43 +367,49 @@ export default function SignLanguagePage() {
 
       console.log('[GEMINI] ▶ Request fired (Auto-Detect) | timestamp=' + Date.now());
 
-      // Route through Edge Function using direct fetch for reliability
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          imageBase64: base64Data,
-          mimeType: 'image/jpeg',
-          apiKey: GEMINI_API_KEY.trim() || undefined,
-          prompt: `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-           console.error('[GEMINI] ✖ Rate limit hit (Auto-Detect)');
-           return;
-        }
-        throw new Error(data.error || 'Failed to auto-detect');
-      }
+      // Capture Frame to Blob
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      console.log('[GEMINI] ✔ Response received (Auto-Detect) | timestamp=' + Date.now());
-
-      const detectedId = (data?.reply || '').trim().toLowerCase();
-      
-      const matchedSign = signs.find(s => s.id.toLowerCase() === detectedId);
-      if (matchedSign && !selected.find(s => s.id === matchedSign.id)) {
-        if (selected.length < 5) {
-          setSelected(prev => [...prev, matchedSign]);
-          if (matchedSign.isCrisis) setShowCrisisWarning(true);
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setIsDetecting(false);
+          isSendingRef.current = false;
+          return;
         }
-      }
+
+        const formData = new FormData();
+        formData.append('image', blob, 'auto-capture.jpg');
+        formData.append('prompt', `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`);
+        formData.append('apiKey', GEMINI_API_KEY.trim());
+
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+            },
+            body: formData
+          });
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Auto-detect failed');
+
+          const detectedId = (data?.reply || '').trim().toLowerCase();
+          const matchedSign = signs.find(s => s.id.toLowerCase() === detectedId);
+          if (matchedSign && !selected.find(s => s.id === matchedSign.id)) {
+            if (selected.length < 5) {
+              setSelected(prev => [...prev, matchedSign]);
+              if (matchedSign.isCrisis) setShowCrisisWarning(true);
+            }
+          }
+        } catch (e: any) {
+          console.error('[GEMINI] ✖ Auto-Detect Error:', e.message);
+        } finally {
+          setIsDetecting(false);
+          isSendingRef.current = false;
+        }
+      }, 'image/jpeg', 0.5);
     } catch (e: any) {
       console.error('[GEMINI] ✖ Error:', e.message);
     } finally {

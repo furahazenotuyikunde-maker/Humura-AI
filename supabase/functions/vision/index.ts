@@ -1,7 +1,5 @@
-
-// AUDITED — max 1 Gemini 3.0 Flash call per user message
+// AUDITED — Multipart Vision Function (Production Safe)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { checkRateLimit } from "../_shared/rateLimiter.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,131 +7,63 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  // Read request early for language
-  let body: any = {}
-  try {
-    body = await req.json()
-  } catch (e) {
-    console.warn("Could not parse request JSON")
-  }
-
-  const { imageBase64, mimeType, prompt, apiKey: bodyApiKey, lang } = body
-  const isRw = lang?.startsWith('rw')
-
-  // 1. Check Rate Limit (Global)
-  const { allowed, count } = await checkRateLimit()
-  if (!allowed) {
-    console.warn(`Rate limit exceeded: ${count} requests in the last minute.`)
-    return new Response(
-      JSON.stringify({ 
-        error: "Rate limit exceeded.",
-        reply: isRw 
-          ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa."
-          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support."
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-    )
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const apiKey = bodyApiKey || Deno.env.get("GEMINI_API_KEY")
+    // 1. Parse Multipart Form Data
+    const formData = await req.formData();
+    const imageFile = formData.get('image') as File;
+    const prompt = formData.get('prompt') as string;
+    const lang = formData.get('lang') as string;
+    const bodyApiKey = formData.get('apiKey') as string;
 
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not found in environment or request body")
+    const apiKey = bodyApiKey || Deno.env.get("GEMINI_API_KEY");
+    const isRw = lang?.startsWith('rw');
+
+    if (!apiKey) throw new Error("GEMINI_API_KEY not found.");
+    if (!imageFile) {
+      return new Response(JSON.stringify({ error: "No image data provided. Ensure your camera is active." }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
+      });
     }
 
-    // Call Gemini 3 Flash Preview (Multimodal)
+    // 2. Convert File to Base64 for Gemini
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    // 3. Call Gemini 3 Flash
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 40000)
+    console.log('[GEMINI] ▶ Multipart Request Fired | size=' + arrayBuffer.byteLength);
 
-    console.log('[GEMINI] ▶ Request fired (Vision) | timestamp=' + Date.now());
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType || 'image/jpeg', data: imageBase64 } }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            topP: 0.8,
-            topK: 40,
-          }
-        })
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt || "Analyze this image." },
+            { inline_data: { mime_type: imageFile.type || 'image/jpeg', data: base64Data } }
+          ]
+        }]
       })
+    })
 
-      clearTimeout(timeoutId)
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error?.message || "Google API Error");
 
-      console.log('[GEMINI] ✔ Response received (Vision) | timestamp=' + Date.now());
-      const data = await response.json()
-      
-      if (!response.ok) {
-        console.error("Gemini Vision Error:", data)
-        const isQuotaError = response.status === 429 || data.error?.message?.toLowerCase().includes('quota')
-        
-        if (isQuotaError) {
-          console.error('[GEMINI] ✖ Rate limit hit (429)');
-          return new Response(
-            JSON.stringify({ 
-              reply: isRw 
-                ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
-                : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support." 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          )
-        }
-        console.error('[GEMINI] ✖ Error:', data.error?.message || "Failed to analyze image with Gemini Vision");
-        throw new Error(data.error?.message || "Failed to analyze image with Gemini Vision")
-      }
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis generated."
 
-      let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis generated."
-      
-      // Robust JSON extraction: Find the first '{' and last '}' to strip away markdown if the AI includes it
-      try {
-        const firstBrace = reply.indexOf('{');
-        const lastBrace = reply.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          reply = reply.substring(firstBrace, lastBrace + 1);
-        }
-      } catch (e) {
-        console.warn("JSON extraction failed, returning raw string.");
-      }
-
-      return new Response(
-        JSON.stringify({ reply }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      )
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId)
-      if (fetchError.name === 'AbortError') {
-        throw new Error("Vision analysis timed out. Please try again.")
-      }
-      throw fetchError
-    }
+    return new Response(JSON.stringify({ reply }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200 
+    })
 
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    )
+    return new Response(JSON.stringify({ error: error.message }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500 
+    })
   }
 })
