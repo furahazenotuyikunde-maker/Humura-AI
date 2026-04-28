@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -132,6 +133,7 @@ export default function ProgressPage() {
   const [insightLoading, setInsightLoading] = useState(false);
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
   const [tierUsed, setTierUsed] = useState<number | null>(null);
+  const isSendingRef = useRef(false);
 
   const today = todayStr();
   const todayEntry = moodEntries.find(e => e.date === today);
@@ -244,12 +246,15 @@ export default function ProgressPage() {
   };
 
   const getInsight = async () => {
+    if (isSendingRef.current) return;
+    
     setInsightLoading(true);
-    setInsightText(''); // Clear previous
+    setInsightText(''); 
+    isSendingRef.current = true;
 
     try {
-      // TIER 1: TRY EDGE FUNCTION
-      console.log("Humura AI (Insight): Attempting Edge Function 'chat'...");
+      console.log('[GEMINI] ▶ Request fired (Insight) | timestamp=' + Date.now());
+      
       const last7Str = moodEntries.slice(-7).map(e => `${e.date}: ${e.mood} (${e.emoji})`).join(', ');
       
       const { data, error } = await supabase.functions.invoke('super-task', {
@@ -262,24 +267,26 @@ export default function ProgressPage() {
       });
 
       if (error && (error as any).status === 429) {
+        console.error('[GEMINI] ✖ Rate limit hit (429)');
         setInsightText(isRw 
-          ? "Wageze ku mupaka wa sisitemu (20/min). Gerageza nyuma y'amasegonda 60." 
-          : "You've hit the system limit (20 requests/min). Please try again in 60 seconds.");
+          ? "Wageze ku mupaka wa sisitemu. Gerageza nyuma y'amasaha 2 cyangwa uhamagare 114 niba ukeneye ubufasha bwihutirwa." 
+          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.");
         return;
       }
 
       if (error) throw error;
       if (!data?.reply) throw new Error('No reply received from Edge Function');
       
+      console.log('[GEMINI] ✔ Response received (Insight) | timestamp=' + Date.now());
       setInsightText(data.reply);
       setTierUsed(2);
-      console.log("✅ Humura AI (Insight): Response received from Edge Function.");
     } catch (edgeError: any) {
-      console.error("❌ Humura AI (Insight): Edge Function failed.", edgeError);
+      console.error('[GEMINI] ✖ Error:', edgeError.message);
       setInsightText(getOfflineInsight(moodEntries, lang));
       setTierUsed(3);
     } finally {
       setInsightLoading(false);
+      isSendingRef.current = false;
     }
   };
 

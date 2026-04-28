@@ -1,4 +1,4 @@
-// SINGLE Gemini 3.0 Flash call — deduplication guards applied
+// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -22,6 +22,8 @@ serve(async (req) => {
     // Clean base64 data (remove header if present)
     const base64Image = frameData.includes(',') ? frameData.split(',')[1] : frameData
 
+    console.log('[GEMINI] ▶ Request fired (Sign-Detect) | timestamp=' + Date.now());
+
     // Call Gemini 3.0 Flash Vision
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${apiKey}`,
@@ -40,8 +42,12 @@ serve(async (req) => {
     )
 
     const data = await geminiResponse.json()
-    if (data.error) throw new Error(data.error.message || 'Gemini API Error')
+    if (data.error) {
+      console.error('[GEMINI] ✖ Error:', data.error.message || 'Gemini API Error');
+      throw new Error(data.error.message || 'Gemini API Error')
+    }
 
+    console.log('[GEMINI] ✔ Response received (Sign-Detect) | timestamp=' + Date.now());
     const detectedSign = data.candidates[0].content.parts[0].text.trim()
 
     // Save to DB
