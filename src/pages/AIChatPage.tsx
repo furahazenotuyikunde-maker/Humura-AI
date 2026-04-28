@@ -62,7 +62,9 @@ const AIChatPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Chat Error:", err);
-      setError(`Chat Error: ${err.message}. (URL: ${import.meta.env.VITE_RENDER_BACKEND_URL})`);
+      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
+      const backendUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
+      setError(`Chat Error: ${err.message}. (ACTUAL CALL: ${backendUrl}/chat)`);
     } finally {
       setIsLoading(false);
     }
