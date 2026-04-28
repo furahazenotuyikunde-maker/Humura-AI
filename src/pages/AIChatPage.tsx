@@ -33,19 +33,17 @@ const AIChatPage: React.FC = () => {
     setInput('');
     setIsLoading(true);
     try {
-      // Route through Supabase Edge Functions
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const functionUrl = `${supabaseUrl}/functions/v1/humura-chat`;
-      
-      console.log("[DEBUG] Calling Supabase Function:", functionUrl);
+      // FIX 1: Ensure URL is absolute and correctly formatted
+      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
+      if (!rawUrl) throw new Error("Backend URL is not defined in environment variables.");
 
-      const response = await fetch(functionUrl, {
+      const backendUrl = rawUrl.replace(/\/$/, '');
+      const targetEndpoint = `${backendUrl}/chat`;
+      console.log("[DEBUG] Calling Target:", targetEndpoint);
+
+      const response = await fetch(targetEndpoint, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}` 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
           history: messages,
@@ -54,8 +52,9 @@ const AIChatPage: React.FC = () => {
       });
 
       if (!response.ok) {
+        // FIX 2: Better error parsing
         const errorText = await response.text();
-        throw new Error(`Server Error (${response.status}): ${errorText || 'Function error'}`);
+        throw new Error(`Server Error (${response.status}): ${errorText || 'Endpoint not found'}`);
       }
 
       const data = await response.json();
@@ -107,16 +106,14 @@ const AIChatPage: React.FC = () => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-[#8B5E3C]'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-[#8B5E3C]'
+                    }`}>
                     {msg.role === 'user' ? <User size={18} className="text-white" /> : <Bot size={18} className="text-white" />}
                   </div>
-                  <div className={`p-4 rounded-2xl ${
-                    msg.role === 'user' 
-                      ? 'bg-[#8B5E3C] text-white rounded-tr-none' 
+                  <div className={`p-4 rounded-2xl ${msg.role === 'user'
+                      ? 'bg-[#8B5E3C] text-white rounded-tr-none'
                       : 'bg-[#FDFCFB] border border-[#E8E1DB] text-[#4A2C1A] rounded-tl-none'
-                  }`}>
+                    }`}>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 </div>
