@@ -13,7 +13,7 @@ const ProgressPage: React.FC = () => {
   const { i18n } = useTranslation();
   const isRw = i18n.language?.startsWith('rw');
   const [moods, setMoods] = useState<MoodLog[]>([]);
-  const [analysis, setAnalysis] = useState<{ summary: string; tips: string[] } | null>(null);
+  const [analysis, setAnalysis] = useState<{ summary: string; recommendations: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -38,15 +38,13 @@ const ProgressPage: React.FC = () => {
   const fetchMoodData = async () => {
     setIsLoading(true);
     try {
-      // Fetch last 7 days of mood logs
       const { data, error } = await supabase
         .from('mood_logs')
         .select('created_at, mood')
         .order('created_at', { ascending: false })
-        .limit(30); // Get enough to find the last 7 distinct days
+        .limit(30);
 
       if (error) throw error;
-
       if (data && data.length > 0) {
         setMoods(data);
         analyzeMoods(data);
@@ -61,33 +59,23 @@ const ProgressPage: React.FC = () => {
   const analyzeMoods = async (data: MoodLog[]) => {
     setIsAnalyzing(true);
     try {
-      const moodHistory = data.map(m => `${new Date(m.created_at).toLocaleDateString()}: ${m.mood}`).join(', ');
+      const moodHistory = data.map(m => ({ date: new Date(m.created_at).toLocaleDateString(), mood: m.mood }));
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: `Analyze this user's mood history for the past week: [${moodHistory}].
-              Provide a response in ${isRw ? 'Kinyarwanda' : 'English'} in the following JSON format:
-              {
-                "summary": "A warm, empathetic 2-sentence summary of their emotional trend, aware of Rwandan context.",
-                "tips": ["Tip 1 (culturally aware)", "Tip 2 (practical)", "Tip 3 (mental health focused)"]
-              }
-              Ensure the advice is supportive and uses Rwandan cultural references where appropriate (e.g., family support, community, nature).`
-          }],
+          moods: moodHistory,
           lang: i18n.language
         })
       });
 
-      const result = await response.json();
-      const aiResponse = result.reply;
-      
-      if (aiResponse) {
-        // Handle potential markdown backticks in JSON response
-        const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-        setAnalysis(JSON.parse(cleanJson));
+      const dataResult = await response.json();
+      if (dataResult.success) {
+        setAnalysis({
+          summary: dataResult.summary,
+          recommendations: dataResult.recommendations
+        });
       }
     } catch (err) {
       console.error("AI Analysis Error:", err);
@@ -186,7 +174,7 @@ const ProgressPage: React.FC = () => {
                   <div className="space-y-6">
                     <p className="text-sm leading-relaxed font-medium">"{analysis.summary}"</p>
                     <div className="space-y-3">
-                      {analysis.tips.map((tip, i) => (
+                      {analysis.recommendations.map((tip, i) => (
                         <div key={i} className="flex gap-2 text-xs bg-white/10 p-3 rounded-xl border border-white/10">
                           <ChevronRight size={14} className="flex-shrink-0" />
                           <span>{tip}</span>

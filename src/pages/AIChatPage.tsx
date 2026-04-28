@@ -39,16 +39,8 @@ const AIChatPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [
-            ...messages,
-            { role: 'user', content: input }
-          ],
-          systemInstruction: `You are Humura AI, a compassionate mental health assistant dedicated to supporting young people in Rwanda. 
-              Your tone is warm, non-judgmental, and culturally sensitive. 
-              You understand the Rwandan context, including local values (Ubumuntu, Ubupfura) and challenges.
-              Support the user in ${isRw ? 'Kinyarwanda' : 'English'}. 
-              If the user is in crisis, prioritize empathy and gently suggest professional help (like calling 114).
-              Keep responses concise but deeply empathetic.`,
+          message: input,
+          history: messages,
           lang: i18n.language
         })
       });
