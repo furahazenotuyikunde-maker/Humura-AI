@@ -33,17 +33,19 @@ const AIChatPage: React.FC = () => {
     setInput('');
     setIsLoading(true);
     try {
-      // FIX 1: Ensure URL is absolute and correctly formatted
-      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      if (!rawUrl) throw new Error("Backend URL is not defined in environment variables.");
+      // Route through Supabase Edge Functions
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const functionUrl = `${supabaseUrl}/functions/v1/humura-chat`;
       
-      const backendUrl = rawUrl.replace(/\/$/, '');
-      const targetEndpoint = `${backendUrl}/chat`; 
-      console.log("[DEBUG] Calling Target:", targetEndpoint);
+      console.log("[DEBUG] Calling Supabase Function:", functionUrl);
 
-      const response = await fetch(targetEndpoint, {
+      const response = await fetch(functionUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}` 
+        },
         body: JSON.stringify({
           message: userMessage,
           history: messages,
@@ -52,9 +54,8 @@ const AIChatPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        // FIX 2: Better error parsing
         const errorText = await response.text();
-        throw new Error(`Server Error (${response.status}): ${errorText || 'Endpoint not found'}`);
+        throw new Error(`Server Error (${response.status}): ${errorText || 'Function error'}`);
       }
 
       const data = await response.json();
