@@ -160,15 +160,18 @@ export default function SignLanguagePage() {
     ctx.drawImage(videoRef.current, 0, 0);
     const imageBase64 = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
 
-    // Call Gemini via 'vision' edge function
-    try {
-      console.log('[GEMINI] ▶ Request fired (Vision) | timestamp=' + Date.now());
-      
-      const { data, error } = await supabase.functions.invoke('vision', {
-        body: {
+      // Call Gemini via 'vision' edge function using direct fetch for reliability
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
           imageBase64,
           mimeType: 'image/jpeg',
-          apiKey: GEMINI_API_KEY.trim(),
+          apiKey: GEMINI_API_KEY.trim() || undefined,
           prompt: `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
             1. Identify the specific sign language gesture, body language, or facial expression.
             2. Interpret the emotional meaning or specific need (e.g., "I feel alone", "I need help").
@@ -179,19 +182,22 @@ export default function SignLanguagePage() {
               "explanation": "a compassionate 2-sentence explanation of what you see and a validating response."
             }
             If no clear gesture is visible, guide them to position their hands better.`
-        }
+        })
       });
 
-      if (error && (error as any).status === 429) {
-        console.error('[GEMINI] ✖ Rate limit hit (429)');
-        const rateLimitMessage = isRw
-          ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-          : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-        setErrorMessage(rateLimitMessage);
-        return;
-      }
+      const data = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.error('[GEMINI] ✖ Rate limit hit (429)');
+          const rateLimitMessage = isRw
+            ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+            : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+          setErrorMessage(rateLimitMessage);
+          return;
+        }
+        throw new Error(data.error || 'Failed to analyze image');
+      }
 
       console.log('[GEMINI] ✔ Response received (Vision) | timestamp=' + Date.now());
 
@@ -359,19 +365,30 @@ export default function SignLanguagePage() {
 
       console.log('[GEMINI] ▶ Request fired (Auto-Detect) | timestamp=' + Date.now());
 
-      // Route through Edge Function to ensure rate limiting
-      const { data, error } = await supabase.functions.invoke('vision', {
-        body: {
+      // Route through Edge Function using direct fetch for reliability
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
           imageBase64: base64Data,
           mimeType: 'image/jpeg',
-          apiKey: GEMINI_API_KEY.trim(),
+          apiKey: GEMINI_API_KEY.trim() || undefined,
           prompt: `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`
-        }
+        })
       });
 
-      if (error && (error as any).status === 429) {
-        console.error('[GEMINI] ✖ Rate limit hit (Auto-Detect)');
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+           console.error('[GEMINI] ✖ Rate limit hit (Auto-Detect)');
+           return;
+        }
+        throw new Error(data.error || 'Failed to auto-detect');
       }
       
       console.log('[GEMINI] ✔ Response received (Auto-Detect) | timestamp=' + Date.now());
