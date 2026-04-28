@@ -35,44 +35,28 @@ const AIChatPage: React.FC = () => {
     setError(null);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Gemini API Key missing");
-
-      // Build context from history
-      const history = messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.content }]
-      }));
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            ...history,
-            { role: 'user', parts: [{ text: input }] }
+          messages: [
+            ...messages,
+            { role: 'user', content: input }
           ],
-          systemInstruction: {
-            parts: [{
-              text: `You are Humura AI, a compassionate mental health assistant dedicated to supporting young people in Rwanda. 
+          systemInstruction: `You are Humura AI, a compassionate mental health assistant dedicated to supporting young people in Rwanda. 
               Your tone is warm, non-judgmental, and culturally sensitive. 
               You understand the Rwandan context, including local values (Ubumuntu, Ubupfura) and challenges.
               Support the user in ${isRw ? 'Kinyarwanda' : 'English'}. 
               If the user is in crisis, prioritize empathy and gently suggest professional help (like calling 114).
-              Keep responses concise but deeply empathetic.`
-            }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
-          }
+              Keep responses concise but deeply empathetic.`,
+          lang: i18n.language
         })
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || "Failed to get AI response");
+      if (!response.ok) throw new Error(data.error || "Failed to get AI response");
 
-      const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const aiReply = data.reply;
       if (aiReply) {
         setMessages(prev => [...prev, { role: 'model', content: aiReply }]);
       }

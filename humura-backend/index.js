@@ -68,6 +68,39 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
   }
 });
 
+// 5. Generic Chat Endpoint (for Chat & Progress Analysis)
+app.post('/chat', express.json(), async (req, res) => {
+  try {
+    const { messages, systemInstruction, lang } = req.body;
+    const isRw = lang?.startsWith('rw');
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Messages array is required" });
+    }
+
+    // Format messages for Gemini
+    const contents = messages.map(m => ({
+      role: m.role === 'model' ? 'model' : 'user',
+      parts: [{ text: m.content || m.parts[0].text }]
+    }));
+
+    const chatResult = await model.generateContent({
+      contents,
+      systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+    });
+
+    const chatResponse = await chatResult.response;
+    return res.status(200).json({ 
+      success: true, 
+      reply: chatResponse.text() 
+    });
+
+  } catch (error) {
+    console.error("[CHAT ERROR]", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // 6. Health Check (for Render monitoring)
 app.get('/', (req, res) => res.send('Humura AI Backend is Live!'));
 

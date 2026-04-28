@@ -61,29 +61,28 @@ const ProgressPage: React.FC = () => {
   const analyzeMoods = async (data: MoodLog[]) => {
     setIsAnalyzing(true);
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       const moodHistory = data.map(m => `${new Date(m.created_at).toLocaleDateString()}: ${m.mood}`).join(', ');
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Analyze this user's mood history for the past week: [${moodHistory}].
+          messages: [{
+            role: 'user',
+            content: `Analyze this user's mood history for the past week: [${moodHistory}].
               Provide a response in ${isRw ? 'Kinyarwanda' : 'English'} in the following JSON format:
               {
                 "summary": "A warm, empathetic 2-sentence summary of their emotional trend, aware of Rwandan context.",
                 "tips": ["Tip 1 (culturally aware)", "Tip 2 (practical)", "Tip 3 (mental health focused)"]
               }
               Ensure the advice is supportive and uses Rwandan cultural references where appropriate (e.g., family support, community, nature).`
-            }]
-          }]
+          }],
+          lang: i18n.language
         })
       });
 
       const result = await response.json();
-      const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      const aiResponse = result.reply;
       
       if (aiResponse) {
         // Handle potential markdown backticks in JSON response
