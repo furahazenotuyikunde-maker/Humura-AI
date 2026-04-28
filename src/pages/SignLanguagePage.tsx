@@ -140,16 +140,18 @@ export default function SignLanguagePage() {
     setErrorMessage('');
     isSendingRef.current = true;
 
-    // Capture frame from video
-    const canvas = document.createElement('canvas');
+    // 1. Capture Frame from Video with Guards
     const video = videoRef.current;
-    if (!video || video.videoWidth === 0) {
-      setErrorMessage(isRw ? "Kamera ntiyiteguye. Tegereza akanya..." : "Camera is not ready. Please wait a moment...");
+    
+    // GUARD: Video stream not ready
+    if (!video || video.readyState < 2 || video.videoWidth === 0) {
+      setErrorMessage(isRw ? "Kamera ntiyiteguye, tegereza akanya" : "Camera not ready, please wait");
       setIsAnalyzing(false);
       isSendingRef.current = false;
       return;
     }
 
+    const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
@@ -159,18 +161,20 @@ export default function SignLanguagePage() {
     }
     ctx.drawImage(video, 0, 0);
 
-    // Convert Canvas to Blob and Send via FormData
+    // 2. Use canvas.toBlob() (NOT toDataURL)
     canvas.toBlob(async (blob) => {
-      if (!blob) {
-        setErrorMessage(isRw ? "Ikosa mu gufata ishusho." : "Failed to capture image.");
+      // GUARD: Blob is null or empty
+      if (!blob || blob.size === 0) {
+        setErrorMessage(isRw ? "Gufata ishusho byanze, ongera ugerageze" : "Failed to capture image, try again");
         setIsAnalyzing(false);
         isSendingRef.current = false;
         return;
       }
 
+      // 3. Wrap in FormData
       const formData = new FormData();
-      formData.append('image', blob, 'capture.jpg');
-      formData.append('prompt', `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
+      formData.append("image", blob, "capture.jpg");
+      formData.append("prompt", `You are Humura AI, an expert in sign language and mental health support. Analyze this image carefully.
             1. Identify the specific sign language gesture, body language, or facial expression.
             2. Interpret the emotional meaning or specific need (e.g., "I feel alone", "I need help").
             3. Provide a warm, empathetic explanation in the user's context (Rwanda).
@@ -180,27 +184,20 @@ export default function SignLanguagePage() {
               "explanation": "a compassionate 2-sentence explanation of what you see and a validating response."
             }
             If no clear gesture is visible, guide them to position their hands better.`);
-      formData.append('lang', lang);
-      formData.append('apiKey', GEMINI_API_KEY.trim());
+      formData.append("lang", lang);
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+        // 4. Send via fetch (Do NOT set Content-Type header manually)
+        const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-sign`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-          },
-          body: formData // Browser automatically sets Content-Type to multipart/form-data with boundary
+          body: formData
         });
 
         const data = await response.json();
 
+        // GUARD: Fetch / Backend failure
         if (!response.ok) {
-           if (response.status === 429) {
-             setErrorMessage(isRw ? "Wageze ku mupaka. Gerageza nyuma." : "Rate limit hit. Try later.");
-             return;
-           }
-           throw new Error(data.error || 'Failed to analyze image');
+           throw new Error(data.error || `Server responded with ${response.status}`);
         }
 
         try {
@@ -213,10 +210,10 @@ export default function SignLanguagePage() {
           });
         }
       } catch (err: any) {
-        console.error('[GEMINI] ✖ Error:', err.message);
-        setErrorMessage(isRw 
+        console.error('[RENDER] ✖ Error:', err.message);
+        setErrorMessage(err.message || (isRw 
           ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone." 
-          : "Failed to analyze the image. Please try again.");
+          : "Failed to analyze the image. Please try again."));
       } finally {
         setIsAnalyzing(false);
         isSendingRef.current = false;
@@ -371,24 +368,19 @@ export default function SignLanguagePage() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       canvas.toBlob(async (blob) => {
-        if (!blob) {
+        if (!blob || blob.size === 0) {
           setIsDetecting(false);
           isSendingRef.current = false;
           return;
         }
 
         const formData = new FormData();
-        formData.append('image', blob, 'auto-capture.jpg');
-        formData.append('prompt', `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`);
-        formData.append('apiKey', GEMINI_API_KEY.trim());
+        formData.append("image", blob, "auto-capture.jpg");
+        formData.append("prompt", `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`);
 
         try {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vision`, {
+          const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-sign`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-            },
             body: formData
           });
 
@@ -404,7 +396,7 @@ export default function SignLanguagePage() {
             }
           }
         } catch (e: any) {
-          console.error('[GEMINI] ✖ Auto-Detect Error:', e.message);
+          console.error('[RENDER] ✖ Auto-Detect Error:', e.message);
         } finally {
           setIsDetecting(false);
           isSendingRef.current = false;
