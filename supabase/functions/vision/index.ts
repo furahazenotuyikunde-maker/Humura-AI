@@ -64,7 +64,7 @@ serve(async (req) => {
           contents: [{
             parts: [
               { text: prompt },
-              { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageBase64 } }
+              { inline_data: { mime_type: mimeType || 'image/jpeg', data: imageBase64 } }
             ]
           }],
           generationConfig: {
