@@ -46,17 +46,19 @@ app.post('/chat', async (req, res) => {
   console.log(`[DEBUG] Incoming POST /chat from ${req.headers.origin}`);
   try {
     const { message, history, lang } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: "No message provided" });
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: "No message provided or invalid format" });
     }
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }));
-    const result = await model.generateContent([
-      ...chatHistory,
-      { role: "user", parts: [{ text: message }] }
-    ]);
+    const result = await model.generateContent({
+      contents: [
+        ...chatHistory,
+        { role: "user", parts: [{ text: message }] }
+      ]
+    });
     const response = await result.response;
     return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
