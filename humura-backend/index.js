@@ -11,7 +11,8 @@ const port = process.env.PORT || 3001;
 
 // 1. Setup Middleware
 app.use(cors({ origin: "*" }));
-app.use(express.json()); // Body parser MUST be before routes
+app.use(express.json({ limit: '10mb' })); // Increased limit for image base64 data
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // 2. Setup Multer (for Image Analysis)
 const upload = multer({

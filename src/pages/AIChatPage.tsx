@@ -94,11 +94,35 @@ const AIChatPage: React.FC = () => {
       
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSelectedImage({
-          data: (reader.result as string).split(',')[1],
-          mimeType: file.type
-        });
-        setError(null);
+        const img = new Image();
+        img.onload = () => {
+          // Resize to max 1024px width/height to keep payload small
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1024;
+          
+          if (width > height && width > maxDim) {
+            height *= maxDim / width;
+            width = maxDim;
+          } else if (height > maxDim) {
+            width *= maxDim / height;
+            height = maxDim;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          setSelectedImage({
+            data: compressedBase64.split(',')[1],
+            mimeType: 'image/jpeg'
+          });
+          setError(null);
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
