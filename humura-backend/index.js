@@ -53,7 +53,7 @@ app.post('/chat', async (req, res) => {
       parts: [{ text: String(m.content || "") }]
     }));
 
-    // Current parts
+    // 2. Prepare current parts
     let parts = [{ text: String(message || "") }];
     if (image && image.data && image.mimeType) {
       parts.push({
@@ -61,8 +61,16 @@ app.post('/chat', async (req, res) => {
       });
     }
 
+    const persona = `You are Humura AI, a warm, empathetic mental health support companion. Always validate emotions before advice. Keep responses concise (2-4 sentences). Never diagnose. If in crisis, tell them to call 114 (Rwanda's crisis line) immediately. Be non-judgmental.`;
+
+    // 3. Call Model with Persona
     const result = await model.generateContent({
-      contents: [...chatHistory, { role: "user", parts }]
+      contents: [
+        { role: "user", parts: [{ text: persona }] },
+        { role: "model", parts: [{ text: "Understood. I am Humura AI, here to support you with empathy and care." }] },
+        ...chatHistory,
+        { role: "user", parts }
+      ]
     });
 
     const response = await result.response;

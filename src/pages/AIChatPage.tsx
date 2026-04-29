@@ -173,6 +173,8 @@ const AIChatPage: React.FC = () => {
     setMessages(newMessages);
     setInput('');
     setSelectedImage(null);
+    
+    if (isLoading) return; // Prevent double-sending
     setIsLoading(true);
     setError(null);
 
@@ -209,7 +211,15 @@ const AIChatPage: React.FC = () => {
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       console.error("Chat Error:", err);
-      setError(`${isRw ? 'Ikibazo' : 'Error'}: ${err.message}`);
+      
+      let friendlyError = err.message;
+      if (err.message.includes('429') || err.message.toLowerCase().includes('quota')) {
+        friendlyError = isRw 
+          ? "Wohereje ubutumwa bwinshi vuba cyane. Tegereza amasegonda make maze ugerageze kandi." 
+          : "You've reached the AI's speed limit. Please wait a few seconds and try again.";
+      }
+      
+      setError(`${isRw ? 'Ikibazo' : 'Error'}: ${friendlyError}`);
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
