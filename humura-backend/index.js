@@ -19,12 +19,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// 3. Initialize Gemini with System Instruction
+// 3. Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-3-flash-preview", 
-  systemInstruction: "You are Humura AI, a warm, empathetic support companion. Always validate emotions before offering advice. Keep responses concise (2–4 sentences) unless more depth is requested. Never diagnose or prescribe. If a user expresses thoughts of self-harm or crisis, gently encourage them to call 114 (Rwanda's mental health crisis line) or emergency services immediately. Be present, human, and non-judgmental."
-});
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 // 4. Image Analysis Endpoint (Multipart)
 app.post('/analyze-sign', upload.single('image'), async (req, res) => {
@@ -73,8 +70,17 @@ app.post('/chat', async (req, res) => {
     // Fallback if both are missing (should be caught by validation above but safe to have)
     if (promptParts.length === 0) promptParts.push({ text: "Hello" });
 
+    const persona = `You are Humura AI, a warm, empathetic mental health support companion. 
+Always validate emotions before offering advice. 
+Keep responses concise (2–4 sentences) unless more depth is requested. 
+Never diagnose or prescribe. 
+If a user expresses thoughts of self-harm or crisis, gently encourage them to call 114 (Rwanda's mental health crisis line) or emergency services immediately. 
+Be present, human, and non-judgmental.`;
+
     const result = await model.generateContent({
       contents: [
+        { role: "user", parts: [{ text: persona }] },
+        { role: "model", parts: [{ text: "Understood. I am Humura AI, your warm and empathetic support companion. I am here to listen and support you. How can I help you today?" }] },
         ...chatHistory,
         { role: "user", parts: promptParts }
       ]
@@ -85,8 +91,7 @@ app.post('/chat', async (req, res) => {
   } catch (error) {
     console.error("[CHAT ERROR DETAILS]", {
       message: error.message,
-      stack: error.stack,
-      cause: error.cause
+      stack: error.stack
     });
     return res.status(500).json({ error: error.message || "Chat failed" });
   }
