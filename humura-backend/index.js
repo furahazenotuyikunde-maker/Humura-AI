@@ -45,21 +45,19 @@ app.get('/chat', (req, res) => {
 app.post('/chat', async (req, res) => {
   console.log(`[DEBUG] Incoming POST /chat from ${req.headers.origin}`);
   try {
-    const { message, history, lang, image } = req.body;
-    if (!message && !image) {
-      return res.status(400).json({ error: "No message or image provided" });
-    }
-
+    const { message, history, image } = req.body;
+    
+    // 1. Map history (V1.0.4 style)
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.content || (m.role === 'user' ? "[Image]" : "...") }]
+      parts: [{ text: m.content || " " }]
     }));
 
-    let promptParts = [];
-    if (message) promptParts.push({ text: message });
-    
-    if (image) {
-      promptParts.push({
+    // 2. Prepare current parts
+    let parts = [];
+    if (message) parts.push({ text: message });
+    if (image && image.data && image.mimeType) {
+      parts.push({
         inlineData: {
           data: image.data,
           mimeType: image.mimeType
@@ -67,33 +65,26 @@ app.post('/chat', async (req, res) => {
       });
     }
 
-    // Fallback if both are missing (should be caught by validation above but safe to have)
-    if (promptParts.length === 0) promptParts.push({ text: "Hello" });
+    // Fallback if empty
+    if (parts.length === 0) parts.push({ text: "Hello" });
 
-    const persona = `You are Humura AI, a warm, empathetic mental health support companion. 
-Always validate emotions before offering advice. 
-Keep responses concise (2–4 sentences) unless more depth is requested. 
-Never diagnose or prescribe. 
-If a user expresses thoughts of self-harm or crisis, gently encourage them to call 114 (Rwanda's mental health crisis line) or emergency services immediately. 
-Be present, human, and non-judgmental.`;
-
+    // 3. Call Model
     const result = await model.generateContent({
       contents: [
-        { role: "user", parts: [{ text: persona }] },
-        { role: "model", parts: [{ text: "Understood. I am Humura AI, your warm and empathetic support companion. I am here to listen and support you. How can I help you today?" }] },
         ...chatHistory,
-        { role: "user", parts: promptParts }
+        { role: "user", parts }
       ]
     });
 
     const response = await result.response;
-    return res.status(200).json({ success: true, reply: response.text() });
+    const text = response.text();
+    return res.status(200).json({ success: true, reply: text });
   } catch (error) {
-    console.error("[CHAT ERROR DETAILS]", {
-      message: error.message,
-      stack: error.stack
+    console.error("[CRITICAL CHAT ERROR]", error);
+    return res.status(500).json({ 
+      error: "Internal Server Error", 
+      details: error.message 
     });
-    return res.status(500).json({ error: error.message || "Chat failed" });
   }
 });
 
