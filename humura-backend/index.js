@@ -21,7 +21,7 @@ const upload = multer({
 
 // 3. Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
 // 4. Image Analysis Endpoint (Multipart)
 app.post('/analyze-sign', upload.single('image'), async (req, res) => {
