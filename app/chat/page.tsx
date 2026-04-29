@@ -47,14 +47,14 @@ export default function ChatPage() {
       console.log('[CHAT] ▶ Gemini 3.0 Flash request fired | id=REQ-' + Date.now());
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/chat-ai`, {
+        const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: historyRef.current,
-            userId: 'guest-' + Date.now()
+            message: input.trim(),
+            history: historyRef.current.slice(0, -1) // Exclude the message we just added since generateResponse adds it
           }),
         });
 
