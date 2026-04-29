@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [uiMessages, setUiMessages] = useState<{role: string, content: string}[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Rule: Conversation history stored in useRef, NOT useState
   const historyRef = useRef<{role: string, content: string}[]>([]);
@@ -33,6 +34,7 @@ export default function ChatPage() {
 
       isSending.current = true;
       setLoading(true);
+      setError(null);
 
       const userMessage = { role: 'user', content: input.trim() };
       
@@ -72,8 +74,9 @@ export default function ChatPage() {
           // Update UI
           setUiMessages(prev => [...prev, aiMessage]);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[CHAT] Error:', error);
+        setError(`Chat Error: ${error.message || 'Failed to fetch AI response'}. Please try again.`);
         // Rule: No auto-retry in catch block
       } finally {
         // Rule: released in finally{}
@@ -124,6 +127,14 @@ export default function ChatPage() {
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="flex justify-center">
+              <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full text-xs">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{error}</span>
               </div>
             </div>
           )}

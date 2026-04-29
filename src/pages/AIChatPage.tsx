@@ -69,7 +69,7 @@ const AIChatPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Chat Error:", err);
-      setError(`${isRw ? 'Ikibazo cyateganyijwe' : 'Chat Error'}: ${err.message}`);
+      setError(`${isRw ? 'Ikibazo cyateganyijwe' : 'Chat Error'}: ${err.message}. ${isRw ? 'Ongera ugerageze.' : 'Please try again.'}`);
     } finally {
       setIsLoading(false);
     }
