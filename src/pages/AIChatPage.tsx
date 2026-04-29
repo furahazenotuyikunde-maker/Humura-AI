@@ -160,7 +160,7 @@ const AIChatPage: React.FC = () => {
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           message: userMessage.content,
-          history: newMessages.slice(0, -1),
+          history: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
           image: selectedImage,
           lang: i18n.language
         })

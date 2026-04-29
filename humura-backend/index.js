@@ -43,48 +43,32 @@ app.get('/chat', (req, res) => {
 });
 
 app.post('/chat', async (req, res) => {
-  console.log(`[DEBUG] Incoming POST /chat from ${req.headers.origin}`);
   try {
     const { message, history, image } = req.body;
     
-    // 1. Map history (V1.0.4 style)
+    // Map history exactly as v1.0.4
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.content || " " }]
+      parts: [{ text: String(m.content || "") }]
     }));
 
-    // 2. Prepare current parts
-    let parts = [];
-    if (message) parts.push({ text: message });
+    // Current parts
+    let parts = [{ text: String(message || "") }];
     if (image && image.data && image.mimeType) {
       parts.push({
-        inlineData: {
-          data: image.data,
-          mimeType: image.mimeType
-        }
+        inlineData: { data: image.data, mimeType: image.mimeType }
       });
     }
 
-    // Fallback if empty
-    if (parts.length === 0) parts.push({ text: "Hello" });
-
-    // 3. Call Model
     const result = await model.generateContent({
-      contents: [
-        ...chatHistory,
-        { role: "user", parts }
-      ]
+      contents: [...chatHistory, { role: "user", parts }]
     });
 
     const response = await result.response;
-    const text = response.text();
-    return res.status(200).json({ success: true, reply: text });
+    return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
-    console.error("[CRITICAL CHAT ERROR]", error);
-    return res.status(500).json({ 
-      error: "Internal Server Error", 
-      details: error.message 
-    });
+    console.error("[GEMINI ERROR]", error);
+    return res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 });
 
