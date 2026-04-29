@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User, Bot, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, User, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Message {
@@ -80,8 +80,8 @@ const AIChatPage: React.FC = () => {
       <div className="max-w-3xl mx-auto flex flex-col h-[80vh] bg-white rounded-3xl shadow-xl border border-[#E8E1DB] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-[#E8E1DB] bg-[#FDFCFB] flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#8B5E3C] rounded-2xl flex items-center justify-center text-white">
-            <Bot size={28} />
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-[#E8E1DB] overflow-hidden">
+            <img src="/logo.png" alt="Humura AI Logo" className="w-10 h-10 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-[#4A2C1A]">Humura AI</h1>
@@ -93,7 +93,7 @@ const AIChatPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <Bot className="mx-auto text-[#E8E1DB] mb-4" size={48} />
+              <img src="/logo.png" alt="Humura AI" className="mx-auto w-20 h-20 object-contain mb-4 opacity-50" />
               <h2 className="text-[#8B5E3C] font-medium mb-2">
                 {isRw ? 'Muraho! Nakufasha iki uyu munsi?' : 'Hello! How can I support you today?'}
               </h2>
@@ -112,9 +112,9 @@ const AIChatPage: React.FC = () => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-[#8B5E3C]'
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-white border border-[#E8E1DB]'
                     }`}>
-                    {msg.role === 'user' ? <User size={18} className="text-white" /> : <Bot size={18} className="text-white" />}
+                    {msg.role === 'user' ? <User size={18} className="text-white" /> : <img src="/logo.png" alt="AI" className="w-6 h-6 object-contain" />}
                   </div>
                   <div className={`p-4 rounded-2xl ${msg.role === 'user'
                       ? 'bg-[#8B5E3C] text-white rounded-tr-none'
@@ -130,8 +130,8 @@ const AIChatPage: React.FC = () => {
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex gap-3 items-center text-[#8B5E3C]">
-                <div className="w-8 h-8 rounded-full bg-[#8B5E3C] flex items-center justify-center">
-                  <Bot size={18} className="text-white" />
+                <div className="w-8 h-8 rounded-full bg-white border border-[#E8E1DB] flex items-center justify-center overflow-hidden">
+                  <img src="/logo.png" alt="AI" className="w-6 h-6 object-contain" />
                 </div>
                 <Loader2 className="animate-spin" size={18} />
                 <span className="text-xs italic">{isRw ? 'Humura AI aratekereza...' : 'Humura AI is thinking...'}</span>
