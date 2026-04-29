@@ -45,20 +45,35 @@ app.get('/chat', (req, res) => {
 app.post('/chat', async (req, res) => {
   console.log(`[DEBUG] Incoming POST /chat from ${req.headers.origin}`);
   try {
-    const { message, history, lang } = req.body;
-    if (!message || typeof message !== 'string') {
-      return res.status(400).json({ error: "No message provided or invalid format" });
+    const { message, history, lang, image } = req.body;
+    if (!message && !image) {
+      return res.status(400).json({ error: "No message or image provided" });
     }
+
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }));
+
+    let promptParts = [{ text: message || "Analyze this image." }];
+    
+    if (image) {
+      // image is expected to be { data: "base64...", mimeType: "image/jpeg" }
+      promptParts.push({
+        inlineData: {
+          data: image.data,
+          mimeType: image.mimeType
+        }
+      });
+    }
+
     const result = await model.generateContent({
       contents: [
         ...chatHistory,
-        { role: "user", parts: [{ text: message }] }
+        { role: "user", parts: promptParts }
       ]
     });
+
     const response = await result.response;
     return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
