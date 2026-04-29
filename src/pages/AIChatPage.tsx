@@ -86,12 +86,19 @@ const AIChatPage: React.FC = () => {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      if (!supportedTypes.includes(file.type)) {
+        setError(isRw ? 'Ubu bwoko bw\'ifoto ntibwemewe (Koresha JPG, PNG, cyangwa WEBP)' : 'Unsupported image type (Use JPG, PNG, or WEBP)');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setSelectedImage({
           data: (reader.result as string).split(',')[1],
           mimeType: file.type
         });
+        setError(null);
       };
       reader.readAsDataURL(file);
     }
@@ -340,7 +347,7 @@ const AIChatPage: React.FC = () => {
                   type="file" 
                   ref={fileInputRef} 
                   hidden 
-                  accept="image/*" 
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif" 
                   onChange={handleImageSelect} 
                 />
                 <button
