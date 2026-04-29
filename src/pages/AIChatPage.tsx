@@ -38,6 +38,9 @@ const AIChatPage: React.FC = () => {
       if (!rawUrl) throw new Error("Backend URL is not defined in environment variables.");
 
       const backendUrl = rawUrl.replace(/\/$/, '');
+      if (!backendUrl.startsWith('http')) {
+        throw new Error(`Invalid Backend URL: "${backendUrl}". It must be an absolute URL starting with http:// or https://. Check your .env file.`);
+      }
       const targetEndpoint = `${backendUrl}/chat`;
       console.log("[DEBUG] Calling Target:", targetEndpoint);
 
@@ -45,15 +48,18 @@ const AIChatPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: userMessage,
+          message: userMessage.content,
           history: messages,
           lang: i18n.language
         })
       });
 
       if (!response.ok) {
-        // FIX 2: Better error parsing
         const errorText = await response.text();
+        const isHtml = errorText.includes('<!DOCTYPE html>');
+        if (isHtml && response.status === 404) {
+          throw new Error(`Server Error (404): The backend endpoint was not found at ${targetEndpoint}. Please verify the backend is running and the URL is correct.`);
+        }
         throw new Error(`Server Error (${response.status}): ${errorText || 'Endpoint not found'}`);
       }
 

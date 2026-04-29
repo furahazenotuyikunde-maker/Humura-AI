@@ -21,7 +21,7 @@ const upload = multer({
 
 // 3. Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // 4. Image Analysis Endpoint (Multipart)
 app.post('/analyze-sign', upload.single('image'), async (req, res) => {
@@ -43,6 +43,7 @@ app.get('/chat', (req, res) => {
 });
 
 app.post('/chat', async (req, res) => {
+  console.log(`[DEBUG] Incoming POST /chat from ${req.headers.origin}`);
   try {
     const { message, history, lang } = req.body;
     if (!message) {
@@ -84,7 +85,11 @@ app.post('/analyze-progress', async (req, res) => {
 });
 
 // 7. Health Check
-app.get('/', (req, res) => res.json({ message: 'Humura AI Backend is Live!', version: "1.0.4" }));
+app.get('/', (req, res) => res.json({ 
+  message: 'Humura AI Backend is Live!', 
+  version: "1.0.5",
+  endpoints: ["GET /", "GET /chat", "POST /chat", "POST /analyze-sign", "POST /analyze-progress"]
+}));
 
 // 8. Catch-all 404 Route (JSON)
 app.use((req, res) => {
