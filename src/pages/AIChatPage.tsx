@@ -93,6 +93,13 @@ const AIChatPage: React.FC = () => {
     }
   };
 
+  const handleDeleteMessage = (index: number) => {
+    if (confirm(isRw ? 'Gusiba ubu butumwa?' : 'Delete this message?')) {
+      const newMessages = messages.filter((_, i) => i !== index);
+      setMessages(newMessages);
+    }
+  };
+
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
 
@@ -220,13 +227,22 @@ const AIChatPage: React.FC = () => {
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       
                       {msg.role === 'user' && !isLoading && (
-                        <button 
-                          onClick={() => handleEditMessage(index)}
-                          className="absolute -left-8 top-2 p-1 text-gray-400 hover:text-[#8B5E3C] opacity-0 group-hover:opacity-100 transition-opacity"
-                          title={isRw ? 'Guhindura' : 'Edit'}
-                        >
-                          <Edit2 size={14} />
-                        </button>
+                        <div className="absolute -left-16 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEditMessage(index)}
+                            className="p-1.5 text-gray-400 hover:text-[#8B5E3C] hover:bg-[#FDFCFB] rounded-full shadow-sm"
+                            title={isRw ? 'Guhindura' : 'Edit'}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteMessage(index)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-[#FDFCFB] rounded-full shadow-sm"
+                            title={isRw ? 'Gusiba' : 'Delete'}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -244,13 +260,6 @@ const AIChatPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin" size={18} />
                   <span className="text-xs italic">{isRw ? 'Humura AI aratekereza...' : 'Humura AI is thinking...'}</span>
-                  <button 
-                    onClick={stopGeneration}
-                    className="ml-2 flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 rounded-md text-[10px] hover:bg-red-100 transition-colors"
-                  >
-                    <Square size={10} fill="currentColor" />
-                    {isRw ? 'Hagarika' : 'Stop'}
-                  </button>
                 </div>
               </div>
             </div>
@@ -316,13 +325,24 @@ const AIChatPage: React.FC = () => {
                 >
                   <ImagePlus size={20} />
                 </button>
-                <button
-                  onClick={toggleRecording}
-                  className={`p-2 transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#8B5E3C]'}`}
-                  title={isRw ? 'Koresha ijwi' : 'Voice message'}
-                >
-                  {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-                </button>
+                
+                {isLoading ? (
+                  <button
+                    onClick={stopGeneration}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors animate-pulse flex items-center gap-1 border border-red-100"
+                    title={isRw ? 'Hagarika' : 'Stop'}
+                  >
+                    <Square size={20} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={toggleRecording}
+                    className={`p-2 transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#8B5E3C]'}`}
+                    title={isRw ? 'Koresha ijwi' : 'Voice message'}
+                  >
+                    {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+                  </button>
+                )}
               </div>
             </div>
 
