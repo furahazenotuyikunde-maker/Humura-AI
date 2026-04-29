@@ -23,6 +23,26 @@ const AIChatPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<any>(null);
+  const STORAGE_KEY = 'humura_chat_history';
+
+  // Load history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load history", e);
+      }
+    }
+  }, []);
+
+  // Save history to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,7 +200,12 @@ const AIChatPage: React.FC = () => {
           </div>
           {messages.length > 0 && (
             <button 
-              onClick={() => { if(confirm(isRw ? 'Gusiba ibiganiro byose?' : 'Clear all messages?')) setMessages([]); }}
+              onClick={() => { 
+                if(confirm(isRw ? 'Gusiba ibiganiro byose?' : 'Clear all messages?')) {
+                  setMessages([]);
+                  localStorage.removeItem(STORAGE_KEY);
+                }
+              }}
               className="p-2 text-gray-400 hover:text-red-500 transition-colors"
               title={isRw ? 'Siba byose' : 'Clear chat'}
             >

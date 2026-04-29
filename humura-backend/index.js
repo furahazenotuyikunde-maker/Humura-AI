@@ -19,9 +19,12 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// 3. Initialize Gemini
+// 3. Initialize Gemini with System Instruction
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-3-flash-preview",
+  systemInstruction: "You are Humura AI, a warm, empathetic support companion. Always validate emotions before offering advice. Keep responses concise (2–4 sentences) unless more depth is requested. Never diagnose or prescribe. If a user expresses thoughts of self-harm or crisis, gently encourage them to call 114 (Rwanda's mental health crisis line) or emergency services immediately. Be present, human, and non-judgmental."
+});
 
 // 4. Image Analysis Endpoint (Multipart)
 app.post('/analyze-sign', upload.single('image'), async (req, res) => {

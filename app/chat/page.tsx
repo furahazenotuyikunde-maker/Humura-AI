@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '../layout';
 
@@ -14,6 +14,7 @@ export default function ChatPage() {
   const [uiMessages, setUiMessages] = useState<{role: string, content: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const STORAGE_KEY = 'humura_chat_history';
   
   // Rule: Conversation history stored in useRef, NOT useState
   const historyRef = useRef<{role: string, content: string}[]>([]);
@@ -21,6 +22,33 @@ export default function ChatPage() {
   const isSending = useRef(false);
   // Rule: debounce timer
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Persistence: Load
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUiMessages(parsed);
+        historyRef.current = parsed;
+      } catch (e) { console.error(e); }
+    }
+  }, []);
+
+  // Persistence: Save
+  useEffect(() => {
+    if (uiMessages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(uiMessages));
+    }
+  }, [uiMessages]);
+
+  const clearHistory = () => {
+    if (confirm('Clear chat history?')) {
+      setUiMessages([]);
+      historyRef.current = [];
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
   const sendMessage = async () => {
     // Rule: hard lock checked at top
