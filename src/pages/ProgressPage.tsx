@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
+import { TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +17,7 @@ const ProgressPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<{ summary: string; recommendations: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Mood to value mapping for the chart
   const moodMap: Record<string, number> = {
@@ -104,6 +106,57 @@ const ProgressPage: React.FC = () => {
         mood: log?.mood || 'none'
       };
     });
+  };
+
+  const handleShare = async () => {
+    if (!analysis) return;
+
+    const shareText = `${isRw ? 'Raporo y\'Iterambere rya Humura AI' : 'Humura AI Progress Report'}\n\n` +
+      `${isRw ? 'Incamake' : 'Summary'}: ${analysis.summary}\n\n` +
+      `${isRw ? 'Inama' : 'Recommendations'}:\n${analysis.recommendations.map(r => `• ${r}`).join('\n')}\n\n` +
+      `${isRw ? 'Byoherejwe binyuze kuri Humura AI' : 'Shared via Humura AI'}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: isRw ? 'Iterambere rya Humura AI' : 'Humura AI Progress',
+          text: shareText,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setShowShareModal(true);
+        }
+      }
+    } else {
+      setShowShareModal(true);
+    }
+  };
+
+  const shareText = analysis ? `${isRw ? 'Raporo y\'Iterambere rya Humura AI' : 'Humura AI Progress Report'}\n\n` +
+    `${isRw ? 'Incamake' : 'Summary'}: ${analysis.summary}\n\n` +
+    `${isRw ? 'Inama' : 'Recommendations'}:\n${analysis.recommendations.map(r => `• ${r}`).join('\n')}\n\n` +
+    `${isRw ? 'Byoherejwe binyuze kuri Humura AI' : 'Shared via Humura AI'}` : '';
+
+  const handlePlatformShare = (platform: string) => {
+    const encodedText = encodeURIComponent(shareText);
+    const subject = encodeURIComponent(isRw ? 'Iterambere rya Humura AI' : 'Humura AI Progress Report');
+
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+        break;
+      case 'telegram':
+        window.open(`https://t.me/share/url?url=&text=${encodedText}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=${subject}&body=${encodedText}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(shareText);
+        alert(isRw ? 'Byakopewe!' : 'Copied to clipboard!');
+        break;
+    }
+    setShowShareModal(false);
   };
 
   const weeklyData = getWeeklyData();
@@ -195,13 +248,84 @@ const ProgressPage: React.FC = () => {
                 )}
               </div>
               
-              <button className="mt-8 w-full py-3 bg-white text-[#8B5E3C] rounded-2xl text-sm font-bold hover:bg-opacity-90 transition-all">
+              <button 
+                onClick={handleShare}
+                disabled={!analysis || isAnalyzing}
+                className="mt-8 w-full py-3 bg-white text-[#8B5E3C] rounded-2xl text-sm font-bold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Share2 size={18} />
                 {isRw ? 'Sangira n’Inshuti' : 'Share Progress'}
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowShareModal(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-[#E8E1DB] flex items-center justify-between">
+                <h3 className="text-lg font-bold text-[#4A2C1A]">{isRw ? 'Sangira Raporo' : 'Share Report'}</h3>
+                <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-[#FDFCFB] rounded-full transition-colors">
+                  <X size={20} className="text-[#8B5E3C]" />
+                </button>
+              </div>
+              <div className="p-6 grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => handlePlatformShare('whatsapp')}
+                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-green-50 hover:border-green-200 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
+                    <MessageCircle size={24} />
+                  </div>
+                  <span className="text-xs font-bold text-[#4A2C1A]">WhatsApp</span>
+                </button>
+                <button 
+                  onClick={() => handlePlatformShare('telegram')}
+                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-blue-50 hover:border-blue-200 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                    <Send size={24} />
+                  </div>
+                  <span className="text-xs font-bold text-[#4A2C1A]">Telegram</span>
+                </button>
+                <button 
+                  onClick={() => handlePlatformShare('email')}
+                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-red-50 hover:border-red-200 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
+                    <Mail size={24} />
+                  </div>
+                  <span className="text-xs font-bold text-[#4A2C1A]">Email</span>
+                </button>
+                <button 
+                  onClick={() => handlePlatformShare('copy')}
+                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-[#FDFCFB] transition-all group"
+                >
+                  <div className="w-12 h-12 bg-[#8B5E3C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#8B5E3C]/20 group-hover:scale-110 transition-transform">
+                    <Copy size={24} />
+                  </div>
+                  <span className="text-xs font-bold text-[#4A2C1A]">{isRw ? 'Kopiye' : 'Copy'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
