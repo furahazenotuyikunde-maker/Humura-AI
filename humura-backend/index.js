@@ -22,7 +22,7 @@ const upload = multer({
 // 3. Initialize Gemini with System Instruction
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-3-flash-preview",
+  model: "gemini-3-flash-preview", 
   systemInstruction: "You are Humura AI, a warm, empathetic support companion. Always validate emotions before offering advice. Keep responses concise (2–4 sentences) unless more depth is requested. Never diagnose or prescribe. If a user expresses thoughts of self-harm or crisis, gently encourage them to call 114 (Rwanda's mental health crisis line) or emergency services immediately. Be present, human, and non-judgmental."
 });
 
@@ -55,13 +55,13 @@ app.post('/chat', async (req, res) => {
 
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.content }]
+      parts: [{ text: m.content || (m.role === 'user' ? "[Image]" : "...") }]
     }));
 
-    let promptParts = [{ text: message || "Analyze this image." }];
+    let promptParts = [];
+    if (message) promptParts.push({ text: message });
     
     if (image) {
-      // image is expected to be { data: "base64...", mimeType: "image/jpeg" }
       promptParts.push({
         inlineData: {
           data: image.data,
@@ -69,6 +69,9 @@ app.post('/chat', async (req, res) => {
         }
       });
     }
+
+    // Fallback if both are missing (should be caught by validation above but safe to have)
+    if (promptParts.length === 0) promptParts.push({ text: "Hello" });
 
     const result = await model.generateContent({
       contents: [
@@ -80,7 +83,11 @@ app.post('/chat', async (req, res) => {
     const response = await result.response;
     return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
-    console.error("[CHAT ERROR]", error);
+    console.error("[CHAT ERROR DETAILS]", {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
     return res.status(500).json({ error: error.message || "Chat failed" });
   }
 });
