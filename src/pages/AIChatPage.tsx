@@ -198,7 +198,8 @@ const AIChatPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Server Error (${response.status})`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || `Server Error (${response.status})`);
       }
 
       const data = await response.json();

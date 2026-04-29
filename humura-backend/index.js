@@ -69,7 +69,8 @@ app.post('/chat', async (req, res) => {
     return res.status(200).json({ success: true, reply: response.text() });
   } catch (error) {
     console.error("[GEMINI ERROR]", error);
-    return res.status(500).json({ error: error.message || "Internal Server Error" });
+    const errorMessage = error.response?.data?.error?.message || error.message || "Internal Server Error";
+    return res.status(500).json({ error: errorMessage });
   }
 });
 
