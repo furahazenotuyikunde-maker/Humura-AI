@@ -237,7 +237,7 @@ const AIChatPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-[#4A2C1A]">Humura AI</h1>
-              <p className="text-sm text-[#8B5E3C]">{isRw ? 'Ubufasha mu mutima' : 'Mental Health Support Assistant'}</p>
+              <p className="text-sm text-[#8B5E3C]">{isRw ? 'Ubufasha kubuzima bwo mu mutwe' : 'Mental Health Support Assistant'}</p>
             </div>
           </div>
           {messages.length > 0 && (
