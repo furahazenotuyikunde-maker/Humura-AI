@@ -215,8 +215,8 @@ const AIChatPage: React.FC = () => {
       let friendlyError = err.message;
       if (err.message.includes('429') || err.message.toLowerCase().includes('quota')) {
         friendlyError = isRw 
-          ? "Wohereje ubutumwa bwinshi vuba cyane. Tegereza amasegonda make maze ugerageze kandi." 
-          : "You've reached the AI's speed limit. Please wait a few seconds and try again.";
+          ? "Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha. Gerageza kandi nyuma y'isaha imwe." 
+          : "You've reached the hourly limit for messages. Please try again in 1 hour.";
       }
       
       setError(`${isRw ? 'Ikibazo' : 'Error'}: ${friendlyError}`);
