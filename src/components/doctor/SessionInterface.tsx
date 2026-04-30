@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Send, Mic, MessageSquare, Sparkles, AlertCircle, 
   User, CheckCircle, FileText, Languages, HandMetal,
@@ -7,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SessionInterface() {
+  const { i18n } = useTranslation();
   const [messages, setMessages] = useState<any[]>([
     { role: 'doctor', content: 'Hello Ancilla, how have you been feeling since our last session?' },
     { role: 'patient', content: 'Not so good. I feel like everything I do is going to fail. It is like a dark cloud.' }

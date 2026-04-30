@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Filter, Plus, MoreVertical, ChevronRight, 
   MapPin, Phone, Calendar, Heart, ShieldAlert,
-  Download, FileText, Activity
+  Download, FileText, Activity, Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
