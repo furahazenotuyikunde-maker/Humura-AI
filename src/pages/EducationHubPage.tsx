@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import ProfessionalVideoHub from '../components/ProfessionalVideoHub';
 import {
   BookOpen, PlayCircle, Headphones, ChevronLeft, X,
   Volume2, VolumeX, ExternalLink, Lightbulb, ChevronRight
@@ -477,7 +478,7 @@ export default function EducationHubPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-6"
+            className="space-y-8"
           >
             {/* Header */}
             <div>
@@ -532,6 +533,11 @@ export default function EducationHubPage() {
                   </div>
                 </motion.button>
               ))}
+            </div>
+
+            {/* Professional Video Section */}
+            <div className="pt-4 border-t border-primary-50">
+               <ProfessionalVideoHub />
             </div>
 
             {/* Offline note */}
