@@ -250,6 +250,14 @@ export const Shell: React.FC<ShellProps> = () => {
                 <ul className="text-sm text-neutral-500 space-y-3 font-semibold">
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Next.js & Supabase Stack
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                    Render Cloud Backend
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
                     Gemini 3 Flash Preview
                   </li>
                   <li className="flex items-center gap-2">
