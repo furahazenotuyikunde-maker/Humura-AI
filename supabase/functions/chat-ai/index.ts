@@ -1,6 +1,7 @@
 // AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkUserRateLimit } from '../_shared/rateLimiter.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +20,22 @@ serve(async (req) => {
 
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY is not set')
+    }
+
+    // 1. Check Rate Limit (Free: 20/hr, Pro: 500/hr)
+    const { allowed, count, limit, plan } = await checkUserRateLimit(userId, 'chat-ai')
+    
+    if (!allowed) {
+      console.warn(`[RATE LIMIT] User ${userId} (${plan}) reached limit: ${count}/${limit}`);
+      return new Response(JSON.stringify({ 
+        error: "quota_exceeded",
+        message: `You've reached your hourly limit of ${limit} messages. You've sent ${count} in the last hour.`,
+        limit,
+        count
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429,
+      })
     }
 
     console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now() + ' | user=' + userId);
@@ -70,7 +87,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: error.message === 'quota_exceeded' ? 429 : 400,
     })
   }
 })

@@ -38,6 +38,14 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
   }
 });
 
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase (Service Role for internal limit checks)
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
 // 5. AI Chat Endpoint
 app.get('/chat', (req, res) => {
   res.json({ status: "Chat endpoint is live. Use POST to send messages.", version: "1.0.4" });
@@ -45,7 +53,32 @@ app.get('/chat', (req, res) => {
 
 app.post('/chat', async (req, res) => {
   try {
-    const { message, history, image } = req.body;
+    const { message, history, image, userId } = req.body;
+
+    // 1. Rate Limit Check (Hourly)
+    if (userId) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      
+      // Get Plan
+      const { data: profile } = await supabase.from('profiles').select('plan_type').eq('id', userId).maybeSingle();
+      const plan = profile?.plan_type || 'free';
+      const limit = plan === 'pro' ? 500 : 20;
+
+      // Count
+      const { count, error: countError } = await supabase
+        .from('chat_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('role', 'user')
+        .gt('created_at', oneHourAgo);
+
+      if (!countError && count >= limit) {
+        return res.status(429).json({ 
+          error: "quota_exceeded", 
+          message: `You've reached your hourly limit of ${limit} messages.` 
+        });
+      }
+    }
     
     // Map history exactly as v1.0.4
     const chatHistory = (history || []).map(m => ({

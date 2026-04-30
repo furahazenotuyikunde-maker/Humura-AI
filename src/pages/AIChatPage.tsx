@@ -187,6 +187,8 @@ const AIChatPage: React.FC = () => {
       const backendUrl = rawUrl.replace(/\/$/, '');
       const targetEndpoint = `${backendUrl}/chat`;
 
+      const { data: { session } } = await (await import('../lib/supabase')).supabase.auth.getSession();
+      
       const response = await fetch(targetEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +197,8 @@ const AIChatPage: React.FC = () => {
           message: userMessage.content,
           history: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
           image: selectedImage,
-          lang: i18n.language
+          lang: i18n.language,
+          userId: session?.user?.id
         })
       });
 
@@ -214,9 +217,13 @@ const AIChatPage: React.FC = () => {
       
       let friendlyError = err.message;
       if (err.message.includes('429') || err.message.toLowerCase().includes('quota')) {
+        const isQuota = err.message.includes('quota_exceeded');
+        const limitInfo = err.message.match(/limit of (\d+) messages/) || [];
+        const limitValue = limitInfo[1] || '20';
+
         friendlyError = isRw 
-          ? "Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha. Gerageza kandi nyuma y'isaha imwe." 
-          : "You've reached the hourly limit for messages. Please try again in 1 hour.";
+          ? `Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha (${limitValue}). Gerageza kandi nyuma y'isaha imwe.` 
+          : `You've reached the hourly limit for messages (${limitValue}/hr). Please try again in 1 hour.`;
       }
       
       setError(`${isRw ? 'Ikibazo' : 'Error'}: ${friendlyError}`);

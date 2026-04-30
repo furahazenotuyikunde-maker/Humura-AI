@@ -1,71 +1,63 @@
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-/**
- * Checks if the global rate limit has been exceeded.
- * Limit: 20 requests per minute.
- * Returns true if allowed, false if limit exceeded.
- */
-export async function checkRateLimit(): Promise<{ allowed: boolean; count: number }> {
-  const now = new Date()
-  const oneMinuteAgo = new Date(now.getTime() - 60000).toISOString()
-
-  try {
-    // 1. Count requests in the last minute (sliding window)
-    const { count, error: countError } = await supabase
-      .from('request_logs')
-      .select('*', { count: 'exact', head: true })
-      .gt('created_at', oneMinuteAgo)
-
-    if (countError) {
-      if (countError.code === '42P01') {
-         console.log("Table 'request_logs' not found. Please create it.")
-         return { allowed: true, count: 0 }
-      }
-      console.error("Error counting requests:", countError)
-      return { allowed: true, count: 0 }
-    }
-
-    const currentCount = count || 0
-    const limit = 300
-
-
-    if (currentCount >= limit) {
-      return { allowed: false, count: currentCount }
-    }
-
-    // 2. Log this request ONLY if allowed
-    const { error: insertError } = await supabase
-      .from('request_logs')
-      .insert([{ created_at: now.toISOString() }])
-
-    if (insertError) {
-      console.error("Error logging request:", insertError)
-    }
-
-    return {
-      allowed: true,
-      count: currentCount + 1
-    }
-  } catch (err) {
-    console.error("Rate limiter exception:", err)
-    return { allowed: true, count: 0 }
-  }
+interface RateLimitResult {
+  allowed: boolean;
+  count: number;
+  limit: number;
+  resetTime?: string;
+  plan: string;
 }
 
 /**
- * Clean up old logs periodically (optional, but good practice)
- * Can be called manually or via a cron job.
+ * Checks if a user has exceeded their hourly message limit.
+ * Free: 20/hr, Paid: 500/hr
  */
-export async function cleanupLogs() {
-  const fiveMinutesAgo = new Date(Date.now() - 300000).toISOString()
-  await supabase
-    .from('request_logs')
-    .delete()
-    .lt('created_at', fiveMinutesAgo)
+export async function checkUserRateLimit(userId: string, endpoint: string = 'chat'): Promise<RateLimitResult> {
+  if (!userId) return { allowed: true, count: 0, limit: 20, plan: 'guest' };
+
+  const now = new Date()
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+
+  try {
+    // 1. Get User Plan
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan_type')
+      .eq('id', userId)
+      .maybeSingle()
+
+    const plan = profile?.plan_type || 'free'
+    const limit = plan === 'pro' ? 500 : 20
+
+    // 2. Count user messages in the last hour from chat_logs
+    const { count, error: countError } = await supabase
+      .from('chat_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('role', 'user')
+      .gt('created_at', oneHourAgo)
+
+    if (countError) throw countError
+
+    const currentCount = count || 0
+    const allowed = currentCount < limit
+
+    // 3. Log the attempt to rate_limit_logs
+    await supabase.from('rate_limit_logs').insert([{ user_id: userId, endpoint }])
+
+    return {
+      allowed,
+      count: currentCount,
+      limit,
+      plan
+    }
+  } catch (err) {
+    console.error('[RateLimiter] Error checking limit:', err.message)
+    return { allowed: true, count: 0, limit: 20, plan: 'unknown' }
+  }
 }
