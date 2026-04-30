@@ -187,7 +187,7 @@ const AIChatPage: React.FC = () => {
       const backendUrl = rawUrl.replace(/\/$/, '');
       const targetEndpoint = `${backendUrl}/chat`;
 
-      const { data: { session } } = await (await import('../lib/supabase')).supabase.auth.getSession();
+      const { data: { session } } = await (await import('../lib/supabaseClient')).supabase.auth.getSession();
       
       const response = await fetch(targetEndpoint, {
         method: 'POST',
