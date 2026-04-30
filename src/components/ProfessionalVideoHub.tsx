@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayCircle, Plus, X, Video, User, Trash2, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfVideo {
   id: string;
@@ -22,6 +23,7 @@ interface ProfVideo {
 
 export default function ProfessionalVideoHub() {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
 
@@ -63,21 +65,6 @@ export default function ProfessionalVideoHub() {
     }
   };
 
-  const grantProfRole = async () => {
-    if (!user) {
-      alert(isRw ? 'Nyamuneka banza winjire.' : 'Please sign in first.');
-      return;
-    }
-    const { error } = await supabase
-      .from('profiles')
-      .update({ plan_type: 'professional' })
-      .eq('id', user.id);
-    
-    if (!error) {
-      setIsProf(true);
-      alert(isRw ? 'Wahawe uburenganzira bw\'inzobere!' : 'Professional role granted for demo!');
-    }
-  };
 
   const fetchVideos = async () => {
     setLoading(true);
@@ -155,12 +142,12 @@ export default function ProfessionalVideoHub() {
             <Plus size={18} />
             {isRw ? 'Ohereza' : 'Upload'}
           </button>
-        ) : user ? (
+        ) : !user ? (
           <button
-            onClick={grantProfRole}
+            onClick={() => navigate('/auth?redirect=/education')}
             className="text-[10px] font-bold text-primary hover:underline"
           >
-            {isRw ? 'Ese uri inzobere? Kanda hano' : 'Are you a professional? Click here'}
+            {isRw ? 'Injira nka muganga ubashe kohereza amashusho' : 'Sign in as a professional to upload'}
           </button>
         ) : null}
       </div>

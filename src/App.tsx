@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage';
 import BrailleGeneratorPage from './pages/BrailleGeneratorPage';
 import NotificationsPage from './pages/NotificationsPage';
 import TranslatorPage from './pages/TranslatorPage';
+import AuthPage from './pages/AuthPage';
 
 const App: React.FC = () => {
   return (
@@ -34,6 +35,7 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="/community" element={<CommunityPage />} />
+        <Route path="/auth" element={<AuthPage />} />
 
       </Routes>
     </BrowserRouter>

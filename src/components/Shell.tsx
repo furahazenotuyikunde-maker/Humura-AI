@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -18,6 +18,30 @@ export const Shell: React.FC<ShellProps> = () => {
   const navigate = useNavigate();
 
   const isRw = i18n.language?.startsWith('rw') || false;
+
+  // Auth State
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   // History state
   const [showHistory, setShowHistory] = useState(false);
@@ -185,6 +209,24 @@ export const Shell: React.FC<ShellProps> = () => {
           >
             <Bell size={20} />
           </button>
+
+          {user ? (
+            <button 
+              onClick={handleLogout}
+              className="p-2 rounded-full bg-red-50 text-red-600 border border-red-100 shadow-sm transition-all active:scale-95"
+              aria-label="Logout"
+              title={isRw ? 'Sohoka' : 'Logout'}
+            >
+              <LogOut size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={() => navigate('/auth')}
+              className="px-4 py-2 rounded-full bg-primary text-white font-bold text-xs shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+            >
+              {isRw ? 'Injira' : 'Login'}
+            </button>
+          )}
         </div>
       </header>
 

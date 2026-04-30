@@ -24,5 +24,7 @@ ALTER TABLE public.rate_limit_logs ENABLE ROW LEVEL SECURITY;
 
 -- 5. Policies
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "System can manage all profiles" ON public.profiles FOR ALL USING (true); -- Internal use
 CREATE POLICY "Users can only see their own logs" ON public.rate_limit_logs FOR SELECT USING (auth.uid() = user_id);
