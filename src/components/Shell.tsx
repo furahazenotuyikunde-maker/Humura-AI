@@ -21,25 +21,46 @@ export const Shell: React.FC<ShellProps> = () => {
 
   // Auth State
   const [user, setUser] = useState<any>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (session?.user) {
+        fetchRole(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchRole(session.user.id);
+      } else {
+        setRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const fetchRole = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    setRole(data?.role || 'patient');
+    setLoading(false);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setRole(null);
     navigate('/');
   };
 
@@ -142,6 +163,7 @@ export const Shell: React.FC<ShellProps> = () => {
         { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
         { to: '/notifications', icon: Bell, label: isRw ? 'Imenyesha' : 'Notifications' },
+        ...(role === 'doctor' ? [{ to: '/doctor', icon: Activity, label: isRw ? 'Ibiro bya Muganga' : 'Doctor Dashboard' }] : []),
       ],
     },
     {
