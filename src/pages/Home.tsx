@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope, Type, Languages } from 'lucide-react';
+import { MessageCircle, Users, BarChart2, BookOpen, MapPin, HandMetal, AlertTriangle, Phone, Stethoscope, Type, Languages, Activity, ChevronRight, AlertCircle } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { useEffect } from 'react';
 
 const MOODS = [
   { id: 'great', emoji: '🤩', en: 'Great', rw: 'Neza cyane', color: 'from-amber-400 to-yellow-500', tip: { en: 'Channel that energy into creativity or helping someone today!', rw: 'Shyira imbaraga zose mu gushyiraho ikintu gishya cyangwa gufasha umuntu uyu munsi!' } },
@@ -19,6 +21,25 @@ export default function Home() {
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
   const navigate = useNavigate();
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkRole();
+  }, []);
+
+  const checkRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      setRole(data?.role || 'patient');
+    }
+    setLoading(false);
+  };
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
     const today = new Date().toISOString().split('T')[0];
     const stored = localStorage.getItem('Humura_moods');
@@ -86,6 +107,94 @@ export default function Home() {
 
   ];
 
+
+  if (loading) return null;
+
+  // If Doctor, show Doctor Welcome or Redirect
+  if (role === 'doctor') {
+    return (
+      <div className="space-y-8 pb-10">
+        <section className="mt-2 flex justify-between items-end">
+          <div>
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="text-3xl font-black text-primary-900 tracking-tight"
+            >
+              {isRw ? 'Muraho, Muganga! 🩺' : 'Welcome, Doctor! 🩺'}
+            </motion.h1>
+            <p className="text-primary-600 mt-1 text-sm font-bold">
+              {isRw ? 'Uyu munsi ufite abarwayi 3 bategereje.' : 'You have 3 clinical alerts pending today.'}
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/doctor')}
+            className="px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs shadow-xl shadow-primary/20 hover:scale-105 transition-all"
+          >
+            {isRw ? 'Gana ku Biro' : 'Go to Dashboard'}
+          </button>
+        </section>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="glass-card p-8 rounded-[2.5rem] bg-gradient-to-br from-primary-50 to-white border-2 border-primary-100 flex flex-col justify-between h-64">
+            <div>
+              <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
+                <Users size={24} />
+              </div>
+              <h3 className="text-xl font-black text-primary-900">{isRw ? 'Gucunga Abarwayi' : 'Patient Records'}</h3>
+              <p className="text-sm text-primary-600 mt-2 font-medium">Access full clinical history and DSM-5 diagnostics.</p>
+            </div>
+            <button onClick={() => navigate('/doctor')} className="text-sm font-black text-primary hover:underline flex items-center gap-2">
+              {isRw ? 'Reba lisiti' : 'View Patient List'} <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="glass-card p-8 rounded-[2.5rem] bg-gradient-to-br from-red-50 to-white border-2 border-red-100 flex flex-col justify-between h-64">
+            <div>
+              <div className="w-12 h-12 bg-red-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-red-500/20">
+                <AlertCircle size={24} />
+              </div>
+              <h3 className="text-xl font-black text-red-900">{isRw ? 'Ubutabazi' : 'Crisis Alerts'}</h3>
+              <p className="text-sm text-red-600 mt-2 font-medium">Immediate SOS notifications from patients at risk.</p>
+            </div>
+            <button onClick={() => navigate('/doctor')} className="text-sm font-black text-red-600 hover:underline flex items-center gap-2">
+              {isRw ? 'Reba ubutabazi' : 'Check Alerts'} <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <section className="glass-card rounded-[2.5rem] p-8 border-primary-100">
+           <div className="flex items-center gap-3 mb-6">
+             <div className="p-2 bg-primary/10 rounded-xl text-primary">
+               <Activity size={24} />
+             </div>
+             <h2 className="text-xl font-black text-primary-900">{isRw ? 'Isesengura rya AI' : 'AI Clinical Insights'}</h2>
+           </div>
+           <p className="text-sm text-primary-600 leading-relaxed font-medium mb-6">
+             Gemini 3 Flash Preview is currently analyzing mood trends across your caseload.
+             Open the dashboard to view the full report.
+           </p>
+           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-4 bg-neutral-50 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-primary-400 uppercase mb-1">Active</p>
+                <p className="text-xl font-black text-primary-900">24</p>
+              </div>
+              <div className="p-4 bg-neutral-50 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-primary-400 uppercase mb-1">At Risk</p>
+                <p className="text-xl font-black text-red-500">3</p>
+              </div>
+              <div className="p-4 bg-neutral-50 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-primary-400 uppercase mb-1">Sessions</p>
+                <p className="text-xl font-black text-primary-900">12</p>
+              </div>
+              <div className="p-4 bg-neutral-50 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-primary-400 uppercase mb-1">Avg Score</p>
+                <p className="text-xl font-black text-emerald-500">7.2</p>
+              </div>
+           </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-10">
