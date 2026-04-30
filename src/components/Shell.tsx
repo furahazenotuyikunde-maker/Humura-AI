@@ -249,7 +249,7 @@ export const Shell: React.FC<ShellProps> = () => {
               {/* Column 3: Innovation */}
               <div className="space-y-6">
                 <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
-                  {isRw ? "Ikoranabuhanga" : "Innovation"}
+                  {isRw ? "Ikoranabuhanga" : "Innovations"}
                 </h4>
                 <ul className="text-sm text-neutral-500 space-y-3 font-semibold">
                   <li className="flex items-center gap-2">
