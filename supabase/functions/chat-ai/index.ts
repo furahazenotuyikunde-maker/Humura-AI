@@ -1,46 +1,66 @@
-// AUDITED — max 1 Gemini 3.0 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { checkUserRateLimit } from '../_shared/rateLimiter.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// SINGLE Gemini 3.0 Flash call — deduplication guards applied
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+async function checkUserRateLimit(supabase: any, userId: string) {
+  if (!userId) return { allowed: true, count: 0, limit: 20 };
+
+  const now = new Date()
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan_type')
+      .eq('id', userId)
+      .maybeSingle()
+
+    const plan = profile?.plan_type || 'free'
+    const limit = plan === 'pro' ? 500 : 20
+
+    const { count, error: countError } = await supabase
+      .from('chat_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('role', 'user')
+      .gt('created_at', oneHourAgo)
+
+    if (countError) throw countError
+
+    const currentCount = count || 0
+    return { allowed: currentCount < limit, count: currentCount, limit };
+  } catch (err) {
+    console.error('[RateLimit Error]', err);
+    return { allowed: true, count: 0, limit: 20 };
   }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const { messages, userId } = await req.json()
     const apiKey = Deno.env.get('GEMINI_API_KEY')
+    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not set')
-    }
-
-    // 1. Check Rate Limit (Free: 20/hr, Pro: 500/hr)
-    const { allowed, count, limit, plan } = await checkUserRateLimit(userId, 'chat-ai')
-    
+    // 1. Check User Quota
+    const { allowed, count, limit } = await checkUserRateLimit(supabase, userId)
     if (!allowed) {
-      console.warn(`[RATE LIMIT] User ${userId} (${plan}) reached limit: ${count}/${limit}`);
       return new Response(JSON.stringify({ 
-        error: "quota_exceeded",
-        message: `You've reached your hourly limit of ${limit} messages. You've sent ${count} in the last hour.`,
-        limit,
-        count
+        error: "user_quota_exceeded", 
+        message: `User limit reached: ${count}/${limit}`,
+        limit 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 429,
       })
     }
 
-    console.log('[GEMINI] ▶ Request fired | timestamp=' + Date.now() + ' | user=' + userId);
-
-    // Call Gemini 3-Flash Vision
+    // 2. Call Gemini
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
@@ -56,38 +76,30 @@ serve(async (req) => {
     )
 
     const data = await geminiResponse.json()
-    
     if (data.error) {
-      console.error('[GEMINI] ✖ Error:', data.error.message || 'Gemini API Error');
-      throw new Error(data.error.message || 'Gemini API Error')
+      // If it's a Gemini limit, return 429 but NOT user_quota_exceeded
+      return new Response(JSON.stringify({ error: "provider_limit", message: data.error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429,
+      })
     }
 
-    console.log('[GEMINI] ✔ Response received | timestamp=' + Date.now());
     const reply = data.candidates[0].content.parts[0].text
 
-    // Save to DB using service role (No Auth)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const lastUserMessage = messages[messages.length - 1].content
-    
-    const { error: dbError } = await supabaseClient.from('chat_logs').insert([
-      { user_id: userId, role: 'user', content: lastUserMessage },
+    // 3. Log successful message
+    await supabase.from('chat_logs').insert([
+      { user_id: userId, role: 'user', content: messages[messages.length - 1].content },
       { user_id: userId, role: 'model', content: reply }
     ])
-
-    if (dbError) throw dbError
 
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "server_error", message: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: error.message === 'quota_exceeded' ? 429 : 400,
+      status: 500,
     })
   }
 })

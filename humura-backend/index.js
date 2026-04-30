@@ -74,8 +74,9 @@ app.post('/chat', async (req, res) => {
 
       if (!countError && count >= limit) {
         return res.status(429).json({ 
-          error: "quota_exceeded", 
-          message: `You've reached your hourly limit of ${limit} messages.` 
+          error: "user_quota_exceeded", 
+          message: `User hourly limit reached: ${count}/${limit}`,
+          limit
         });
       }
     }

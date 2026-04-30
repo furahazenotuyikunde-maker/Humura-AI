@@ -217,13 +217,20 @@ const AIChatPage: React.FC = () => {
       
       let friendlyError = err.message;
       if (err.message.includes('429') || err.message.toLowerCase().includes('quota')) {
-        const isQuota = err.message.includes('quota_exceeded');
-        const limitInfo = err.message.match(/limit of (\d+) messages/) || [];
+        const isUserQuota = err.message.includes('user_quota_exceeded');
+        const limitInfo = err.message.match(/limit.*(\d+)/) || [];
         const limitValue = limitInfo[1] || '20';
 
-        friendlyError = isRw 
-          ? `Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha (${limitValue}). Gerageza kandi nyuma y'isaha imwe.` 
-          : `You've reached the hourly limit for messages (${limitValue}/hr). Please try again in 1 hour.`;
+        if (isUserQuota) {
+          friendlyError = isRw 
+            ? `Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha (${limitValue}). Gerageza kandi nyuma y'isaha imwe.` 
+            : `You've reached the hourly limit for messages (${limitValue}/hr). Please try again in 1 hour.`;
+        } else {
+          // Gemini / Provider limit
+          friendlyError = isRw
+            ? "Sisitemu irimo gukoreshwa n'abantu benshi. Gerageza kandi nyuma y'umunota umwe."
+            : "The AI service is currently busy due to high traffic. Please try again in a minute.";
+        }
       }
       
       setError(`${isRw ? 'Ikibazo' : 'Error'}: ${friendlyError}`);
