@@ -117,7 +117,69 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-// 6. Progress Tracker Endpoint
+// 7. Clinical AI Endpoints (Doctor Dashboard)
+
+// 7a. Session Assistant (Suggestions + Distortion Detection)
+app.post('/clinical/session-assist', async (req, res) => {
+  try {
+    const { messages, lang } = req.body;
+    const prompt = `You are a clinical assistant supporting a licensed mental health doctor in Rwanda conducting CBT therapy. 
+    Analyze the following conversation and return a JSON object with:
+    1. "suggestions": An array of 3 empathetic response suggestions the doctor can use.
+    2. "distortions": An array of cognitive distortions detected in the patient's last message (e.g., Catastrophizing, All-or-nothing thinking).
+    3. "technique": A recommended CBT technique for the next step.
+    
+    Conversation: ${JSON.stringify(messages)}
+    Language: ${lang || 'en'}
+    
+    Rwandan Context: Be culturally sensitive. Flag any signs of crisis or suicide risk immediately.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text().replace(/```json|```/g, '').trim();
+    return res.status(200).json({ success: true, ...JSON.parse(text) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 7b. SOAP Note Generator
+app.post('/clinical/generate-soap', async (req, res) => {
+  try {
+    const { transcript, lang } = req.body;
+    const prompt = `Generate a professional SOAP note (Subjective, Objective, Assessment, Plan) based on this therapy session transcript. 
+    Return a JSON object with keys: "subjective", "objective", "assessment", "plan".
+    
+    Transcript: ${transcript}
+    Language: ${lang || 'en'}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text().replace(/```json|```/g, '').trim();
+    return res.status(200).json({ success: true, ...JSON.parse(text) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 7c. Caseload Query
+app.post('/clinical/query-caseload', async (req, res) => {
+  try {
+    const { query, context, lang } = req.body;
+    const prompt = `You are a clinical data assistant. Answer the doctor's query based on the provided patient context.
+    Context: ${JSON.stringify(context)}
+    Query: ${query}
+    Language: ${lang || 'en'}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return res.status(200).json({ success: true, reply: response.text() });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 8. Progress Tracker Endpoint
 app.post('/analyze-progress', async (req, res) => {
   try {
     const { moods, lang } = req.body;
