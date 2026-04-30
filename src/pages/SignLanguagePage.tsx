@@ -201,9 +201,15 @@ export default function SignLanguagePage() {
         }
 
         try {
-          const parsed = typeof data.reply === 'string' ? JSON.parse(data.reply) : data.reply;
+          // Clean the response: remove markdown code blocks if present
+          const cleanReply = typeof data.reply === 'string' 
+            ? data.reply.replace(/```json|```/g, '').trim()
+            : data.reply;
+            
+          const parsed = typeof cleanReply === 'string' ? JSON.parse(cleanReply) : cleanReply;
           setScanResult(parsed);
-        } catch {
+        } catch (parseError) {
+          console.error('[PARSE ERROR]', parseError);
           setScanResult({
             detectedSign: "Analysis Complete",
             explanation: data.reply || "Could not analyze the image. Please try again."

@@ -32,7 +32,8 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
     const imagePart = { inlineData: { data: req.file.buffer.toString("base64"), mimeType: req.file.mimetype } };
     const result = await model.generateContent([prompt || "Analyze this image.", imagePart]);
     const response = await result.response;
-    return res.status(200).json({ success: true, reply: response.text() });
+    const text = response.text().replace(/```json|```/g, '').trim();
+    return res.status(200).json({ success: true, reply: text });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Image analysis failed" });
   }
