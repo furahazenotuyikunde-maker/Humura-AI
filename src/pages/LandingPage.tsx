@@ -9,25 +9,27 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const isRw = i18n.language?.startsWith('rw');
 
-  const toggleLanguage = () => {
-    const next = isRw ? 'en' : 'rw';
-    i18n.changeLanguage(next);
-  };
-
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
 
-      {/* Language Toggle */}
-      <button 
-        onClick={toggleLanguage}
-        className="absolute top-8 right-8 flex items-center gap-2 px-4 py-2 bg-neutral-50 rounded-full border border-neutral-100 font-black text-xs uppercase tracking-widest text-primary-900"
-      >
-        <Languages size={14} />
-        {isRw ? 'English' : 'Kinyarwanda'}
-      </button>
+      {/* Language Selector */}
+      <div className="absolute top-8 right-8 flex bg-neutral-50 p-1 rounded-2xl border border-neutral-100 shadow-sm">
+        <button 
+          onClick={() => i18n.changeLanguage('en')}
+          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${!isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+        >
+          EN
+        </button>
+        <button 
+          onClick={() => i18n.changeLanguage('rw')}
+          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+        >
+          RW
+        </button>
+      </div>
 
       <main className="w-full max-w-sm text-center space-y-10">
         <motion.div

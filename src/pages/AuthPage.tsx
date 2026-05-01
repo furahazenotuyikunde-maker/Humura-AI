@@ -57,6 +57,7 @@ export default function AuthPage() {
             full_name: fullName,
             phone: phone,
             role: role,
+            language_pref: isRw ? 'rw' : 'en',
             updated_at: new Date().toISOString()
           });
         }
@@ -82,6 +83,21 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+      <div className="fixed top-8 right-8 flex bg-neutral-50 p-1 rounded-2xl border border-neutral-100 shadow-sm">
+        <button 
+          onClick={() => i18n.changeLanguage('en')}
+          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${!isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+        >
+          EN
+        </button>
+        <button 
+          onClick={() => i18n.changeLanguage('rw')}
+          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+        >
+          RW
+        </button>
+      </div>
+
       <button 
         onClick={() => navigate('/welcome')}
         className="fixed top-8 left-8 p-3 rounded-2xl bg-neutral-50 text-primary-900"
