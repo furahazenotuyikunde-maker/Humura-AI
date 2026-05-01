@@ -233,47 +233,6 @@ export default function Home() {
            </div>
         </div>
 
-        {/* Floating Chat Bar */}
-        <section className="pt-4">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative bg-white/80 backdrop-blur-xl border border-neutral-100 p-2 rounded-[2.5rem] flex items-center gap-2 shadow-xl shadow-primary/5">
-              <button className="w-11 h-11 flex items-center justify-center text-neutral-400 hover:text-primary hover:bg-primary-50 rounded-full transition-all">
-                <div className="relative">
-                  <div className="w-5 h-5 border-2 border-current rounded-md flex items-center justify-center">
-                    <div className="w-1 h-1 bg-current rounded-full mb-1 ml-1" />
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-white flex items-center justify-center text-[6px] font-black text-white">+</div>
-                </div>
-              </button>
-              
-              <input 
-                type="text"
-                placeholder={isRw ? "Vugana na Humura AI..." : "Message Humura AI..."}
-                className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-primary-900 placeholder:text-neutral-300 px-2"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') navigate('/chat');
-                }}
-              />
-
-              <button className="w-11 h-11 flex items-center justify-center text-neutral-400 hover:text-primary hover:bg-primary-50 rounded-full transition-all">
-                <div className="w-5 h-5 border-2 border-current rounded-full flex items-center justify-center">
-                   <div className="w-1.5 h-1.5 bg-current rounded-full" />
-                </div>
-              </button>
-
-              <button 
-                onClick={() => navigate('/chat')}
-                className="w-12 h-12 bg-neutral-400 text-white rounded-full flex items-center justify-center shadow-lg shadow-neutral-400/20 hover:bg-primary hover:shadow-primary/30 transition-all active:scale-95"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </section>
 
       </div>
     </div>
