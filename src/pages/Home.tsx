@@ -84,7 +84,6 @@ export default function Home() {
 
     // 2. Save to Supabase (For Progress Page analysis)
     try {
-      const { supabase } = await import('../lib/supabaseClient');
       await supabase.from('mood_logs').insert([{
         mood: mood.id,
         emoji: mood.emoji,

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, User, AlertCircle, Loader2, Mic, MicOff, ImagePlus, Square, Edit2, X, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../lib/supabaseClient';
 
 interface Message {
   role: 'user' | 'model';
@@ -186,8 +187,8 @@ const AIChatPage: React.FC = () => {
 
       const backendUrl = rawUrl.replace(/\/$/, '');
       const targetEndpoint = `${backendUrl}/chat`;
-
-      const { data: { session } } = await (await import('../lib/supabaseClient')).supabase.auth.getSession();
+      
+      const { data: { session } } = await supabase.auth.getSession();
       
       const response = await fetch(targetEndpoint, {
         method: 'POST',
