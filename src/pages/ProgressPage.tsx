@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
 interface MoodLog {
-  logged_at: string;
+  created_at: string;
   mood: string;
 }
 
@@ -45,7 +45,7 @@ const ProgressPage: React.FC = () => {
           .channel('mood-updates')
           .on(
             'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'mood_logs', filter: `patient_id=eq.${userId}` },
+            { event: 'INSERT', schema: 'public', table: 'mood_logs', filter: `user_id=eq.${userId}` },
             () => fetchMoodData(userId)
           )
           .subscribe();
@@ -66,9 +66,9 @@ const ProgressPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('mood_logs')
-        .select('logged_at, mood')
-        .eq('patient_id', userId)
-        .order('logged_at', { ascending: false })
+        .select('created_at, mood')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
         .limit(30);
 
       if (error) throw error;
@@ -91,7 +91,7 @@ const ProgressPage: React.FC = () => {
     setIsAnalyzing(true);
     try {
       const moodHistory = data.map(m => ({ 
-        date: m.logged_at ? new Date(m.logged_at).toLocaleDateString() : 'N/A', 
+        date: m.created_at ? new Date(m.created_at).toLocaleDateString() : 'N/A', 
         mood: m.mood 
       }));
 
@@ -135,7 +135,7 @@ const ProgressPage: React.FC = () => {
       }).reverse();
 
       return last7Days.map(date => {
-        const log = moods.find(m => m.logged_at && m.logged_at.startsWith(date));
+        const log = moods.find(m => m.created_at && m.created_at.startsWith(date));
         return {
           date,
           value: log ? (moodMap[log.mood] || 3) : 0,

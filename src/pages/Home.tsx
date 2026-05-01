@@ -67,11 +67,11 @@ export default function Home() {
       const isoString = localNow.toISOString();
 
       const { error } = await supabase.from('mood_logs').insert([{
-        patient_id: session.user.id,
-        mood_score: moodItem.score,
+        user_id: session.user.id,
+        score: moodItem.score,
         mood: moodItem.key,
         emoji: moodItem.emoji,
-        logged_at: isoString
+        created_at: isoString
       }]);
 
       if (error) throw error;
