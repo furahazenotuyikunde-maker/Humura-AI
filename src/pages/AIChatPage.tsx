@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User, AlertCircle, Loader2, Mic, MicOff, ImagePlus, Square, Edit2, X, Trash2 } from 'lucide-react';
+import { 
+  Send, User, AlertCircle, Loader2, Mic, MicOff, 
+  ImagePlus, Square, Edit2, X, Trash2, Languages,
+  ClipboardList, CheckCircle
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 
 interface Message {
   role: 'user' | 'model';
   content: string;
-  image?: string; // Base64 preview
+  translated?: string;
+  image?: string;
 }
 
 const AIChatPage: React.FC = () => {
@@ -16,444 +21,176 @@ const AIChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTranslating, setIsTranslating] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [pendingHomework, setPendingHomework] = useState<any>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const recognitionRef = useRef<any>(null);
   const STORAGE_KEY = 'humura_chat_history';
 
-  // Load history from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setMessages(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load history", e);
-      }
-    }
+    if (saved) setMessages(JSON.parse(saved));
+    fetchHomework();
   }, []);
 
-  // Save history to localStorage
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    }
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const fetchHomework = async () => {
+    // Mocking a pending homework for demo
+    setPendingHomework({
+      id: 'task-1',
+      title: isRw ? 'Andika ibyo utekereza' : 'Morning thought record',
+      desc: isRw ? 'Andika ibintu bitatu wumva biguteye impungenge uyu munsi.' : 'Write down 3 things making you anxious today.'
+    });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  // Initialize Speech Recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = i18n.language === 'rw' ? 'rw-RW' : 'en-US';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result: any) => result.transcript)
-          .join('');
-        setInput(transcript);
-      };
-
-      recognitionRef.current.onend = () => setIsRecording(false);
-      recognitionRef.current.onerror = () => setIsRecording(false);
-    }
-  }, [i18n.language]);
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-    } else {
-      setIsRecording(true);
-      recognitionRef.current?.start();
-    }
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-      if (!supportedTypes.includes(file.type)) {
-        setError(isRw ? 'Ubu bwoko bw\'ifoto ntibwemewe (Koresha JPG, PNG, cyangwa WEBP)' : 'Unsupported image type (Use JPG, PNG, or WEBP)');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          // Resize to max 1024px width/height to keep payload small
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const maxDim = 1024;
-          
-          if (width > height && width > maxDim) {
-            height *= maxDim / width;
-            width = maxDim;
-          } else if (height > maxDim) {
-            width *= maxDim / height;
-            height = maxDim;
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-          setSelectedImage({
-            data: compressedBase64.split(',')[1],
-            mimeType: 'image/jpeg'
-          });
-          setError(null);
-        };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsLoading(false);
-      setError(isRw ? 'Guhagarika byakunze' : 'Generation stopped');
-    }
-  };
-
-  const handleEditMessage = (index: number) => {
+  const handleTranslate = async (index: number) => {
     const msg = messages[index];
-    if (msg.role === 'user') {
-      setInput(msg.content);
-      setEditingIndex(index);
+    if (msg.translated) return;
+    
+    setIsTranslating(index);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/ai/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg.content, targetLang: isRw ? 'en' : 'rw' })
+      });
+      const data = await res.json();
+      const updated = [...messages];
+      updated[index].translated = data.translated;
+      setMessages(updated);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTranslating(null);
     }
   };
 
-  const handleDeleteMessage = (index: number) => {
-    if (confirm(isRw ? 'Gusiba ubu butumwa?' : 'Delete this message?')) {
-      const newMessages = messages.filter((_, i) => i !== index);
-      setMessages(newMessages);
+  const handleHomeworkSubmit = async (response: string) => {
+    setIsLoading(true);
+    try {
+      // 1. Submit to AI for observation
+      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/ai/homework-observation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: pendingHomework.title, response })
+      });
+      const data = await res.json();
+      
+      // 2. Add to chat history
+      setMessages(prev => [...prev, 
+        { role: 'user', content: `[HOMEWORK] ${pendingHomework.title}: ${response}` },
+        { role: 'model', content: isRw ? 'Urakoze kurangiza uyu mukoro. Muganga wawe azabibona.' : 'Thank you for completing this task. Your doctor has been notified.' }
+      ]);
+      setPendingHomework(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && !selectedImage) || isLoading) return;
-
-    const userMessage: Message = { 
-      role: 'user', 
-      content: input,
-      image: selectedImage ? `data:${selectedImage.mimeType};base64,${selectedImage.data}` : undefined
-    };
-
-    let newMessages = [...messages];
-    if (editingIndex !== null) {
-      newMessages[editingIndex] = userMessage;
-      // Optionally clear subsequent messages if editing an old one
-      newMessages = newMessages.slice(0, editingIndex + 1);
-      setEditingIndex(null);
-    } else {
-      newMessages.push(userMessage);
-    }
-
-    setMessages(newMessages);
+    if (!input.trim() || isLoading) return;
+    const userMsg: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
-    setSelectedImage(null);
-    
-    if (isLoading) return; // Prevent double-sending
     setIsLoading(true);
-    setError(null);
-
-    abortControllerRef.current = new AbortController();
 
     try {
-      const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      if (!rawUrl) throw new Error("Backend URL is not defined.");
-
-      const backendUrl = rawUrl.replace(/\/$/, '');
-      const targetEndpoint = `${backendUrl}/chat`;
-      
       const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(targetEndpoint, {
+      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: abortControllerRef.current.signal,
-        body: JSON.stringify({
-          message: userMessage.content,
-          history: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-          image: selectedImage,
-          lang: i18n.language,
-          userId: session?.user?.id
-        })
+        body: JSON.stringify({ message: input, userId: session?.user?.id, lang: i18n.language })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.details || `Server Error (${response.status})`);
-      }
-
-      const data = await response.json();
-      if (data.reply) {
-        setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
-      }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      console.error("Chat Error:", err);
-      
-      let friendlyError = err.message;
-      if (err.message.includes('429') || err.message.toLowerCase().includes('quota')) {
-        const isUserQuota = err.message.includes('user_quota_exceeded');
-        const limitInfo = err.message.match(/limit.*(\d+)/) || [];
-        const limitValue = limitInfo[1] || '20';
-
-        if (isUserQuota) {
-          friendlyError = isRw 
-            ? `Ugeze ku rugero ntarengwa rw'ubutumwa bugenewe amasaha (${limitValue}). Gerageza kandi nyuma y'isaha imwe.` 
-            : `You've reached the hourly limit for messages (${limitValue}/hr). Please try again in 1 hour.`;
-        } else {
-          // Gemini / Provider limit
-          friendlyError = isRw
-            ? "Sisitemu irimo gukoreshwa n'abantu benshi. Gerageza kandi nyuma y'umunota umwe."
-            : "The AI service is currently busy due to high traffic. Please try again in a minute.";
-        }
-      }
-      
-      setError(`${isRw ? 'Ikibazo' : 'Error'}: ${friendlyError}`);
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
+    } catch (e) {
+      setError('Chat error');
     } finally {
       setIsLoading(false);
-      abortControllerRef.current = null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-12 px-4">
-      <div className="max-w-3xl mx-auto flex flex-col h-[80vh] bg-white rounded-3xl shadow-xl border border-[#E8E1DB] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-[#E8E1DB] bg-[#FDFCFB] flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-[#E8E1DB] overflow-hidden">
-              <img src="/logo.png" alt="Humura AI Logo" className="w-10 h-10 object-contain" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-[#4A2C1A]">Humura AI</h1>
-              <p className="text-sm text-[#8B5E3C]">{isRw ? 'Ubufasha kubuzima bwo mu mutwe' : 'Mental Health Support Assistant'}</p>
-            </div>
-          </div>
-          {messages.length > 0 && (
-            <button 
-              onClick={() => { 
-                if(confirm(isRw ? 'Gusiba ibiganiro byose?' : 'Clear all messages?')) {
-                  setMessages([]);
-                  localStorage.removeItem(STORAGE_KEY);
-                }
-              }}
-              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-              title={isRw ? 'Siba byose' : 'Clear chat'}
-            >
-              <Trash2 size={20} />
-            </button>
-          )}
-        </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <img src="/logo.png" alt="Humura AI" className="mx-auto w-20 h-20 object-contain mb-4 opacity-50" />
-              <h2 className="text-[#8B5E3C] font-medium mb-2">
-                {isRw ? 'Muraho! Nakufasha iki uyu munsi?' : 'Hello! How can I support you today?'}
-              </h2>
-              <p className="text-sm text-gray-400 max-w-xs mx-auto">
-                {isRw ? 'Humura AI iri hano kugutegeka amatwi no kugufasha.' : 'Humura AI is here to listen and support you in a safe space.'}
-              </p>
-            </div>
-          )}
-
-          <AnimatePresence initial={false}>
-            {messages.map((msg, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${msg.role === 'user' ? 'bg-[#D4A373]' : 'bg-white border border-[#E8E1DB]'
-                    }`}>
-                    {msg.role === 'user' ? <User size={18} className="text-white" /> : <img src="/logo.png" alt="AI" className="w-6 h-6 object-contain" />}
-                  </div>
-                  <div className="flex flex-col gap-1 w-full">
-                    <div className={`p-4 rounded-2xl relative group ${msg.role === 'user'
-                        ? 'bg-[#8B5E3C] text-white rounded-tr-none'
-                        : 'bg-[#FDFCFB] border border-[#E8E1DB] text-[#4A2C1A] rounded-tl-none'
-                      }`}>
-                      {msg.image && (
-                        <img src={msg.image} alt="Upload" className="max-w-xs rounded-lg mb-3 border border-white/20" />
-                      )}
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                      
-                      {msg.role === 'user' && !isLoading && (
-                        <div className="absolute -left-16 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleEditMessage(index)}
-                            className="p-1.5 text-gray-400 hover:text-[#8B5E3C] hover:bg-[#FDFCFB] rounded-full shadow-sm"
-                            title={isRw ? 'Guhindura' : 'Edit'}
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteMessage(index)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-[#FDFCFB] rounded-full shadow-sm"
-                            title={isRw ? 'Gusiba' : 'Delete'}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="flex gap-3 items-center text-[#8B5E3C]">
-                <div className="w-8 h-8 rounded-full bg-white border border-[#E8E1DB] flex items-center justify-center overflow-hidden">
-                  <img src="/logo.png" alt="AI" className="w-6 h-6 object-contain" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={18} />
-                  <span className="text-xs italic">{isRw ? 'Humura AI aratekereza...' : 'Humura AI is thinking...'}</span>
-                </div>
+    <div className="min-h-screen bg-neutral-50 flex flex-col pt-20">
+      {/* Homework Banner */}
+      <AnimatePresence>
+        {pendingHomework && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="bg-primary-900 text-white p-6 mx-4 mb-4 rounded-3xl shadow-xl space-y-4"
+          >
+            <div className="flex items-center gap-3">
+              <ClipboardList className="text-primary-300" />
+              <div>
+                <h3 className="font-black text-sm">{pendingHomework.title}</h3>
+                <p className="text-xs text-primary-200">{pendingHomework.desc}</p>
               </div>
             </div>
-          )}
-
-          {error && (
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs">
-                <AlertCircle size={14} />
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="p-6 bg-white border-t border-[#E8E1DB]">
-          {selectedImage && (
-            <div className="mb-4 relative inline-block">
-              <img 
-                src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} 
-                alt="Preview" 
-                className="w-20 h-20 object-cover rounded-xl border-2 border-[#8B5E3C]" 
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder={isRw ? 'Andika hano...' : 'Type your response...'}
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm outline-none focus:bg-white/20"
+                onKeyDown={(e: any) => e.key === 'Enter' && handleHomeworkSubmit(e.target.value)}
               />
-              <button 
-                onClick={() => setSelectedImage(null)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600"
-              >
-                <X size={12} />
-              </button>
+              <button className="p-2 bg-primary rounded-xl"><CheckCircle size={20} /></button>
             </div>
-          )}
-          
-          <div className="flex items-end gap-3">
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder={editingIndex !== null ? (isRw ? 'Vugurura ubutumwa...' : 'Edit your message...') : (isRw ? 'Andika ubutumwa bwawe...' : 'Type your message...')}
-                className="w-full px-6 py-3 bg-[#FDFCFB] border border-[#E8E1DB] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8B5E3C] text-[#4A2C1A] resize-none min-h-[52px] max-h-32"
-                rows={1}
-              />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-4 pb-24">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`max-w-[85%] p-4 rounded-2xl relative group ${
+              msg.role === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white border-2 border-neutral-100 text-primary-900 rounded-tl-none shadow-sm'
+            }`}>
+              <p className="text-sm leading-relaxed">{msg.content}</p>
               
-              <div className="absolute right-3 bottom-2.5 flex items-center gap-2">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  hidden 
-                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif" 
-                  onChange={handleImageSelect} 
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-gray-400 hover:text-[#8B5E3C] transition-colors"
-                  title={isRw ? 'Ohereza ifoto' : 'Upload image'}
-                >
-                  <ImagePlus size={20} />
-                </button>
-                
-                {isLoading ? (
-                  <button
-                    onClick={stopGeneration}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors animate-pulse flex items-center gap-1 border border-red-100"
-                    title={isRw ? 'Hagarika' : 'Stop'}
-                  >
-                    <Square size={20} fill="currentColor" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={toggleRecording}
-                    className={`p-2 transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#8B5E3C]'}`}
-                    title={isRw ? 'Koresha ijwi' : 'Voice message'}
-                  >
-                    {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-                  </button>
-                )}
-              </div>
-            </div>
+              {msg.translated && (
+                <p className="text-xs mt-2 pt-2 border-t border-black/10 italic opacity-80">
+                  <Languages size={10} className="inline mr-1" /> {msg.translated}
+                </p>
+              )}
 
-            <button
-              onClick={handleSend}
-              disabled={(!input.trim() && !selectedImage) || isLoading}
-              className="w-12 h-12 bg-[#8B5E3C] text-white rounded-2xl flex items-center justify-center hover:bg-[#4A2C1A] transition-colors disabled:opacity-50 flex-shrink-0"
-            >
-              <Send size={20} />
-            </button>
-          </div>
-          
-          {editingIndex !== null && (
-            <div className="flex justify-between items-center mt-2 px-2">
-              <span className="text-[10px] text-[#8B5E3C] font-medium uppercase tracking-wider">
-                {isRw ? 'UHINDURA UBUTUMWA' : 'EDITING MODE'}
-              </span>
               <button 
-                onClick={() => { setEditingIndex(null); setInput(''); }}
-                className="text-[10px] text-gray-400 hover:text-red-500 underline"
+                onClick={() => handleTranslate(idx)}
+                className={`absolute ${msg.role === 'user' ? '-left-8' : '-right-8'} top-1/2 -translate-y-1/2 p-1.5 bg-neutral-100 text-neutral-400 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:text-primary`}
               >
-                {isRw ? 'Kureka' : 'Cancel'}
+                {isTranslating === idx ? <Loader2 size={12} className="animate-spin" /> : <Languages size={12} />}
               </button>
             </div>
-          )}
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex items-center gap-2 text-neutral-400 text-xs italic">
+            <Loader2 size={14} className="animate-spin" />
+            {isRw ? 'Humura AI aratekereza...' : 'Humura AI is thinking...'}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
-          <p className="text-[10px] text-center text-gray-400 mt-3">
-            {isRw ? 'Humura AI ntisimbura ubufasha bw’inzobere mu buzima bwo mu mutwe.' : 'Humura AI is not a replacement for professional mental health care.'}
-          </p>
+      {/* Input */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-neutral-100">
+        <div className="max-w-3xl mx-auto flex gap-2">
+          <input 
+            type="text" 
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            placeholder={isRw ? 'Andika ubutumwa...' : 'Message Humura AI...'}
+            className="flex-1 bg-neutral-50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-4 text-sm font-bold outline-none transition-all"
+          />
+          <button 
+            onClick={handleSend}
+            className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20"
+          >
+            <Send size={24} />
+          </button>
         </div>
       </div>
     </div>

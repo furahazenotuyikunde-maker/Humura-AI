@@ -17,12 +17,29 @@ import TranslatorPage from './pages/TranslatorPage';
 import AuthPage from './pages/AuthPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import IntakePage from './pages/IntakePage';
+import LandingPage from './pages/LandingPage';
+import { supabase } from './lib/supabaseClient';
+import { useEffect, useState } from 'react';
 
 const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Shell />}>
+        <Route path="/" element={session ? <Shell /> : <LandingPage />}>
           <Route index element={<Home />} />
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />
@@ -40,6 +57,7 @@ const App: React.FC = () => {
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/welcome" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
   );
