@@ -8,6 +8,8 @@ import {
   Settings, LogOut, Phone, Send, Info, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useClinicalEvents } from '../hooks/useClinicalEvents';
+import { toast as hotToast } from 'react-hot-toast';
 
 // --- Sub-components ---
 const StatCard = ({ label, value, sub, icon: Icon, color }: any) => (
@@ -42,10 +44,12 @@ export default function DoctorDashboard() {
   const [moodLogs, setMoodLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { activeSession } = useClinicalEvents(doctorProfile?.id, 'doctor');
+
   useEffect(() => {
     fetchInitialData();
     setupRealtime();
-  }, []);
+  }, [doctorProfile?.id]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -129,6 +133,29 @@ export default function DoctorDashboard() {
 
       if (error) throw error;
       showToast(isRw ? "Ikibazo cyakemutse" : "Crisis alert resolved");
+      fetchInitialData();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAcceptBooking = async (sessionId: string) => {
+    setActionLoading(sessionId);
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .update({ 
+          status: 'confirmed',
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', sessionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      showToast(isRw ? "Wemeye guhura n'umurwayi" : "Booking accepted!");
       fetchInitialData();
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -574,25 +601,27 @@ export default function DoctorDashboard() {
                                 onClick={() => handleUpdateSessionStatus(s.id, 'missed')}
                                 disabled={actionLoading === s.id}
                                 className="px-4 py-2 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                {isRw ? 'Ntiyabonetse' : 'Mark Missed'}
-                              </button>
-                              <button 
-                                onClick={() => handleUpdateSessionStatus(s.id, 'active')}
+                                onClick={() => handleAcceptBooking(s.id)}
                                 disabled={actionLoading === s.id}
-                                className="px-6 py-2.5 bg-primary text-white font-black text-[10px] uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                className="px-6 py-2.5 bg-emerald-600 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                               >
-                                {isRw ? 'Tangira' : 'Start Session'}
+                                {actionLoading === s.id ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
+                                {isRw ? 'Kwemeza' : 'Accept Request'}
                               </button>
                             </>
-                          )}
-                          {s.status === 'active' && (
+                          ) : s.status === 'confirmed' ? (
+                            <button 
+                              onClick={() => handleUpdateSessionStatus(s.id, 'active')}
+                              className="px-6 py-2.5 bg-primary text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                            >
+                              {isRw ? 'Tangira' : 'Start Session'}
+                            </button>
+                          ) : s.status === 'active' && (
                             <button 
                               onClick={() => handleUpdateSessionStatus(s.id, 'completed')}
-                              disabled={actionLoading === s.id}
-                              className="px-6 py-2.5 bg-emerald-600 text-white font-black text-[10px] uppercase rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-700"
+                              className="px-6 py-2.5 bg-neutral-900 text-white font-black text-xs uppercase rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all"
                             >
-                              {isRw ? 'RANGIZA' : 'Finish Session'}
+                              {isRw ? 'Sohora' : 'Complete'}
                             </button>
                           )}
                           {s.status === 'completed' && (

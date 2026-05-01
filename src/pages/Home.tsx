@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabaseClient';
+import { useClinicalEvents } from '../hooks/useClinicalEvents';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -21,7 +22,10 @@ export default function Home() {
   const [patientData, setPatientData] = useState<any>(null);
   const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  const { activeSession } = useClinicalEvents(profile?.id, 'patient');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -84,6 +88,27 @@ export default function Home() {
       setTimeout(() => navigate('/emergency'), 2000);
     } catch (err) {
       console.error(err);
+    }
+  };
+  const handleBookSession = async () => {
+    if (!doctor || !session?.user?.id) return;
+    setBookingLoading(true);
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .insert({
+          patient_id: session.user.id,
+          doctor_id: doctor.id,
+          scheduled_at: new Date(Date.now() + 3600000).toISOString(), // Placeholder: +1 hour
+          status: 'pending'
+        });
+
+      if (error) throw error;
+      showToast(isRw ? 'Gahunda yawe yoherejwe!' : 'Booking request sent to your professional!');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -172,15 +197,23 @@ export default function Home() {
           </div>
           <div className="flex gap-3 pt-2">
             <button 
-              onClick={() => navigate('/chat')}
+              onClick={() => {
+                if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
+                  navigate('/clinical-workspace');
+                } else {
+                  showToast(isRw ? 'Tegereza muganga akwemere gahunda.' : 'Please wait for your doctor to accept your booking.');
+                }
+              }}
               className="flex-1 py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/20 text-xs uppercase"
             >
-              {isRw ? 'Tangira Ikiganiro' : 'Start chatting now'}
+              {isRw ? 'Andikira Muganga' : 'Start clinical chat'}
             </button>
             <button 
-              onClick={() => navigate('/professionals')}
-              className="flex-1 py-4 bg-white border-2 border-primary/10 text-primary-900 font-black rounded-2xl text-xs uppercase"
+              onClick={handleBookSession}
+              disabled={bookingLoading}
+              className="flex-1 py-4 bg-white border-2 border-primary/10 text-primary-900 font-black rounded-2xl text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2"
             >
+              {bookingLoading && <Loader2 size={14} className="animate-spin" />}
               {isRw ? 'Saba Gahunda' : 'Book a session'}
             </button>
           </div>
@@ -209,7 +242,13 @@ export default function Home() {
 
         {/* Message Card */}
         <button 
-          onClick={() => navigate('/chat')}
+          onClick={() => {
+            if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
+              navigate('/clinical-workspace');
+            } else {
+              showToast(isRw ? 'Tegereza muganga akwemere gahunda.' : 'Please wait for your doctor to accept your booking.');
+            }
+          }}
           className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
         >
           <div className="flex items-center gap-4">
@@ -226,8 +265,9 @@ export default function Home() {
 
         {/* Session Card */}
         <button 
-          onClick={() => navigate('/professionals')}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
+          onClick={handleBookSession}
+          disabled={bookingLoading}
+          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group disabled:opacity-50"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
