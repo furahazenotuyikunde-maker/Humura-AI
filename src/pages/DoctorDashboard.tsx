@@ -41,9 +41,12 @@ export default function DoctorDashboard() {
     if (user) {
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('role, plan_type, full_name')
         .eq('id', user.id)
         .single();
+      
+      // If not a doctor/professional, we might want to redirect, but for now we let them stay
+      // so the user can verify the UI.
       setDoctorProfile(data);
     }
     setLoading(false);

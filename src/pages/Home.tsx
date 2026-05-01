@@ -33,10 +33,12 @@ export default function Home() {
     if (user) {
       const { data } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, plan_type')
         .eq('id', user.id)
         .single();
-      setRole(data?.role || 'patient');
+      
+      const userRole = data?.role === 'doctor' || data?.plan_type === 'professional' ? 'doctor' : 'patient';
+      setRole(userRole);
     }
     setLoading(false);
   };
