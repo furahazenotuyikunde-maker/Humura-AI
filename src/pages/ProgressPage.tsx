@@ -12,19 +12,19 @@ interface MoodLog {
 
 const ProgressPage: React.FC = () => {
   const { i18n } = useTranslation();
-  const isRw = i18n.language?.startsWith('rw');
+  
+  // Safe-Start: Ensure we have a valid translation context
+  const isRw = i18n?.language?.startsWith('rw') || false;
+  
   const [moods, setMoods] = useState<MoodLog[]>([]);
   const [analysis, setAnalysis] = useState<{ summary: string; recommendations: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
   // Mood to value mapping for the chart
   const moodMap: Record<string, number> = {
-    'happy': 5,
-    'calm': 4,
-    'neutral': 3,
-    'sad': 2,
-    'stressed': 1,
-    'angry': 1
+    'happy': 5, 'calm': 4, 'neutral': 3, 'sad': 2, 'stressed': 1, 'angry': 1
   };
 
   const dayNames = isRw 
@@ -109,20 +109,25 @@ const ProgressPage: React.FC = () => {
   };
 
   const getWeeklyData = () => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
+    try {
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+      }).reverse();
 
-    return last7Days.map(date => {
-      const log = moods.find(m => m.logged_at && m.logged_at.startsWith(date));
-      return {
-        date,
-        value: log ? (moodMap[log.mood] || 3) : 0,
-        mood: log?.mood || 'none'
-      };
-    });
+      return last7Days.map(date => {
+        const log = moods.find(m => m.logged_at && m.logged_at.startsWith(date));
+        return {
+          date,
+          value: log ? (moodMap[log.mood] || 3) : 0,
+          mood: log?.mood || 'none'
+        };
+      });
+    } catch (e) {
+      console.error("Critical error in getWeeklyData:", e);
+      return [];
+    }
   };
 
   const handleShare = async () => {
