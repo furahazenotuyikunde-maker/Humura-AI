@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
 interface MoodLog {
-  created_at: string;
+  logged_at: string;
   mood: string;
 }
 
@@ -42,8 +42,8 @@ const ProgressPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('mood_logs')
-        .select('created_at, mood')
-        .order('created_at', { ascending: false })
+        .select('logged_at, mood')
+        .order('logged_at', { ascending: false })
         .limit(30);
 
       if (error) throw error;
@@ -61,7 +61,7 @@ const ProgressPage: React.FC = () => {
   const analyzeMoods = async (data: MoodLog[]) => {
     setIsAnalyzing(true);
     try {
-      const moodHistory = data.map(m => ({ date: new Date(m.created_at).toLocaleDateString(), mood: m.mood }));
+      const moodHistory = data.map(m => ({ date: new Date(m.logged_at).toLocaleDateString(), mood: m.mood }));
 
       const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-progress`, {
         method: 'POST',
@@ -99,7 +99,7 @@ const ProgressPage: React.FC = () => {
     }).reverse();
 
     return last7Days.map(date => {
-      const log = moods.find(m => m.created_at.startsWith(date));
+      const log = moods.find(m => m.logged_at.startsWith(date));
       return {
         date,
         value: log ? moodMap[log.mood] || 3 : 0,
