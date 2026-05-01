@@ -17,8 +17,6 @@ const ProgressPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<{ summary: string; recommendations: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-
   // Mood to value mapping for the chart
   const moodMap: Record<string, number> = {
     'happy': 5,
@@ -34,22 +32,34 @@ const ProgressPage: React.FC = () => {
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   useEffect(() => {
-    fetchMoodData();
+    const initializeData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetchMoodData(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    };
+    initializeData();
   }, []);
 
-  const fetchMoodData = async () => {
+  const fetchMoodData = async (userId: string) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('mood_logs')
         .select('logged_at, mood')
+        .eq('patient_id', userId)
         .order('logged_at', { ascending: false })
         .limit(30);
 
       if (error) throw error;
       if (data && data.length > 0) {
         setMoods(data);
+        // Instant trigger for AI analysis
         analyzeMoods(data);
+      } else {
+        setMoods([]);
       }
     } catch (err) {
       console.error("Error fetching moods:", err);
