@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, AlertCircle, Loader2, ChevronRight, 
   ChevronLeft, MessageCircle, AlertTriangle, 
-  History, UserCheck, ShieldCheck 
+  History, UserCheck, ShieldCheck, Users, Star, ArrowRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -27,10 +27,9 @@ const CONCERNS = [
 
 export default function IntakePage() {
   const navigate = useNavigate();
-  const [subStep, setSubStep] = useState('3a'); // 3a, 3b, 3c, 4 (Matching)
+  const [subStep, setSubStep] = useState('3a'); // 3a, 3b, 3c, 4 (Selection)
   const [loading, setLoading] = useState(false);
-  const [matchedDoctor, setMatchedDoctor] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [isRw, setIsRw] = useState(false);
 
   // Form State
@@ -48,7 +47,16 @@ export default function IntakePage() {
         });
       }
     });
+    fetchDoctors();
   }, []);
+
+  const fetchDoctors = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'doctor');
+    setDoctors(data || []);
+  };
 
   const getBackendUrl = () => {
     const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL || '';
@@ -70,22 +78,16 @@ export default function IntakePage() {
     }
   };
 
-  const handleComplete = async () => {
+  const handleSelectDoctor = async (docId: string) => {
     setLoading(true);
-    setSubStep('4'); // Move to loading/matching screen
-    
-    // Fail-safe timer: If API is too slow, move forward anyway
-    const failSafe = setTimeout(() => {
-      if (!matchedDoctor) navigate('/');
-    }, 8000);
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) return;
 
       // 1. Save Intake Data
       await supabase.from('patients').upsert({
         id: user.id,
+        doctor_id: docId,
         primary_concern: concern?.id || 'general',
         concern_duration: duration,
         phq9_score: (mood?.score || 3) * 2,
@@ -103,79 +105,70 @@ export default function IntakePage() {
         }]);
       }
 
-      // 3. Match Doctor
-      const res = await fetch(`${getBackendUrl()}/api/patients/match-doctor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: user.id,
-          concern: concern?.id || 'general',
-          lang: isRw ? 'rw' : 'en'
-        })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        clearTimeout(failSafe);
-        setMatchedDoctor(data.doctor);
-        setTimeout(() => navigate('/'), 3000); // Show success for 3s
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      console.error("Match Error:", err);
-      // Even on error, don't get stuck. Allow them to see dashboard.
-      setTimeout(() => navigate('/'), 2000);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleComplete = () => {
+    setSubStep('4'); // Move to doctor selection list
+  };
+
   if (subStep === '4') return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-10">
-      <motion.div 
-        animate={{ 
-          rotate: matchedDoctor ? 0 : 360,
-          scale: matchedDoctor ? [1, 1.2, 1] : 1
-        }} 
-        transition={{ repeat: matchedDoctor ? 0 : Infinity, duration: matchedDoctor ? 0.5 : 2, ease: "linear" }}
-        className="relative"
-      >
-        {matchedDoctor ? (
-          <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/40">
-            <UserCheck size={48} />
+    <div className="min-h-screen bg-neutral-50 flex flex-col items-center p-6 pb-20">
+      <header className="w-full max-w-lg pt-10 mb-8 flex flex-col items-center text-center">
+        <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-6">
+          <Users size={32} className="text-primary" />
+        </div>
+        <h2 className="text-3xl font-black text-primary-900 mb-2">
+          {isRw ? 'Hitamo umuvuzi wawe' : 'Choose your professional'}
+        </h2>
+        <p className="text-sm font-medium text-primary-600">
+          {isRw ? 'Dufite inzobere ziteguye kugufasha uyu munsi.' : 'We have professionals ready to support you today.'}
+        </p>
+      </header>
+
+      <main className="w-full max-w-lg space-y-4">
+        {doctors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-10 text-center space-y-4">
+            <Loader2 className="animate-spin text-primary" size={40} />
+            <p className="text-sm font-bold text-neutral-400">
+               {isRw ? 'Turashaka abavuzi...' : 'Looking for available professionals...'}
+            </p>
           </div>
         ) : (
-          <Loader2 size={64} className="text-primary" />
+          doctors.map((doc) => (
+            <motion.button
+              key={doc.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => handleSelectDoctor(doc.id)}
+              disabled={loading}
+              className="w-full p-6 bg-white rounded-[2.5rem] border-2 border-transparent hover:border-primary shadow-sm hover:shadow-xl transition-all flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center text-primary font-black text-2xl uppercase">
+                  {doc.full_name?.charAt(0)}
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">{doc.specialty || 'Mental Health Professional'}</p>
+                  <h3 className="text-xl font-black text-primary-900 group-hover:text-primary transition-colors">{doc.full_name}</h3>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={10} fill="#D4A373" className="text-[#D4A373]" />)}
+                    <span className="text-[10px] font-bold text-neutral-400 ml-1">Top Rated</span>
+                  </div>
+                </div>
+              </div>
+              <div className="w-10 h-10 bg-neutral-50 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={20} />}
+              </div>
+            </motion.button>
+          ))
         )}
-      </motion.div>
-      
-      <div className="space-y-4">
-        <h2 className="text-3xl font-black text-primary-900">
-          {matchedDoctor 
-            ? (isRw ? 'Twaguhuje na...' : 'We found your professional!') 
-            : (isRw ? 'Duhura na muganga...' : 'Finding your professional...')}
-        </h2>
-        
-        {matchedDoctor && (
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }}
-            className="p-8 bg-primary-50 rounded-[3rem] border-2 border-primary-100"
-          >
-            <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">
-              {matchedDoctor.specialty}
-            </p>
-            <h3 className="text-2xl font-black text-primary-900">{matchedDoctor.full_name}</h3>
-          </motion.div>
-        )}
-      </div>
-
-      <p className="text-xs font-medium text-neutral-400 max-w-xs leading-relaxed">
-        {matchedDoctor 
-          ? (isRw ? 'Turakwereka aho ugera ubu...' : 'Taking you to your dashboard now...') 
-          : (isRw ? 'Turi kureba inzobere igufasha neza...' : 'Our AI is matching you with the best professional for your needs...')}
-      </p>
+      </main>
     </div>
   );
 
@@ -317,13 +310,13 @@ export default function IntakePage() {
                   onClick={handleComplete}
                   className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                 >
-                  {isRw ? 'Nhuze n\'umuvuzi' : 'Connect me now'} <ChevronRight size={20} />
+                  {isRw ? 'Reba inzobere' : 'View professionals'} <ChevronRight size={20} />
                 </button>
                 <button 
                   onClick={handleComplete}
                   className="w-full text-center text-xs font-bold text-neutral-400 hover:text-primary transition-colors"
                 >
-                  {isRw ? 'Simbuka ubu' : 'Skip, just connect me'}
+                  {isRw ? 'Simbuka' : 'Skip, see all'}
                 </button>
               </div>
             </motion.div>
