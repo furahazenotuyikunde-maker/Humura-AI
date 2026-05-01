@@ -54,15 +54,16 @@ const ProgressPage: React.FC = () => {
         .limit(30);
 
       if (error) throw error;
-      if (data && data.length > 0) {
-        setMoods(data);
-        // Instant trigger for AI analysis
-        analyzeMoods(data);
-      } else {
-        setMoods([]);
+      const validMoods = data || [];
+      setMoods(validMoods);
+      
+      // Trigger AI analysis only if we have data and backend exists
+      if (validMoods.length > 0 && import.meta.env.VITE_RENDER_BACKEND_URL) {
+        analyzeMoods(validMoods);
       }
     } catch (err) {
       console.error("Error fetching moods:", err);
+      setMoods([]);
     } finally {
       setIsLoading(false);
     }
@@ -71,21 +72,27 @@ const ProgressPage: React.FC = () => {
   const analyzeMoods = async (data: MoodLog[]) => {
     setIsAnalyzing(true);
     try {
-      const moodHistory = data.map(m => ({ date: new Date(m.logged_at).toLocaleDateString(), mood: m.mood }));
+      const moodHistory = data.map(m => ({ 
+        date: m.logged_at ? new Date(m.logged_at).toLocaleDateString() : 'N/A', 
+        mood: m.mood 
+      }));
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/ai/analyze-progress`, {
+      const baseUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
+      if (!baseUrl) {
+        console.warn("VITE_RENDER_BACKEND_URL is not set. Skipping AI analysis.");
+        return;
+      }
+
+      const response = await fetch(`${baseUrl}/api/ai/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           moods: moodHistory,
-          lang: i18n.language
+          lang: i18n.language || 'en'
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server returned ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
 
       const dataResult = await response.json();
       if (dataResult.success) {
