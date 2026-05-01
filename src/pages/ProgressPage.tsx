@@ -109,10 +109,10 @@ const ProgressPage: React.FC = () => {
     }).reverse();
 
     return last7Days.map(date => {
-      const log = moods.find(m => m.logged_at.startsWith(date));
+      const log = moods.find(m => m.logged_at && m.logged_at.startsWith(date));
       return {
         date,
-        value: log ? moodMap[log.mood] || 3 : 0,
+        value: log ? (moodMap[log.mood] || 3) : 0,
         mood: log?.mood || 'none'
       };
     });
