@@ -28,6 +28,13 @@ export default function AIChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
+  // New States for requested features
+  const [isRecording, setIsRecording] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +81,9 @@ export default function AIChatPage() {
     setPreviewImage(null);
     setIsLoading(true);
 
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || '').replace(/\/$/, '');
       
@@ -81,9 +91,11 @@ export default function AIChatPage() {
       const response = await fetch(`${baseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           message: userMsg.content,
-          history: newMessages.slice(-4).map(m => ({ role: m.role, content: m.content })),
+          image: userMsg.image, // Now actually sending the image
+          history: newMessages.slice(-6).map(m => ({ role: m.role, content: m.content })),
           lang: i18n.language,
           userId: (await supabase.auth.getSession()).data.session?.user?.id
         })
@@ -94,6 +106,7 @@ export default function AIChatPage() {
       addAIMessage(data.reply, newMessages);
 
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.warn("Backend failed, attempting Direct AI Fallback...");
       
       // 🛡️ ATTEMPT 2: Direct Google API Fallback (Invincible Mode)
@@ -104,10 +117,14 @@ export default function AIChatPage() {
         const fallbackRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [
-              { role: 'user', parts: [{ text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional." }] },
-              ...newMessages.slice(-6).map(m => ({
+              { role: 'user', parts: [
+                { text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional." },
+                ...(userMsg.image ? [{ inline_data: { mime_type: "image/jpeg", data: userMsg.image.split(',')[1] } }] : [])
+              ] },
+              ...newMessages.slice(-8).map(m => ({
                 role: m.role === 'model' ? 'model' : 'user',
                 parts: [{ text: m.content }]
               }))
@@ -119,11 +136,74 @@ export default function AIChatPage() {
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I am here for you. Tell me more.";
         addAIMessage(reply, newMessages);
 
-      } catch (fallbackErr) {
+      } catch (fallbackErr: any) {
+        if (fallbackErr.name === 'AbortError') return;
         setError(isRw ? "Ibibazo by'itumanaho. Ongera ugerageze." : "Connection issue. Please try again.");
       }
     } finally {
       setIsLoading(false);
+      setAbortController(null);
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setIsLoading(false);
+    }
+  };
+
+  const deleteMessage = (idx: number) => {
+    const updated = messages.filter((_, i) => i !== idx);
+    setMessages(updated);
+    saveHistory(updated);
+  };
+
+  const startEdit = (idx: number) => {
+    setEditingId(idx);
+    setInput(messages[idx].content);
+  };
+
+  const saveEdit = () => {
+    if (editingId === null) return;
+    const updated = [...messages];
+    updated[editingId].content = input;
+    updated[editingId].timestamp = new Date();
+    setMessages(updated);
+    saveHistory(updated);
+    setEditingId(null);
+    setInput('');
+  };
+
+  // Voice Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        // In a real app, you'd send this blob to a Whisper API or similar
+        // For now, we'll simulate a voice-to-text placeholder
+        setInput(isRw ? "[Ubutumwa bw'ijwi]" : "[Voice Message]");
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Mic access denied", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   };
 
@@ -173,15 +253,28 @@ export default function AIChatPage() {
           {messages.map((msg, idx) => (
             <motion.div 
               key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col mb-6 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col mb-6 group ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <div className={`max-w-[90%] p-5 rounded-3xl relative ${
+              <div className={`max-w-[90%] p-5 rounded-3xl relative transition-all ${
                 msg.role === 'user' 
                   ? 'bg-primary text-white rounded-tr-none shadow-xl shadow-primary/10' 
                   : 'bg-neutral-50 border border-neutral-100 text-primary-900 rounded-tl-none shadow-sm'
               }`}>
-                {msg.image && <img src={msg.image} className="w-full rounded-2xl mb-3" />}
+                {msg.image && <img src={msg.image} className="w-full rounded-2xl mb-3 border border-white/20" />}
                 <p className="text-sm font-bold leading-relaxed">{msg.content}</p>
+                
+                {/* Message Actions (Edit/Delete) */}
+                <div className={`absolute -top-4 ${msg.role === 'user' ? 'right-0' : 'left-0'} flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-neutral-100 rounded-xl p-1 shadow-md`}>
+                  {msg.role === 'user' && (
+                    <button onClick={() => startEdit(idx)} className="p-1.5 hover:bg-neutral-50 rounded-lg text-neutral-400 hover:text-primary transition-colors">
+                      <Edit2 size={12} />
+                    </button>
+                  )}
+                  <button onClick={() => deleteMessage(idx)} className="p-1.5 hover:bg-neutral-50 rounded-lg text-neutral-400 hover:text-red-500 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+
                 <div className={`text-[8px] mt-2 font-black uppercase opacity-30 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
@@ -214,8 +307,18 @@ export default function AIChatPage() {
           )}
 
           <div className="flex items-center gap-3">
-            <div className="flex-1 bg-neutral-50 border border-neutral-100 rounded-[2rem] p-2 flex items-center shadow-sm">
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 text-neutral-300 hover:text-primary"><ImagePlus size={20} /></button>
+            <div className="flex-1 bg-neutral-50 border border-neutral-100 rounded-[2rem] p-2 flex items-center shadow-sm relative">
+              {previewImage && (
+                <div className="absolute -top-16 left-4 p-2 bg-white border border-neutral-100 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom-2">
+                  <img src={previewImage} className="w-10 h-10 rounded-lg object-cover" />
+                  <button onClick={() => setPreviewImage(null)} className="p-1 bg-red-50 text-red-500 rounded-full"><X size={12} /></button>
+                </div>
+              )}
+              
+              <button onClick={() => fileInputRef.current?.click()} className="p-3 text-neutral-300 hover:text-primary transition-colors">
+                <ImagePlus size={20} />
+              </button>
+              
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -224,19 +327,39 @@ export default function AIChatPage() {
                   reader.readAsDataURL(file);
                 }
               }} />
+
               <input 
                 type="text" value={input} onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                onKeyDown={e => e.key === 'Enter' && (editingId !== null ? saveEdit() : handleSend())}
                 placeholder={isRw ? 'Andika hano...' : 'Message Humura AI...'}
                 className="flex-1 px-4 py-3 bg-transparent outline-none text-sm font-bold text-primary-900 placeholder:text-neutral-300"
               />
+
+              <button 
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`p-3 transition-all ${isRecording ? 'text-red-500 animate-pulse' : 'text-neutral-300 hover:text-primary'}`}
+              >
+                {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
             </div>
-            <button 
-              onClick={handleSend} disabled={isLoading}
-              className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-            >
-              <Send size={24} />
-            </button>
+
+            {isLoading ? (
+              <button 
+                onClick={stopGeneration}
+                className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-100 hover:bg-red-100 transition-all"
+                title={isRw ? 'Hagarika' : 'Stop'}
+              >
+                <Square size={20} fill="currentColor" />
+              </button>
+            ) : (
+              <button 
+                onClick={editingId !== null ? saveEdit : handleSend}
+                disabled={!input.trim() && !previewImage}
+                className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+              >
+                {editingId !== null ? <CheckCircle size={24} /> : <Send size={24} />}
+              </button>
+            )}
           </div>
         </div>
       </div>
