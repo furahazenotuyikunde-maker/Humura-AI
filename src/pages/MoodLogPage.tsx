@@ -24,8 +24,8 @@ export default function MoodLogPage() {
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState('');
 
-  const handleSaveMood = async () => {
-    if (!mood) return;
+  const handleMoodSelect = async (m: any) => {
+    setMood(m);
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -33,16 +33,15 @@ export default function MoodLogPage() {
 
       const { error } = await supabase.from('mood_logs').insert([{
         patient_id: user.id,
-        mood_score: mood.score,
-        mood: mood.key, // Matching the mapping in ProgressPage
-        emoji: mood.emoji,
-        note: note,
+        mood_score: m.score,
+        mood: m.key, // Matching the mapping in ProgressPage
+        emoji: m.emoji,
         logged_at: new Date().toISOString()
       }]);
 
       if (error) throw error;
       
-      // Navigate to progress for analysis
+      // Navigate to progress for analysis immediately
       navigate('/progress');
     } catch (err) {
       console.error(err);
@@ -77,8 +76,9 @@ export default function MoodLogPage() {
             {MOODS.map(m => (
               <button 
                 key={m.id}
-                onClick={() => setMood(m)}
-                className={`flex flex-col items-center gap-3 transition-all duration-500 ${mood?.id === m.id ? 'scale-125' : 'opacity-40 hover:opacity-100'}`}
+                onClick={() => handleMoodSelect(m)}
+                disabled={loading}
+                className={`flex flex-col items-center gap-3 transition-all duration-500 ${mood?.id === m.id ? 'scale-125' : 'opacity-40 hover:opacity-100'} ${loading ? 'cursor-wait' : ''}`}
               >
                 <span className={`text-5xl filter drop-shadow-xl transition-all ${mood?.id === m.id ? 'grayscale-0' : 'grayscale'}`}>
                   {m.emoji}
@@ -90,37 +90,14 @@ export default function MoodLogPage() {
             ))}
           </div>
 
-          {/* Optional Note */}
-          <AnimatePresence>
-            {mood && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-              >
-                <div className="relative group">
-                  <div className="absolute left-5 top-5 text-primary-300 group-focus-within:text-primary transition-colors">
-                    <MessageCircle size={20} />
-                  </div>
-                  <textarea 
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={isRw ? 'Hari icyo wakongeraho? (udateganyijwe)' : 'Any notes on why you feel this way? (optional)'}
-                    className="w-full bg-neutral-50 border-2 border-neutral-50 focus:border-primary/20 focus:bg-white rounded-[2rem] p-5 pl-14 text-sm font-medium text-primary-900 outline-none transition-all min-h-[120px] resize-none"
-                  />
-                </div>
-
-                <button 
-                  onClick={handleSaveMood}
-                  disabled={loading}
-                  className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/30 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                  {isRw ? 'Bika Ububiko' : 'Log Mood & See Analysis'}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {loading && (
+            <div className="flex flex-col items-center gap-4 py-10">
+              <Loader2 className="animate-spin text-primary" size={32} />
+              <p className="text-sm font-bold text-primary/60 italic">
+                {isRw ? 'Turi kusesengura...' : 'Analyzing your mood...'}
+              </p>
+            </div>
+          )}
         </main>
 
         <footer className="pt-10 flex items-center justify-center gap-2 text-neutral-300">

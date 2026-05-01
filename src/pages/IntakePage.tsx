@@ -65,16 +65,42 @@ export default function IntakePage() {
 
   const handleMoodSelect = async (m: any) => {
     setMood(m);
+    setLoading(true);
     try {
-      const res = await fetch(`${getBackendUrl()}/api/ai/intake-ack`, {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Initial AI Acknowledgement (Fire and forget or wait if needed)
+      fetch(`${getBackendUrl()}/api/ai/intake-ack`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ moodScore: m.score, lang: isRw ? 'rw' : 'en' })
       });
-      const data = await res.json();
-      setAiAck(data.ack);
+
+      // 2. Save the mood log immediately
+      await supabase.from('mood_logs').insert([{
+        patient_id: user.id,
+        mood_score: m.score,
+        mood: MOODS.find(mood => mood.id === m.id)?.score === 5 ? 'happy' : 
+              MOODS.find(mood => mood.id === m.id)?.score === 4 ? 'calm' :
+              MOODS.find(mood => mood.id === m.id)?.score === 3 ? 'neutral' :
+              MOODS.find(mood => mood.id === m.id)?.score === 2 ? 'sad' : 'stressed',
+        emoji: m.emoji,
+        logged_at: new Date().toISOString()
+      }]);
+
+      // 3. If they already have a doctor, go straight to progress
+      const { data: patient } = await supabase.from('patients').select('doctor_id').eq('id', user.id).maybeSingle();
+      if (patient?.doctor_id) {
+        navigate('/progress');
+      } else {
+        // Otherwise continue the intake flow
+        setSubStep('3b');
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
