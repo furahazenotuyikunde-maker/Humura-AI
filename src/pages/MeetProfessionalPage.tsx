@@ -70,7 +70,7 @@ export default function MeetProfessionalPage() {
         body: JSON.stringify({
           patientId: session.user.id,
           doctorId: patientData?.doctor_id,
-          type: 'SOS_BUTTON',
+          type: 'SOS_button',
           lastMsg: 'Patient triggered SOS from Professional Hub'
         })
       });
@@ -90,7 +90,7 @@ export default function MeetProfessionalPage() {
         .insert({
           patient_id: session.user.id,
           doctor_id: doctor.id,
-          status: 'pending',
+          status: 'scheduled',
           scheduled_at: new Date().toISOString()
         });
 

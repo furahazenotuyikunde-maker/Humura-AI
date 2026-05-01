@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 
 export interface HandshakeEvent {
   booking_id: string;
-  status: 'pending' | 'confirmed' | 'active' | 'completed';
+  status: 'scheduled' | 'confirmed' | 'active' | 'completed';
   session_token: string | null;
 }
 
