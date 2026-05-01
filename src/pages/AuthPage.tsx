@@ -88,13 +88,13 @@ export default function AuthPage() {
           onClick={() => i18n.changeLanguage('en')}
           className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${!isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
         >
-          EN
+          English
         </button>
         <button 
           onClick={() => i18n.changeLanguage('rw')}
           className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
         >
-          RW
+          Kinyarwanda
         </button>
       </div>
 

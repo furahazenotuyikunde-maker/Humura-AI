@@ -320,15 +320,15 @@ export default function DoctorDashboard() {
             <div className="flex bg-[#F8F5F2] p-1 rounded-xl border border-[#E8E1DB]">
               <button 
                 onClick={() => toggleLanguage('en')}
-                className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg transition-all ${!isRw ? 'bg-white shadow-sm text-emerald-700' : 'text-neutral-400 hover:text-neutral-600'}`}
+                className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${!isRw ? 'bg-white shadow-sm text-emerald-700' : 'text-neutral-400 hover:text-neutral-600'}`}
               >
-                EN
+                English
               </button>
               <button 
                 onClick={() => toggleLanguage('rw')}
-                className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg transition-all ${isRw ? 'bg-white shadow-sm text-emerald-700' : 'text-neutral-400 hover:text-neutral-600'}`}
+                className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${isRw ? 'bg-white shadow-sm text-emerald-700' : 'text-neutral-400 hover:text-neutral-600'}`}
               >
-                RW
+                Kinyarwanda
               </button>
             </div>
             <button className="relative p-2 text-neutral-400 hover:text-primary transition-colors">
