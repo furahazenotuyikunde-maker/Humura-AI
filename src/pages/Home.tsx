@@ -23,6 +23,12 @@ export default function Home() {
   const navigate = useNavigate();
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     checkRole();
@@ -69,10 +75,10 @@ export default function Home() {
         last_message: 'Patient triggered SOS button from dashboard'
       }]).select().single();
 
-      // 2. Mock SMS/Alert (In real app, this calls Twilio)
-      alert(isRw ? 'Ubufasha buraje! Inshuti yawe na muganga bamenyeshejwe.' : 'Help is on the way! Your emergency contact and doctor have been notified.');
+      // 2. Alert/Feedback
+      showToast(isRw ? 'Ubufasha buraje! Inshuti yawe na muganga bamenyeshejwe.' : 'Help is on the way! Your emergency contact and doctor have been notified.', 'success');
       
-      navigate('/emergency');
+      setTimeout(() => navigate('/emergency'), 2000);
     } catch (err) {
       console.error("SOS Error:", err);
     }
@@ -236,7 +242,23 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 20 }}
+            exit={{ opacity: 0, y: -50 }}
+            className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-xl font-bold text-sm ${
+              toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+            }`}
+          >
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Greeting */}
       <section className="mt-2">
         <motion.h1
@@ -336,7 +358,10 @@ export default function Home() {
         </motion.button>
 
         <motion.button
-          onClick={() => navigate('/emergency')}
+          onClick={() => {
+            showToast(isRw ? 'Urahagamarwa 116...' : 'Dialing 116...');
+            setTimeout(() => window.location.href = 'tel:116', 1000);
+          }}
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center justify-center gap-2 p-4 bg-white border-2 border-red-100 text-red-600 rounded-3xl hover:bg-red-50 transition-all"
@@ -358,7 +383,15 @@ export default function Home() {
           <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100">
             <p className="text-xs font-bold text-primary-900 mb-1">Morning thought record</p>
             <p className="text-[10px] text-primary-600">Assigned by Dr. Uwimana</p>
-            <button className="mt-3 w-full py-2 bg-white text-primary text-[10px] font-black uppercase rounded-xl border border-primary-100">Start Task</button>
+            <button 
+              onClick={() => {
+                showToast(isRw ? 'Ugiye gutangira umukoro...' : 'Starting your CBT task...');
+                setTimeout(() => navigate('/chat'), 1500);
+              }}
+              className="mt-3 w-full py-2 bg-white text-primary text-[10px] font-black uppercase rounded-xl border border-primary-100 hover:bg-primary-50 transition-all"
+            >
+              {isRw ? 'Tangira Umukoro' : 'Start Task'}
+            </button>
           </div>
         </div>
 
@@ -368,7 +401,12 @@ export default function Home() {
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
           </div>
           <p className="text-[10px] text-emerald-600 font-bold mb-4 uppercase tracking-wider">Next Session: Tomorrow, 9:30 AM</p>
-          <button className="w-full py-3 bg-emerald-600 text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-emerald-200">Join Room</button>
+          <button 
+            onClick={() => showToast(isRw ? 'Icyumba kirefunguka mu kanya...' : 'The session room is opening soon...', 'success')}
+            className="w-full py-3 bg-emerald-600 text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95"
+          >
+            {isRw ? 'Injira mu cyumba' : 'Join Room'}
+          </button>
         </div>
       </section>
 
