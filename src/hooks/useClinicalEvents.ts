@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { toast } from 'react-hot-toast';
 
 export interface HandshakeEvent {
-  bookingId: string;
+  booking_id: string;
   status: 'pending' | 'confirmed' | 'active' | 'completed';
-  token?: string;
+  session_token: string | null;
 }
 
 export function useClinicalEvents(userId: string | undefined, role: 'patient' | 'doctor') {
@@ -14,36 +13,25 @@ export function useClinicalEvents(userId: string | undefined, role: 'patient' | 
   useEffect(() => {
     if (!userId) return;
 
-    // Listen to the sessions table for changes relevant to this user
+    // Listen for session status changes
     const channel = supabase
-      .channel(`clinical_workspace:${userId}`)
+      .channel('clinical-handshake')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'sessions',
-          filter: role === 'doctor' ? `doctor_id=eq.${userId}` : `patient_id=eq.${userId}`
+          filter: `${role === 'patient' ? 'patient_id' : 'doctor_id'}=eq.${userId}`
         },
         (payload) => {
-          const { id, status, session_token, doctor_id, patient_id } = payload.new as any;
-          
-          setActiveSession({
-            bookingId: id,
-            status,
-            token: session_token
-          });
-
-          // Visual Feedback / Notifications
-          if (status === 'pending' && role === 'doctor') {
-            toast.success('New Booking Request Received!', { icon: '📅' });
-          }
-          
-          if (status === 'confirmed') {
-            toast.success(role === 'doctor' ? 'Session Confirmed!' : 'Professional Accepted your request!', {
-              duration: 5000,
-              icon: '🚀'
-            });
+          if (payload.new) {
+            const updatedSession: HandshakeEvent = {
+              booking_id: payload.new.id,
+              status: payload.new.status,
+              session_token: payload.new.session_token
+            };
+            setActiveSession(updatedSession);
           }
         }
       )
@@ -54,5 +42,5 @@ export function useClinicalEvents(userId: string | undefined, role: 'patient' | 
     };
   }, [userId, role]);
 
-  return { activeSession, setActiveSession };
+  return { activeSession };
 }
