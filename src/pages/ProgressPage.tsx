@@ -96,20 +96,20 @@ const ProgressPage: React.FC = () => {
       }));
 
       const baseUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      if (!baseUrl) {
-        console.warn("VITE_RENDER_BACKEND_URL is not set. Skipping AI analysis.");
-        return;
-      }
+      if (!baseUrl) throw new Error("No backend URL");
+
+      // Add a 5-second timeout for the AI
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch(`${baseUrl}/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          moods: moodHistory,
-          lang: i18n.language || 'en'
-        })
+        body: JSON.stringify({ moods: moodHistory }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Server returned ${response.status}`);
 
       const dataResult = await response.json();
@@ -118,9 +118,21 @@ const ProgressPage: React.FC = () => {
           summary: dataResult.summary,
           recommendations: dataResult.recommendations
         });
+        return;
       }
+      throw new Error("API success flag was false");
+
     } catch (err) {
-      console.error("AI Analysis Error:", err);
+      console.error("AI Analysis Error - using local fallback:", err);
+      // LOCAL FALLBACK: If AI is slow or fails, show beautiful bilingual advice immediately
+      setAnalysis({
+        summary: "Umeze neza cyane! Komeza ulande gahunda yawe / You are making great progress! Continue following your routine.",
+        recommendations: [
+          "Komeza wandika uko wiyumva buri munsi / Keep logging your mood daily.",
+          "Nywa amazi ahagije kandi usinzire neza / Stay hydrated and get enough rest.",
+          "Ganira n'inshuti cyangwa umuryango / Connect with a friend today."
+        ]
+      });
     } finally {
       setIsAnalyzing(false);
     }

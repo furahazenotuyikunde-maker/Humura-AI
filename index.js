@@ -105,18 +105,18 @@ app.post('/analyze-progress', async (req, res) => {
 
     const response = await result.response;
     const rawText = response.text();
-    
+
     // Deep-Clean: Extract only the JSON block even if AI adds extra text
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No valid JSON found in AI response");
-    
+
     const parsed = JSON.parse(jsonMatch[0]);
-    
+
     return res.status(200).json({ success: true, ...parsed });
   } catch (error) {
     console.error("[PROGRESS ERROR]", error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       summary: "Incamake ntibashije kuboneka / Summary unavailable.",
       recommendations: ["Komeza wandika uko wiyumva / Keep logging your mood."]
     });
@@ -124,8 +124,8 @@ app.post('/analyze-progress', async (req, res) => {
 });
 
 // 7. Health Check
-app.get('/', (req, res) => res.json({ 
-  message: 'Humura AI Backend is Live!', 
+app.get('/', (req, res) => res.json({
+  message: 'Humura AI Backend is Live!',
   version: "1.0.5",
   endpoints: ["GET /", "GET /chat", "POST /chat", "POST /analyze-sign", "POST /analyze-progress"]
 }));
