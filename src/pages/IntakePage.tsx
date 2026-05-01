@@ -27,8 +27,9 @@ const CONCERNS = [
 
 export default function IntakePage() {
   const navigate = useNavigate();
-  const [subStep, setSubStep] = useState('3a'); // 3a, 3b, 3c
+  const [subStep, setSubStep] = useState('3a'); // 3a, 3b, 3c, 4 (Matching)
   const [loading, setLoading] = useState(false);
+  const [matchedDoctor, setMatchedDoctor] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRw, setIsRw] = useState(false);
 
@@ -40,7 +41,6 @@ export default function IntakePage() {
   const [priorTherapy, setPriorTherapy] = useState('');
 
   useEffect(() => {
-    // Check language pref
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         supabase.from('profiles').select('language_pref').eq('id', user.id).single().then(({ data }) => {
@@ -50,11 +50,15 @@ export default function IntakePage() {
     });
   }, []);
 
+  const getBackendUrl = () => {
+    const rawUrl = import.meta.env.VITE_RENDER_BACKEND_URL || '';
+    return rawUrl.replace(/\/$/, '');
+  };
+
   const handleMoodSelect = async (m: any) => {
     setMood(m);
-    // Call Gemini for acknowledgement
     try {
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/ai/intake-ack`, {
+      const res = await fetch(`${getBackendUrl()}/api/ai/intake-ack`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ moodScore: m.score, lang: isRw ? 'rw' : 'en' })
@@ -68,6 +72,13 @@ export default function IntakePage() {
 
   const handleComplete = async () => {
     setLoading(true);
+    setSubStep('4'); // Move to loading/matching screen
+    
+    // Fail-safe timer: If API is too slow, move forward anyway
+    const failSafe = setTimeout(() => {
+      if (!matchedDoctor) navigate('/');
+    }, 8000);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -75,49 +86,96 @@ export default function IntakePage() {
       // 1. Save Intake Data
       await supabase.from('patients').upsert({
         id: user.id,
-        primary_concern: concern.id,
+        primary_concern: concern?.id || 'general',
         concern_duration: duration,
-        phq9_score: mood.score * 2, // Mocking phq9 from mood for now
+        phq9_score: (mood?.score || 3) * 2,
         intake_completed_at: new Date().toISOString(),
         status: 'active'
       });
 
       // 2. Initial Mood Log
-      await supabase.from('mood_logs').insert([{
-        patient_id: user.id,
-        mood: mood.id,
-        emoji: mood.emoji,
-        score: mood.score
-      }]);
+      if (mood) {
+        await supabase.from('mood_logs').insert([{
+          patient_id: user.id,
+          mood_score: mood.score,
+          emoji: mood.emoji,
+          logged_at: new Date().toISOString()
+        }]);
+      }
 
       // 3. Match Doctor
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/patients/match-doctor`, {
+      const res = await fetch(`${getBackendUrl()}/api/patients/match-doctor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId: user.id,
-          concern: concern.id,
+          concern: concern?.id || 'general',
           lang: isRw ? 'rw' : 'en'
         })
       });
       const data = await res.json();
 
       if (data.success) {
-        navigate('/'); // Go home where "Meet Your Professional" will show
+        clearTimeout(failSafe);
+        setMatchedDoctor(data.doctor);
+        setTimeout(() => navigate('/'), 3000); // Show success for 3s
+      } else {
+        throw new Error(data.error);
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error("Match Error:", err);
+      // Even on error, don't get stuck. Allow them to see dashboard.
+      setTimeout(() => navigate('/'), 2000);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center">
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="mb-6">
-        <Loader2 size={48} className="text-primary" />
+  if (subStep === '4') return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-10">
+      <motion.div 
+        animate={{ 
+          rotate: matchedDoctor ? 0 : 360,
+          scale: matchedDoctor ? [1, 1.2, 1] : 1
+        }} 
+        transition={{ repeat: matchedDoctor ? 0 : Infinity, duration: matchedDoctor ? 0.5 : 2, ease: "linear" }}
+        className="relative"
+      >
+        {matchedDoctor ? (
+          <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/40">
+            <UserCheck size={48} />
+          </div>
+        ) : (
+          <Loader2 size={64} className="text-primary" />
+        )}
       </motion.div>
-      <h2 className="text-xl font-black text-primary-900">{isRw ? 'Duhura na muganga...' : 'Finding your professional...'}</h2>
+      
+      <div className="space-y-4">
+        <h2 className="text-3xl font-black text-primary-900">
+          {matchedDoctor 
+            ? (isRw ? 'Twaguhuje na...' : 'We found your professional!') 
+            : (isRw ? 'Duhura na muganga...' : 'Finding your professional...')}
+        </h2>
+        
+        {matchedDoctor && (
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }}
+            className="p-8 bg-primary-50 rounded-[3rem] border-2 border-primary-100"
+          >
+            <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">
+              {matchedDoctor.specialty}
+            </p>
+            <h3 className="text-2xl font-black text-primary-900">{matchedDoctor.full_name}</h3>
+          </motion.div>
+        )}
+      </div>
+
+      <p className="text-xs font-medium text-neutral-400 max-w-xs leading-relaxed">
+        {matchedDoctor 
+          ? (isRw ? 'Turakwereka aho ugera ubu...' : 'Taking you to your dashboard now...') 
+          : (isRw ? 'Turi kureba inzobere igufasha neza...' : 'Our AI is matching you with the best professional for your needs...')}
+      </p>
     </div>
   );
 
