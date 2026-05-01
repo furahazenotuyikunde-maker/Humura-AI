@@ -66,9 +66,10 @@ export default function DoctorDashboard() {
     // 2. Assigned Patients
     const { data: patientList } = await supabase
       .from('patients')
-      .select('*, profiles(full_name, avatar_url, phone)')
+      .select('*, patient_info:profiles!inner(full_name, avatar_url, phone)')
       .eq('doctor_id', user.id);
     setPatients(patientList || []);
+
 
     // 3. Today's Sessions
     const today = new Date().toISOString().split('T')[0];
@@ -342,9 +343,10 @@ export default function DoctorDashboard() {
                             {p.profiles?.full_name?.charAt(0)}
                           </div>
                           <div className="flex-1">
-                            <p className="text-xs font-black text-[#4A2C1A]">{p.profiles?.full_name}</p>
+                            <p className="text-xs font-black text-[#4A2C1A]">{p.patient_info?.full_name}</p>
                             <p className="text-[10px] font-bold text-neutral-400">{p.primary_concern} · PHQ-9: {p.phq9_score}</p>
                           </div>
+
                           <ChevronRight size={14} className="text-neutral-300" />
                         </div>
                       ))}
@@ -450,17 +452,18 @@ export default function DoctorDashboard() {
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   {patients
-                    .filter(p => p.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .filter(p => p.patient_info?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map(p => (
                     <div key={p.id} className="p-6 bg-white border border-[#E8E1DB] rounded-3xl flex items-center justify-between hover:shadow-md transition-all">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center font-black text-lg">
-                          {p.profiles?.full_name?.charAt(0)}
+                          {p.patient_info?.full_name?.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-black text-[#4A2C1A]">{p.profiles?.full_name}</p>
+                          <p className="font-black text-[#4A2C1A]">{p.patient_info?.full_name}</p>
                           <p className="text-xs font-bold text-neutral-400">{p.primary_concern} · Joined {new Date(p.created_at).toLocaleDateString()}</p>
                         </div>
+
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-center">

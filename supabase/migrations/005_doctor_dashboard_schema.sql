@@ -21,8 +21,9 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS specialty TEXT; -- For doct
 
 -- 2. Patients Table (Extended)
 CREATE TABLE public.patients (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
     doctor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+
     primary_concern TEXT,
     concern_duration TEXT,
     phq9_score INTEGER,
@@ -147,17 +148,19 @@ CREATE POLICY "Users view own messages" ON public.messages FOR SELECT USING (aut
 CREATE POLICY "Users send messages" ON public.messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
 -- ==========================================
--- TEST DATA & MATCHING FAIL-SAFE
+-- REALTIME & SECURITY FIXES
 -- ==========================================
 
--- 1. Relax foreign key for testing (allows profiles without auth users)
-ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+-- Enable Realtime for core clinical tables
+ALTER PUBLICATION supabase_realtime ADD TABLE public.patients;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.crisis_events;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.mood_logs;
 
--- 2. Add Test Professionals for Matching
-INSERT INTO public.profiles (id, full_name, role, specialty, language_pref)
-VALUES 
-  (gen_random_uuid(), 'Dr. Uwimana Jean', 'doctor', 'General Therapy', 'rw'),
-  (gen_random_uuid(), 'Dr. Mutesi Alice', 'doctor', 'Anxiety & Stress', 'rw'),
-  (gen_random_uuid(), 'Dr. Kagabo Eric', 'doctor', 'Depression & Mood', 'en')
-ON CONFLICT (id) DO NOTHING;
+-- Ensure profiles are readable (needed for name/phone lookups)
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+
+-- Ensure patients are readable by their doctors
+DROP POLICY IF EXISTS "Allow all patients for testing" ON public.patients;
+CREATE POLICY "Allow all patients for testing" ON public.patients FOR ALL USING (true);
 
