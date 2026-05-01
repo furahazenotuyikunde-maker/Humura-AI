@@ -129,6 +129,37 @@ export default function DoctorDashboard() {
 
       if (error) throw error;
       showToast(isRw ? "Ikibazo cyakemutse" : "Crisis alert resolved");
+      fetchInitialData();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUpdateSessionStatus = async (sessionId: string, status: 'active' | 'completed' | 'missed' | 'scheduled') => {
+    setActionLoading(sessionId);
+    try {
+      const updates: any = { status };
+      if (status === 'active') updates.started_at = new Date().toISOString();
+      if (status === 'completed') updates.ended_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('sessions')
+        .update(updates)
+        .eq('id', sessionId);
+
+      if (error) throw error;
+      
+      const statusLabels: any = {
+        active: isRw ? "Ikiganiro cyatangiye" : "Session started",
+        completed: isRw ? "Ikiganiro cyarangiye" : "Session completed",
+        missed: isRw ? "Umurwayi ntiyabonetse" : "Marked as missed",
+        scheduled: isRw ? "Gusubika igihe" : "Rescheduled"
+      };
+
+      showToast(statusLabels[status]);
+      fetchInitialData();
     } catch (err: any) {
       showToast(err.message, 'error');
     } finally {
@@ -487,38 +518,92 @@ export default function DoctorDashboard() {
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
               <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
-                <h3 className="text-2xl font-black text-[#4A2C1A] mb-8">{isRw ? 'Guhura' : 'Upcoming Sessions'}</h3>
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Guhura' : 'Your Schedule'}</h3>
+                  <div className="flex gap-2">
+                     <span className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                       {sessions.filter(s => s.status === 'scheduled').length} {isRw ? 'Ibitegerejwe' : 'Pending'}
+                     </span>
+                  </div>
+                </div>
+
                 {sessions.length === 0 ? (
                   <div className="p-20 text-center">
                     <Calendar size={64} className="mx-auto text-neutral-100 mb-4" />
-                    <p className="text-neutral-400 font-bold">{isRw ? 'Nta mibonano iteganyijwe' : 'No upcoming sessions scheduled.'}</p>
+                    <p className="text-neutral-400 font-bold">{isRw ? 'Nta mibonano iteganyijwe' : 'No sessions scheduled yet.'}</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {sessions.map(s => (
-                      <div key={s.id} className="p-6 bg-[#F8F5F2] border border-[#E8E1DB] rounded-3xl flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 bg-white rounded-2xl border border-[#E8E1DB] flex flex-col items-center justify-center">
-                            <p className="text-[10px] font-black text-neutral-400 uppercase leading-none">
+                  <div className="grid grid-cols-1 gap-4">
+                    {sessions.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()).map(s => (
+                      <div key={s.id} className="p-6 bg-white border border-[#E8E1DB] rounded-3xl flex items-center justify-between hover:shadow-md transition-all">
+                        <div className="flex items-center gap-6">
+                          <div className="w-16 h-16 bg-[#F8F5F2] rounded-2xl border border-[#E8E1DB] flex flex-col items-center justify-center">
+                            <p className="text-[10px] font-black text-neutral-400 uppercase leading-none mb-1">
                               {new Date(s.scheduled_at).toLocaleString('default', { month: 'short' })}
                             </p>
-                            <p className="text-xl font-black text-primary leading-none">
+                            <p className="text-2xl font-black text-primary leading-none">
                               {new Date(s.scheduled_at).getDate()}
                             </p>
                           </div>
                           <div>
-                            <p className="font-black text-[#4A2C1A]">{s.profiles?.full_name}</p>
-                            <p className="text-xs font-bold text-neutral-400">
-                              {new Date(s.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Video Consultation
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-black text-[#4A2C1A]">{s.profiles?.full_name}</p>
+                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                s.status === 'scheduled' ? 'bg-blue-100 text-blue-600' :
+                                s.status === 'active' ? 'bg-emerald-100 text-emerald-600 animate-pulse' :
+                                s.status === 'completed' ? 'bg-neutral-100 text-neutral-500' :
+                                'bg-red-100 text-red-600'
+                              }`}>
+                                {s.status}
+                              </span>
+                            </div>
+                            <p className="text-xs font-bold text-neutral-400 flex items-center gap-2">
+                              <Clock size={12} />
+                              {new Date(s.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              <span className="w-1 h-1 bg-neutral-200 rounded-full" />
+                              {isRw ? 'Ikiganiro cya videwo' : 'Video Consultation'}
                             </p>
                           </div>
                         </div>
-                        <button 
-                          onClick={() => showToast(isRw ? "Igihe cyo guhura kiratangira..." : "Starting session...", "success")}
-                          className="px-8 py-3 bg-emerald-600 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-200"
-                        >
-                          {isRw ? 'Tangira' : 'Start Session'}
-                        </button>
+
+                        <div className="flex items-center gap-3">
+                          {s.status === 'scheduled' && (
+                            <>
+                              <button 
+                                onClick={() => handleUpdateSessionStatus(s.id, 'missed')}
+                                disabled={actionLoading === s.id}
+                                className="px-4 py-2 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                {isRw ? 'Ntiyabonetse' : 'Mark Missed'}
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateSessionStatus(s.id, 'active')}
+                                disabled={actionLoading === s.id}
+                                className="px-6 py-2.5 bg-primary text-white font-black text-[10px] uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                              >
+                                {isRw ? 'Tangira' : 'Start Session'}
+                              </button>
+                            </>
+                          )}
+                          {s.status === 'active' && (
+                            <button 
+                              onClick={() => handleUpdateSessionStatus(s.id, 'completed')}
+                              disabled={actionLoading === s.id}
+                              className="px-6 py-2.5 bg-emerald-600 text-white font-black text-[10px] uppercase rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-700"
+                            >
+                              {isRw ? 'RANGIZA' : 'Finish Session'}
+                            </button>
+                          )}
+                          {s.status === 'completed' && (
+                            <button 
+                              onClick={() => { setSelectedPatient({ id: s.patient_id, patient_info: s.profiles }); setActiveTab('dashboard'); }}
+                              className="px-4 py-2 bg-neutral-50 text-neutral-500 font-black text-[10px] uppercase rounded-lg hover:bg-neutral-100"
+                            >
+                              {isRw ? 'Andika inyandiko' : 'View Notes'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

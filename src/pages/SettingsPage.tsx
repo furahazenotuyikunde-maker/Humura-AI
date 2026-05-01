@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Settings, User, Languages, Bell, Eye, Type, Contrast, 
-  Mic, FileText, Shield, ChevronRight, Check, Info, X, LogOut
+  Mic, FileText, Shield, ChevronRight, Check, Info, X, LogOut, Loader2
 } from 'lucide-react';
 
 type TextSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -21,6 +22,50 @@ export default function SettingsPage() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const isRw = i18n.language?.startsWith('rw');
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  
+  // Professional specific state
+  const [specialty, setSpecialty] = useState('');
+  const [location, setLocation] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (data) {
+        setProfile(data);
+        setSpecialty(data.specialty || '');
+        setLocation(data.location || '');
+      }
+    }
+  };
+
+  const updateProfessionalProfile = async () => {
+    setUpdating(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ specialty, location })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      alert(isRw ? 'Umwirondoro wavuguruwe!' : 'Professional profile updated!');
+      fetchProfile();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const [settings, setSettings] = useState<SettingsState>(() => {
     const saved = localStorage.getItem('Humura_settings_v2');
@@ -83,18 +128,68 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-5 border-2 border-black rounded-2xl bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center text-xl font-black">
-                H
+                {profile?.full_name?.charAt(0) || 'H'}
               </div>
               <div>
-                <p className="font-black text-lg">Humura User</p>
-                <p className="text-sm font-medium">{isRw ? 'Nta konti ikenewe' : 'No account needed'}</p>
+                <p className="font-black text-lg">{profile?.full_name || 'Humura User'}</p>
+                <p className="text-sm font-medium">
+                  {profile?.role === 'doctor' ? (isRw ? 'Inzobere mu Buzima' : 'Clinical Professional') : (isRw ? 'Umurwayi' : 'Patient User')}
+                </p>
               </div>
             </div>
-            <button className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors" aria-label="View profile">
+            <button 
+              onClick={() => {
+                if (!profile) navigate('/auth');
+              }}
+              className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors" 
+              aria-label="View profile"
+            >
               <ChevronRight size={24} />
             </button>
           </div>
         </section>
+
+        {/* Professional Profile Settings (Conditional) */}
+        {profile?.role === 'doctor' && (
+          <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-2 border-b-2 border-black pb-2">
+              <Settings size={20} className="text-primary" />
+              <h2 className="text-lg font-black uppercase text-primary">
+                {isRw ? 'Umwirondoro w\'Akazi' : 'Professional Profile'}
+              </h2>
+            </div>
+            <div className="p-6 border-2 border-black rounded-2xl bg-primary-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-primary-400 uppercase tracking-widest ml-1">{isRw ? 'Inzobere muri' : 'Specialty / Title'}</label>
+                <input 
+                  type="text" 
+                  value={specialty}
+                  onChange={e => setSpecialty(e.target.value)}
+                  placeholder="e.g. Clinical Psychologist"
+                  className="w-full p-4 rounded-xl border-2 border-black font-bold outline-none focus:bg-white transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-primary-400 uppercase tracking-widest ml-1">{isRw ? 'Aho ukorera' : 'Location'}</label>
+                <input 
+                  type="text" 
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  placeholder="e.g. Kigali, Kacyiru"
+                  className="w-full p-4 rounded-xl border-2 border-black font-bold outline-none focus:bg-white transition-all"
+                />
+              </div>
+              <button 
+                onClick={updateProfessionalProfile}
+                disabled={updating}
+                className="w-full py-4 bg-black text-white font-black rounded-xl hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
+              >
+                {updating ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                {isRw ? 'Bika impinduka' : 'Save Professional Info'}
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* 2. Language Section */}
         <section className="space-y-4">
