@@ -88,8 +88,17 @@ export default function IntakePage() {
 
       if (patientError) throw patientError;
 
-      // 3. Trigger Doctor Assignment (via Edge Function or handled on backend later)
-      // For now, we'll just redirect to home
+      // 3. Trigger Doctor Assignment
+      await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/patients/assign-doctor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: user.id,
+          concern: form.primaryConcern,
+          lang: form.language
+        })
+      });
+
       navigate('/');
     } catch (err: any) {
       setError(err.message);

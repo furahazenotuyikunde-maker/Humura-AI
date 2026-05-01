@@ -39,6 +39,7 @@ export default function DoctorDashboard() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [crisisAlerts, setCrisisAlerts] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [moodLogs, setMoodLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -87,6 +88,22 @@ export default function DoctorDashboard() {
 
     setLoading(false);
   };
+
+  const fetchMoodLogs = async (patientId: string) => {
+    const { data } = await supabase
+      .from('mood_logs')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('logged_at', { ascending: false })
+      .limit(5);
+    setMoodLogs(data || []);
+  };
+
+  useEffect(() => {
+    if (selectedPatient) {
+      fetchMoodLogs(selectedPatient.id);
+    }
+  }, [selectedPatient]);
 
   const setupRealtime = () => {
     supabase
@@ -357,10 +374,40 @@ export default function DoctorDashboard() {
                               {selectedPatient.self_harm_flag ? '⚠️ Self-harm reported in intake' : 'Low clinical risk'}
                             </p>
                           </div>
+                          <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-blue-400 uppercase mb-1">{isRw ? 'Igihe bimaze' : 'Duration of Concern'}</p>
+                            <p className="text-sm font-black text-blue-900">{selectedPatient.concern_duration || 'Not specified'}</p>
+                          </div>
+                          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-emerald-400 uppercase mb-1">{isRw ? 'Ubufasha bwihutirwa' : 'Emergency Contact'}</p>
+                            <p className="text-sm font-black text-emerald-900">{selectedPatient.emergency_contact?.name} ({selectedPatient.emergency_contact?.phone})</p>
+                          </div>
+                          
+                          {/* Mood History Mini-Chart/List */}
+                          <div className="pt-4">
+                            <h4 className="text-[10px] font-black text-neutral-400 uppercase mb-3">{isRw ? 'Imiterere y\'iminsi ishize' : 'Recent Mood History'}</h4>
+                            <div className="space-y-2">
+                              {moodLogs.length === 0 ? (
+                                <p className="text-[10px] text-neutral-400 italic">No mood logs recorded yet.</p>
+                              ) : moodLogs.map(log => (
+                                <div key={log.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-lg">{log.emoji || '😐'}</span>
+                                    <div>
+                                      <p className="text-[10px] font-black text-[#4A2C1A]">{new Date(log.logged_at).toLocaleDateString()}</p>
+                                      <p className="text-[9px] font-bold text-neutral-400 uppercase">Score: {log.mood_score}/10</p>
+                                    </div>
+                                  </div>
+                                  <div className={`w-2 h-2 rounded-full ${log.mood_score > 7 ? 'bg-emerald-500' : log.mood_score > 4 ? 'bg-amber-500' : 'bg-red-500'}`} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
                           <button 
                             onClick={() => handleRequestSummary(selectedPatient)}
                             disabled={actionLoading === 'summary'}
-                            className="w-full py-3 bg-primary text-white font-black text-xs uppercase rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-primary text-white font-black text-xs uppercase rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
                           >
                             {actionLoading === 'summary' && <Loader2 size={14} className="animate-spin" />}
                             {isRw ? 'Saba inshamake y\'ubuvuzi' : 'Generate Clinical Report'}
