@@ -145,3 +145,19 @@ CREATE POLICY "Doctors see all crisis events" ON public.crisis_events FOR ALL US
 -- Messages
 CREATE POLICY "Users view own messages" ON public.messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 CREATE POLICY "Users send messages" ON public.messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+-- ==========================================
+-- TEST DATA & MATCHING FAIL-SAFE
+-- ==========================================
+
+-- 1. Relax foreign key for testing (allows profiles without auth users)
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
+-- 2. Add Test Professionals for Matching
+INSERT INTO public.profiles (id, full_name, role, specialty, language_pref)
+VALUES 
+  (gen_random_uuid(), 'Dr. Uwimana Jean', 'doctor', 'General Therapy', 'rw'),
+  (gen_random_uuid(), 'Dr. Mutesi Alice', 'doctor', 'Anxiety & Stress', 'rw'),
+  (gen_random_uuid(), 'Dr. Kagabo Eric', 'doctor', 'Depression & Mood', 'en')
+ON CONFLICT (id) DO NOTHING;
+
