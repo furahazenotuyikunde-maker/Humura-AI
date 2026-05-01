@@ -199,8 +199,8 @@ export default function AIChatPage() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="fixed bottom-0 inset-x-0 p-6 z-[50] bg-white">
+      {/* Controls - Positioned above mobile footer and respecting desktop sidebar */}
+      <div className="fixed bottom-16 md:bottom-0 left-0 md:left-64 right-0 p-6 z-[40] bg-white/90 backdrop-blur-xl border-t border-neutral-100/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
         <div className="max-w-xl mx-auto">
           {error && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-2 mb-4">
