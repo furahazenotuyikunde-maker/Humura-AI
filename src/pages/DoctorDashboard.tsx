@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useClinicalEvents } from '../hooks/useClinicalEvents';
-import { toast as hotToast } from 'react-hot-toast';
+
 
 // --- Sub-components ---
 const StatCard = ({ label, value, sub, icon: Icon, color }: any) => (
