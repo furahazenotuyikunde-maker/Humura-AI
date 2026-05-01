@@ -1,0 +1,6 @@
+app/
+index.js
+humura-backend/
+supabase/
+generate_braille_card.py
+chat-bot.html
