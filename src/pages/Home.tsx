@@ -3,34 +3,30 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  MessageCircle, Calendar, ClipboardList, TrendingUp, 
-  AlertTriangle, Phone, Heart, ChevronRight, Loader2, Info,
-  UserCheck, ShieldCheck
+  Sparkles, Calendar, ChevronRight, Loader2, Info,
+  TrendingUp, Star, Heart, Clock, AlertCircle
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabaseClient';
-import { useClinicalEvents } from '../hooks/useClinicalEvents';
+
+const MOODS = [
+  { id: 'very_low', emoji: '😔', score: 1, key: 'stressed' },
+  { id: 'low', emoji: '😟', score: 2, key: 'sad' },
+  { id: 'okay', emoji: '😐', score: 3, key: 'neutral' },
+  { id: 'good', emoji: '🙂', score: 4, key: 'calm' },
+  { id: 'great', emoji: '😊', score: 5, key: 'happy' },
+];
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const lang = i18n.language || 'en';
-  const isRw = lang.startsWith('rw');
+  const isRw = i18n.language?.startsWith('rw');
   const navigate = useNavigate();
   
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [patientData, setPatientData] = useState<any>(null);
-  const [doctor, setDoctor] = useState<any>(null);
+  const [moodLogs, setMoodLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-
-  const { activeSession } = useClinicalEvents(profile?.id, 'patient');
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const [loggingMood, setLoggingMood] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -44,73 +40,56 @@ export default function Home() {
     }
     setSession(session);
 
-    // 1. Fetch Profile
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
     setProfile(profile);
 
-    if (profile?.role === 'doctor') {
-      setLoading(false);
-      return;
-    }
-
-    // 2. Fetch Patient Data
-    const { data: patient } = await supabase.from('patients').select('*').eq('id', session.user.id).maybeSingle();
-    setPatientData(patient);
-
-    if (!patient?.intake_completed_at) {
-      navigate('/intake');
-      return;
-    }
-
-    // 3. Fetch Doctor
-    if (patient.doctor_id) {
-      const { data: doc } = await supabase.from('profiles').select('*').eq('id', patient.doctor_id).single();
-      setDoctor(doc);
-    }
-
+    // Fetch last 7 days of mood logs
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const { data: logs } = await supabase
+      .from('mood_logs')
+      .select('*')
+      .eq('patient_id', session.user.id)
+      .gte('logged_at', sevenDaysAgo.toISOString())
+      .order('logged_at', { ascending: true });
+    
+    setMoodLogs(logs || []);
     setLoading(false);
   };
 
-  const triggerSOS = async () => {
-    if (!session?.user?.id) return;
+  const handleQuickLog = async (moodItem: any) => {
+    if (!session?.user?.id || loggingMood) return;
+    setLoggingMood(true);
     try {
-      await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/crisis/trigger`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: session.user.id,
-          doctorId: patientData?.doctor_id,
-          type: 'SOS_BUTTON',
-          lastMsg: 'Patient triggered SOS from Home'
-        })
-      });
-      showToast(isRw ? 'Ubufasha buraje! Muganga yamenyeshejwe.' : 'Help is on the way! Your doctor has been alerted.', 'success');
-      setTimeout(() => navigate('/emergency'), 2000);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-  const handleBookSession = async () => {
-    if (!doctor || !session?.user?.id) return;
-    setBookingLoading(true);
-    try {
-      const { error } = await supabase
-        .from('sessions')
-        .insert({
-          patient_id: session.user.id,
-          doctor_id: doctor.id,
-          scheduled_at: new Date(Date.now() + 3600000).toISOString(), // Placeholder: +1 hour
-          status: 'pending'
-        });
+      const { error } = await supabase.from('mood_logs').insert([{
+        patient_id: session.user.id,
+        mood_score: moodItem.score,
+        mood: moodItem.key,
+        emoji: moodItem.emoji,
+        logged_at: new Date().toISOString()
+      }]);
 
       if (error) throw error;
-      showToast(isRw ? 'Gahunda yawe yoherejwe!' : 'Booking request sent to your professional!');
-    } catch (err: any) {
-      showToast(err.message, 'error');
+      fetchInitialData(); // Refresh logs
+    } catch (err) {
+      console.error(err);
     } finally {
-      setBookingLoading(false);
+      setLoggingMood(false);
     }
   };
+
+  const getDayData = (daysAgo: number) => {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() - daysAgo);
+    const dateStr = targetDate.toISOString().split('T')[0];
+    
+    return moodLogs.find(log => log.logged_at.startsWith(dateStr));
+  };
+
+  const weekDays = isRw 
+    ? ['Kwe', 'Kab', 'Gat', 'Kan', 'Gat', 'Saa', 'Dim'] 
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
@@ -118,213 +97,142 @@ export default function Home() {
     </div>
   );
 
-  // --- Doctor View ---
-  if (profile?.role === 'doctor') {
-    return (
-      <div className="space-y-6 pb-10 p-6">
-        <header className="space-y-1">
-          <h1 className="text-3xl font-black text-primary-900 tracking-tight">
-            {isRw ? 'Muraho, Muganga! 🩺' : 'Welcome, Doctor! 🩺'}
-          </h1>
-          <p className="text-primary-600 font-bold text-sm">
-            {isRw ? 'Urateganya gufasha abarwayi bawe uyu munsi.' : 'Ready to support your patients today?'}
-          </p>
-        </header>
-        <button 
-          onClick={() => navigate('/doctor')}
-          className="w-full p-8 bg-primary text-white rounded-[2.5rem] shadow-xl shadow-primary/20 flex flex-col items-start gap-4 text-left group overflow-hidden relative"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-all" />
-          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <h3 className="text-xl font-black">{isRw ? 'Gana ku Biro' : 'Go to Dashboard'}</h3>
-            <p className="text-sm font-medium opacity-80 mt-1">Manage caseload, crisis alerts, and clinical reports.</p>
-          </div>
-        </button>
-      </div>
-    );
-  }
-
-  // --- Patient View ---
   return (
-    <div className="space-y-6 pb-20 p-6 relative">
-      <AnimatePresence>
-        {toast && (
-          <motion.div 
-            initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 20 }} exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-xl font-bold text-sm ${
-              toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-            }`}
-          >
-            {toast.message}
-          </motion.div>
+    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-20 px-6 overflow-x-hidden">
+      <div className="max-w-xl mx-auto space-y-12">
+        
+        {/* Welcome Header */}
+        <header className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black text-primary-900">
+              {isRw ? `Muraho, ${profile?.full_name?.split(' ')[0]}` : `Hello, ${profile?.full_name?.split(' ')[0]}`}
+            </h1>
+            <p className="text-sm font-bold text-primary-600/60">
+              {isRw ? 'Umeze ute uyu munsi?' : "How's your wellness today?"}
+            </p>
+          </div>
+          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-neutral-100 flex items-center justify-center text-primary">
+            <Heart size={24} fill="currentColor" className="opacity-10" />
+          </div>
+        </header>
+
+        {/* 7-Day Mood Tracker */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-primary-900 flex items-center gap-2">
+              <Calendar size={20} className="text-primary" />
+              {isRw ? 'Icyumweru cyanjye' : 'Your 7-Day Journey'}
+            </h2>
+            <button 
+              onClick={() => navigate('/progress')}
+              className="text-[10px] font-black text-primary-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1"
+            >
+              {isRw ? 'Reba byose' : 'View History'} <ChevronRight size={12} />
+            </button>
+          </div>
+
+          <div className="bg-white p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex justify-between gap-2 overflow-x-auto no-scrollbar">
+            {[6, 5, 4, 3, 2, 1, 0].map((daysAgo) => {
+              const log = getDayData(daysAgo);
+              const date = new Date();
+              date.setDate(date.getDate() - daysAgo);
+              const isToday = daysAgo === 0;
+
+              return (
+                <div key={daysAgo} className="flex flex-col items-center gap-3 flex-shrink-0">
+                  <span className={`text-[9px] font-black uppercase tracking-tighter ${isToday ? 'text-primary' : 'text-neutral-300'}`}>
+                    {weekDays[date.getDay() === 0 ? 6 : date.getDay() - 1]}
+                  </span>
+                  <div 
+                    className={`w-12 h-16 rounded-2xl border-2 flex items-center justify-center transition-all ${
+                      log ? 'bg-primary-50 border-primary-100' : isToday ? 'bg-white border-primary border-dashed' : 'bg-neutral-50 border-neutral-50'
+                    }`}
+                  >
+                    {log ? (
+                      <span className="text-2xl">{log.emoji}</span>
+                    ) : isToday ? (
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="w-1.5 h-1.5 rounded-full bg-neutral-200" />
+                    )}
+                  </div>
+                  {isToday && !log && (
+                    <div className="h-1 w-1 rounded-full bg-primary" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Quick Log Action */}
+        {!getDayData(0) && (
+          <section className="bg-primary p-8 rounded-[3rem] shadow-2xl shadow-primary/30 space-y-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Sparkles size={100} className="text-white" />
+            </div>
+            <div className="relative z-10 space-y-2">
+              <h3 className="text-2xl font-black text-white">
+                {isRw ? 'Umeze ute ubu?' : 'Log your mood now'}
+              </h3>
+              <p className="text-xs font-medium text-white/70">
+                {isRw ? 'Hitamo uko wiyumva kugira ngo AI igufashe.' : 'Pick your state for instant AI insights.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 flex justify-between gap-2">
+              {MOODS.map(m => (
+                <button 
+                  key={m.id}
+                  onClick={() => handleQuickLog(m)}
+                  disabled={loggingMood}
+                  className="flex-1 bg-white/10 hover:bg-white/20 active:scale-95 py-4 rounded-2xl transition-all flex items-center justify-center text-3xl filter hover:drop-shadow-lg"
+                >
+                  {m.emoji}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
-      </AnimatePresence>
 
-      <header className="space-y-1">
-        <h1 className="text-3xl font-black text-primary-900 tracking-tight">
-          Hi, {profile?.full_name?.split(' ')[0]} 👋
-        </h1>
-        <p className="text-primary-600 font-bold text-sm">
-          {isRw ? 'Umeze ute uyu munsi?' : 'You are not alone.'}
-        </p>
-      </header>
-
-      {/* Meet Your Professional (Step 4) */}
-      {!patientData?.has_met_doctor && doctor && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="bg-primary/5 border-2 border-primary/10 rounded-[2.5rem] p-8 space-y-6"
-        >
-          <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
-            <UserCheck size={16} />
-            {isRw ? 'Twaguhitiye umuvuzi' : 'We found someone for you'}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary text-white rounded-3xl flex items-center justify-center font-black text-2xl shadow-lg">
-              {doctor.full_name?.charAt(0)}
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-primary-900">{doctor.full_name}</h3>
-              <p className="text-sm font-bold text-primary-600">{doctor.specialty || 'Psychiatrist'}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <span className="px-3 py-1 bg-white border border-primary/10 rounded-full text-[10px] font-black uppercase text-primary-400">🇷🇼 Kinyarwanda</span>
-            <span className="px-3 py-1 bg-white border border-primary/10 rounded-full text-[10px] font-black uppercase text-primary-400">🇬🇧 English</span>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button 
-              onClick={() => {
-                if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
-                  navigate('/clinical-workspace');
-                } else {
-                  showToast(isRw ? 'Tegereza muganga akwemere gahunda.' : 'Please wait for your doctor to accept your booking.');
-                }
-              }}
-              className="flex-1 py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/20 text-xs uppercase"
-            >
-              {isRw ? 'Andikira Muganga' : 'Start clinical chat'}
-            </button>
-            <button 
-              onClick={handleBookSession}
-              disabled={bookingLoading}
-              className="flex-1 py-4 bg-white border-2 border-primary/10 text-primary-900 font-black rounded-2xl text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {bookingLoading && <Loader2 size={14} className="animate-spin" />}
-              {isRw ? 'Saba Gahunda' : 'Book a session'}
-            </button>
-          </div>
-          <p className="text-center text-[10px] font-bold text-neutral-400 flex items-center justify-center gap-2">
-            <ShieldCheck size={12} />
-            {isRw ? 'Amakuru yawe arinzwe 🔒' : 'Your information is private and secure 🔒'}
-          </p>
-        </motion.div>
-      )}
-
-      {/* Patient Home Summary (Step 5) */}
-      <div className="space-y-4">
-        {/* Log Mood Card */}
-        <button 
-          onClick={() => navigate('/mood')}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl">😊</span>
-            </div>
-            <p className="font-black text-primary-900">{isRw ? 'Uko wiyumva uyu munsi' : "Log today's mood"}</p>
-          </div>
-          <ChevronRight size={20} className="text-neutral-200 group-hover:text-primary transition-all" />
-        </button>
-
-        {/* Message Card */}
-        <button 
-          onClick={() => {
-            if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
-              navigate('/clinical-workspace');
-            } else {
-              showToast(isRw ? 'Tegereza muganga akwemere gahunda.' : 'Please wait for your doctor to accept your booking.');
-            }
-          }}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-              <MessageCircle size={24} />
-            </div>
-            <div>
-              <p className="font-black text-primary-900 text-left">{isRw ? 'Andikira Muganga' : 'Message your Professional'}</p>
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest text-left mt-0.5">{doctor?.full_name || 'Assigned Doctor'}</p>
-            </div>
-          </div>
-          <ChevronRight size={20} className="text-neutral-200 group-hover:text-primary transition-all" />
-        </button>
-
-        {/* Session Card */}
-        <button 
-          onClick={handleBookSession}
-          disabled={bookingLoading}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group disabled:opacity-50"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-              <Calendar size={24} />
-            </div>
-            <div>
-              <p className="font-black text-primary-900 text-left">{isRw ? 'Gahunda itaha' : 'Next session'}</p>
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest text-left mt-0.5">Tuesday 10:00 AM</p>
-            </div>
-          </div>
-          <ChevronRight size={20} className="text-neutral-200 group-hover:text-primary transition-all" />
-        </button>
-
-        {/* Homework Card */}
-        <button 
-          onClick={() => navigate('/chat')}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center">
-              <ClipboardList size={24} />
-            </div>
-            <div>
-              <p className="font-black text-primary-900 text-left">{isRw ? 'Umukoro wanjye' : 'My homework'}</p>
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest text-left mt-0.5">1 pending task</p>
-            </div>
-          </div>
-          <ChevronRight size={20} className="text-neutral-200 group-hover:text-primary transition-all" />
-        </button>
-
-        {/* Progress Card */}
+        {/* AI Insight CTA */}
         <button 
           onClick={() => navigate('/progress')}
-          className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
+          className="w-full p-8 bg-white border-2 border-primary/5 rounded-[3rem] shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center">
-              <TrendingUp size={24} />
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10 group-hover:scale-110 transition-transform">
+              <Sparkles size={28} />
             </div>
-            <div>
-              <p className="font-black text-primary-900 text-left">{isRw ? 'Iterambere ryanjye' : 'My progress'}</p>
-              <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest text-left mt-0.5">Improving ✅</p>
+            <div className="text-left">
+              <h3 className="text-xl font-black text-primary-900">
+                {isRw ? 'Andebere uko nifashe' : 'Get AI Analysis'}
+              </h3>
+              <p className="text-xs font-bold text-neutral-400">
+                {isRw ? 'Reba inama za AI kuri iki cyumweru.' : 'Unlock recommendations for the week.'}
+              </p>
             </div>
           </div>
-          <ChevronRight size={20} className="text-neutral-200 group-hover:text-primary transition-all" />
+          <div className="w-12 h-12 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-300 group-hover:bg-primary group-hover:text-white transition-all">
+            <ChevronRight size={24} />
+          </div>
         </button>
-      </div>
 
-      {/* SOS Button (Always visible) */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
-        <button 
-          onClick={triggerSOS}
-          className="w-full py-5 bg-red-600 text-white font-black rounded-3xl shadow-xl shadow-red-200 flex items-center justify-center gap-3 pointer-events-auto hover:scale-[1.02] active:scale-[0.98] transition-all"
-        >
-          <AlertTriangle size={24} className="animate-pulse" />
-          {isRw ? 'NKENEYE UBUFASHA UBU' : 'I NEED HELP NOW'}
-        </button>
+        {/* Tips / Quote Card */}
+        <div className="bg-neutral-50 p-6 rounded-[2.5rem] flex gap-4 items-start">
+           <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-primary flex-shrink-0 shadow-sm">
+             <Star size={18} fill="currentColor" />
+           </div>
+           <div>
+             <p className="text-sm font-black text-primary-900 italic mb-2">
+               {isRw ? '"Umutima usanzwe ni ishingiro ry’ubuzima."' : '"Your mental wellness is your greatest wealth."'}
+             </p>
+             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">— Humura AI Wellness</p>
+           </div>
+        </div>
+
       </div>
     </div>
   );

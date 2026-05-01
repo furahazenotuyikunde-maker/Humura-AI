@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut, Activity
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut, Activity, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -147,9 +147,9 @@ export const Shell: React.FC<ShellProps> = () => {
   // Bottom mobile nav (primary 4)
   const mobileNavItems = [
     { to: '/', icon: Home, label: t('nav.home') },
+    { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Muganga' : 'Professional' },
     { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
-    { to: '/community', icon: Users, label: t('nav.community') },
-    { to: '/emergency', icon: AlertTriangle, label: t('nav.emergency') },
+    { to: '/progress', icon: BarChart2, label: t('nav.progress') },
   ];
 
   // Full sidebar nav
@@ -157,10 +157,10 @@ export const Shell: React.FC<ShellProps> = () => {
     {
       title: isRw ? 'Ibihingwa' : 'Core',
       items: [
-        { to: '/', icon: Home, label: t('nav.home') },
+        { index: true, to: '/', icon: Home, label: t('nav.home') },
+        { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Gura na Muganga' : 'Meet Professional' },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
         { to: '#', icon: RotateCcw, label: isRw ? 'ibiganiro twagiranye' : 'Chat History', onClick: () => setShowHistory(true) },
-        { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
         { to: '/notifications', icon: Bell, label: isRw ? 'Imenyesha' : 'Notifications' },
         ...(role === 'doctor' ? [{ to: '/doctor', icon: Activity, label: isRw ? 'Ibiro bya Muganga' : 'Doctor Dashboard' }] : []),

@@ -18,6 +18,7 @@ import AuthPage from './pages/AuthPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import IntakePage from './pages/IntakePage';
 import MoodLogPage from './pages/MoodLogPage';
+import MeetProfessionalPage from './pages/MeetProfessionalPage';
 import LandingPage from './pages/LandingPage';
 import { supabase } from './lib/supabaseClient';
 import { useEffect, useState } from 'react';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="intake" element={<IntakePage />} />
           <Route path="mood" element={<MoodLogPage />} />
+          <Route path="meet-professional" element={<MeetProfessionalPage />} />
         </Route>
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
