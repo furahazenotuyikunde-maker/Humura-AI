@@ -253,31 +253,40 @@ export default function AIChatPage() {
           {messages.map((msg, idx) => (
             <motion.div 
               key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col mb-6 group ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col mb-8 group ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <div className={`max-w-[90%] p-5 rounded-3xl relative transition-all ${
+              <div className={`max-w-[85%] p-4 rounded-2xl relative transition-all ${
                 msg.role === 'user' 
-                  ? 'bg-primary text-white rounded-tr-none shadow-xl shadow-primary/10' 
-                  : 'bg-neutral-50 border border-neutral-100 text-primary-900 rounded-tl-none shadow-sm'
+                  ? 'bg-primary text-white rounded-tr-none shadow-lg' 
+                  : 'bg-neutral-50 border border-neutral-100 text-primary-900 rounded-tl-none'
               }`}>
-                {msg.image && <img src={msg.image} className="w-full rounded-2xl mb-3 border border-white/20" />}
-                <p className="text-sm font-bold leading-relaxed">{msg.content}</p>
+                {msg.image && <img src={msg.image} className="w-full rounded-xl mb-3 border border-white/10" />}
+                <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 
-                {/* Message Actions (Edit/Delete) */}
-                <div className={`absolute -top-4 ${msg.role === 'user' ? 'right-0' : 'left-0'} flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-neutral-100 rounded-xl p-1 shadow-md`}>
-                  {msg.role === 'user' && (
-                    <button onClick={() => startEdit(idx)} className="p-1.5 hover:bg-neutral-50 rounded-lg text-neutral-400 hover:text-primary transition-colors">
-                      <Edit2 size={12} />
-                    </button>
-                  )}
-                  <button onClick={() => deleteMessage(idx)} className="p-1.5 hover:bg-neutral-50 rounded-lg text-neutral-400 hover:text-red-500 transition-colors">
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-
                 <div className={`text-[8px] mt-2 font-black uppercase opacity-30 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
+              </div>
+
+              {/* Message Actions - Positioned below like ChatGPT */}
+              <div className={`flex gap-3 mt-1.5 px-2 opacity-0 group-hover:opacity-100 transition-all duration-300 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {msg.role === 'user' && (
+                  <button onClick={() => startEdit(idx)} className="text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
+                    <Edit2 size={12} />
+                    <span className="text-[10px] font-bold uppercase">Edit</span>
+                  </button>
+                )}
+                <button 
+                  onClick={() => { navigator.clipboard.writeText(msg.content); }} 
+                  className="text-neutral-400 hover:text-emerald-500 transition-colors flex items-center gap-1"
+                >
+                  <RefreshCcw size={12} />
+                  <span className="text-[10px] font-bold uppercase">Copy</span>
+                </button>
+                <button onClick={() => deleteMessage(idx)} className="text-neutral-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                  <Trash2 size={12} />
+                  <span className="text-[10px] font-bold uppercase">Delete</span>
+                </button>
               </div>
             </motion.div>
           ))}
@@ -306,58 +315,56 @@ export default function AIChatPage() {
             </motion.div>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="flex-1 bg-neutral-50 border border-neutral-100 rounded-[2rem] p-2 flex items-center shadow-sm relative">
-              {previewImage && (
-                <div className="absolute -top-16 left-4 p-2 bg-white border border-neutral-100 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom-2">
-                  <img src={previewImage} className="w-10 h-10 rounded-lg object-cover" />
-                  <button onClick={() => setPreviewImage(null)} className="p-1 bg-red-50 text-red-500 rounded-full"><X size={12} /></button>
-                </div>
-              )}
-              
-              <button onClick={() => fileInputRef.current?.click()} className="p-3 text-neutral-300 hover:text-primary transition-colors">
-                <ImagePlus size={20} />
-              </button>
-              
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => setPreviewImage(reader.result as string);
-                  reader.readAsDataURL(file);
-                }
-              }} />
+          <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-100 rounded-[2rem] p-1.5 shadow-sm relative pr-2">
+            {previewImage && (
+              <div className="absolute -top-16 left-4 p-2 bg-white border border-neutral-100 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom-2">
+                <img src={previewImage} className="w-10 h-10 rounded-lg object-cover" />
+                <button onClick={() => setPreviewImage(null)} className="p-1 bg-red-50 text-red-500 rounded-full"><X size={12} /></button>
+              </div>
+            )}
+            
+            <button onClick={() => fileInputRef.current?.click()} className="p-3 text-neutral-300 hover:text-primary transition-colors">
+              <ImagePlus size={20} />
+            </button>
+            
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => setPreviewImage(reader.result as string);
+                reader.readAsDataURL(file);
+              }
+            }} />
 
-              <input 
-                type="text" value={input} onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (editingId !== null ? saveEdit() : handleSend())}
-                placeholder={isRw ? 'Andika hano...' : 'Message Humura AI...'}
-                className="flex-1 px-4 py-3 bg-transparent outline-none text-sm font-bold text-primary-900 placeholder:text-neutral-300"
-              />
+            <input 
+              type="text" value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (editingId !== null ? saveEdit() : handleSend())}
+              placeholder={isRw ? 'Andika hano...' : 'Message Humura AI...'}
+              className="flex-1 px-3 py-3 bg-transparent outline-none text-sm font-semibold text-primary-900 placeholder:text-neutral-300"
+            />
 
-              <button 
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`p-3 transition-all ${isRecording ? 'text-red-500 animate-pulse' : 'text-neutral-300 hover:text-primary'}`}
-              >
-                {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-              </button>
-            </div>
+            <button 
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`p-3 transition-all ${isRecording ? 'text-red-500 animate-pulse' : 'text-neutral-300 hover:text-primary'}`}
+            >
+              {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+            </button>
 
             {isLoading ? (
               <button 
                 onClick={stopGeneration}
-                className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-100 hover:bg-red-100 transition-all"
+                className="w-11 h-11 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 transition-all border border-red-100"
                 title={isRw ? 'Hagarika' : 'Stop'}
               >
-                <Square size={20} fill="currentColor" />
+                <Square size={16} fill="currentColor" />
               </button>
             ) : (
               <button 
                 onClick={editingId !== null ? saveEdit : handleSend}
                 disabled={!input.trim() && !previewImage}
-                className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+                className="w-11 h-11 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
               >
-                {editingId !== null ? <CheckCircle size={24} /> : <Send size={24} />}
+                {editingId !== null ? <CheckCircle size={20} /> : <Send size={20} />}
               </button>
             )}
           </div>
