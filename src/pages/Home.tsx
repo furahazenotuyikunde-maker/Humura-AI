@@ -62,18 +62,27 @@ export default function Home() {
     if (!session?.user?.id || loggingMood) return;
     setLoggingMood(true);
     try {
+      // Use local date string to avoid UTC day-offset issues
+      const localNow = new Date();
+      const isoString = localNow.toISOString();
+
       const { error } = await supabase.from('mood_logs').insert([{
         patient_id: session.user.id,
         mood_score: moodItem.score,
         mood: moodItem.key,
         emoji: moodItem.emoji,
-        logged_at: new Date().toISOString()
+        logged_at: isoString
       }]);
 
       if (error) throw error;
-      fetchInitialData(); // Refresh logs
+      
+      // Refresh local state first
+      await fetchInitialData();
+      
+      // Immediately navigate to progress for AI insight
+      navigate('/progress');
     } catch (err) {
-      console.error(err);
+      console.error("Mood logging failed:", err);
     } finally {
       setLoggingMood(false);
     }
