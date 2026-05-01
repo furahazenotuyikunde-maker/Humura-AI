@@ -620,14 +620,14 @@ export default function DoctorDashboard() {
                             >
                               {isRw ? 'Tangira' : 'Start Session'}
                             </button>
-                          ) : s.status === 'active' && (
+                          ) : s.status === 'active' ? (
                             <button 
                               onClick={() => handleUpdateSessionStatus(s.id, 'completed')}
                               className="px-6 py-2.5 bg-neutral-900 text-white font-black text-xs uppercase rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all"
                             >
                               {isRw ? 'Sohora' : 'Complete'}
                             </button>
-                          )}
+                          ) : null}
                           {s.status === 'completed' && (
                             <button 
                               onClick={() => { setSelectedPatient({ id: s.patient_id, patient_info: s.profiles }); setActiveTab('dashboard'); }}
