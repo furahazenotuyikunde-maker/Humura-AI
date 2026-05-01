@@ -63,7 +63,7 @@ const ProgressPage: React.FC = () => {
     try {
       const moodHistory = data.map(m => ({ date: new Date(m.logged_at).toLocaleDateString(), mood: m.mood }));
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-progress`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/ai/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
