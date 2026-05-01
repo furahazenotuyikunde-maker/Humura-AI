@@ -5,7 +5,9 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { callGemini } = require('./lib/gemini');
+
 
 dotenv.config();
 
@@ -23,6 +25,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // 2. Initialize Clients
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
 
 // 3. Socket.io Logic
 io.on('connection', (socket) => {
@@ -199,6 +204,59 @@ app.post('/api/doctor/generate-report', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.0.7 Live!', engine: 'Gemini 3 Flash Preview' }));
+// 4g. Main AI Chat (Gemini 3 Flash Preview)
+app.post('/chat', async (req, res) => {
+  try {
+    const { message, history, image, lang } = req.body;
+    if (!message) return res.status(400).json({ error: "No message" });
+
+    const chatHistory = (history || []).map(m => ({
+      role: m.role === 'model' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    let parts = [{ text: message }];
+    if (image) {
+      parts.push({ 
+        inlineData: { 
+          data: image.split(',')[1], 
+          mimeType: "image/jpeg" 
+        } 
+      });
+    }
+
+    const response = await geminiModel.generateContent({
+      contents: [
+        ...chatHistory,
+        { role: "user", parts }
+      ]
+    });
+    
+    const responseText = await response.response;
+    const reply = responseText.text();
+    
+    // Save to Supabase for Clinical Visibility
+    if (req.body.userId) {
+      await supabase.from('messages').insert([
+        { sender_id: req.body.userId, receiver_id: '00000000-0000-0000-0000-000000000000', content: message },
+        { sender_id: '00000000-0000-0000-0000-000000000000', receiver_id: req.body.userId, content: reply }
+      ]);
+    }
+
+    // Auto-Crisis Detection
+    const isCrisis = /suicide|kill|harm|die|death|help now|emergency/i.test(message + reply);
+
+    return res.status(200).json({ success: true, reply, isCrisis });
+
+  } catch (error) {
+    console.error("Chat Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/chat', (req, res) => res.json({ status: "Chat is live." }));
+
+app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.0 Unified Live!', engine: 'Gemini 3 Flash Preview' }));
+
 
 server.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
