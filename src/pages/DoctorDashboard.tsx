@@ -595,12 +595,16 @@ export default function DoctorDashboard() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {s.status === 'scheduled' && (
-                            <>
+                          {s.status === 'pending' || s.status === 'scheduled' ? (
+                            <div className="flex items-center gap-2">
                               <button 
                                 onClick={() => handleUpdateSessionStatus(s.id, 'missed')}
                                 disabled={actionLoading === s.id}
                                 className="px-4 py-2 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                {isRw ? 'Ntiyabonetse' : 'Mark Missed'}
+                              </button>
+                              <button 
                                 onClick={() => handleAcceptBooking(s.id)}
                                 disabled={actionLoading === s.id}
                                 className="px-6 py-2.5 bg-emerald-600 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
@@ -608,7 +612,7 @@ export default function DoctorDashboard() {
                                 {actionLoading === s.id ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
                                 {isRw ? 'Kwemeza' : 'Accept Request'}
                               </button>
-                            </>
+                            </div>
                           ) : s.status === 'confirmed' ? (
                             <button 
                               onClick={() => handleUpdateSessionStatus(s.id, 'active')}
