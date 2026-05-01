@@ -178,8 +178,13 @@ export default function DoctorDashboard() {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/auth';
+    try {
+      await supabase.auth.signOut();
+      localStorage.clear(); // Clear any cached session or preferences
+      window.location.replace('/');
+    } catch (err) {
+      window.location.replace('/');
+    }
   };
 
   if (loading) return (
