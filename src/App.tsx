@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Shell } from './components/Shell';
 import Home from './pages/Home';
 import AIChatPage from './pages/AIChatPage';
@@ -23,23 +23,43 @@ import { useEffect, useState } from 'react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) fetchRole(session.user.id);
+      else setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) fetchRole(session.user.id);
+      else {
+        setRole(null);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const fetchRole = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('role').eq('id', userId).single();
+    setRole(data?.role || 'patient');
+    setLoading(false);
+  };
+
+  if (loading) return null; // Or a splash screen
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={session ? <Shell /> : <LandingPage />}>
+        <Route path="/" element={
+          !session ? <LandingPage /> : 
+          role === 'doctor' ? <Navigate to="/doctor" replace /> : <Shell />
+        }>
           <Route index element={<Home />} />
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />

@@ -72,7 +72,20 @@ export default function AuthPage() {
         });
 
         if (signInError) throw signInError;
+        // Fetch role to decide where to navigate
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user?.id)
+        .single();
+      
+      const userRole = prof?.role || 'patient';
+      
+      if (userRole === 'doctor') {
+        navigate('/doctor');
+      } else {
         navigate('/');
+      }
       }
     } catch (err: any) {
       setError(err.message);
