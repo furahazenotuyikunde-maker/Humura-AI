@@ -164,11 +164,11 @@ export default function AIChatPage() {
       {/* --- CBT Top Bar --- */}
       <div className="bg-white border-b border-[#E8E1DB] px-6 py-3 flex items-center justify-between sticky top-20 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
-            <Sparkles size={20} />
+          <div className="w-10 h-10 bg-white border border-[#E8E1DB] rounded-2xl flex items-center justify-center p-2 shadow-sm">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h2 className="text-sm font-black text-[#4A2C1A]">{isRw ? 'Ubufasha bwa CBT' : 'Interactive CBT Companion'}</h2>
+            <h2 className="text-sm font-black text-[#4A2C1A]">Humura CBT AI</h2>
             <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1">
               <Activity size={10} /> {isRw ? 'Ikirere Kiratekanye' : 'Safe Space Active'}
             </p>
@@ -187,34 +187,10 @@ export default function AIChatPage() {
 
       {/* --- Chat Feed --- */}
       <div className="flex-1 overflow-y-auto px-6 space-y-6 pb-32 pt-6">
-        <AnimatePresence>
-          {pendingHomework && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-primary-900 text-white p-8 rounded-[2.5rem] shadow-2xl shadow-primary/20 space-y-6 relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl" />
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <ClipboardList size={24} className="text-primary-200" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black">{pendingHomework.title}</h3>
-                  <p className="text-xs text-primary-200 font-medium">{pendingHomework.desc}</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <input 
-                  type="text" 
-                  placeholder={isRw ? 'Andika hano...' : 'Type your reflection...'}
-                  onKeyDown={(e: any) => e.key === 'Enter' && handleHomeworkSubmit(e.target.value)}
-                  className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-6 py-4 text-sm outline-none focus:bg-white/20 transition-all font-bold placeholder:text-white/40"
-                />
-                <button className="w-14 h-14 bg-white text-primary-900 rounded-2xl flex items-center justify-center shadow-lg"><CheckCircle size={24} /></button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="flex flex-col items-center justify-center py-10 opacity-20">
+          <img src="/logo.png" alt="Humura AI" className="h-16 w-16 grayscale" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] mt-4">Secure CBT Environment</p>
+        </div>
 
         {messages.map((msg, idx) => (
           <motion.div 
