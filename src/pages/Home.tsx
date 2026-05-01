@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, Calendar, ClipboardList, TrendingUp, 
-  AlertTriangle, Phone, Heart, ChevronRight, Loader2, Info
+  AlertTriangle, Phone, Heart, ChevronRight, Loader2, Info,
+  UserCheck, ShieldCheck
 } from 'lucide-react';
+
 import { supabase } from '../lib/supabaseClient';
 
 export default function Home() {
