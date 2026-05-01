@@ -121,7 +121,7 @@ export default function AIChatPage() {
           body: JSON.stringify({
             contents: [
               { role: 'user', parts: [
-                { text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional." },
+                { text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional. If you detect the user is in a crisis, suicidal, or in immediate danger, ALWAYS direct them to call the Rwanda National Mental Health Hotline at 114 immediately." },
                 ...(userMsg.image ? [{ inline_data: { mime_type: "image/jpeg", data: userMsg.image.split(',')[1] } }] : [])
               ] },
               ...newMessages.slice(-8).map(m => ({
