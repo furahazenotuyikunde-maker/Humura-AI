@@ -32,15 +32,33 @@ const ProgressPage: React.FC = () => {
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   useEffect(() => {
+    let channel: any;
+
     const initializeData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        fetchMoodData(session.user.id);
+        const userId = session.user.id;
+        fetchMoodData(userId);
+
+        // Real-time listener for instant UI updates
+        channel = supabase
+          .channel('mood-updates')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'mood_logs', filter: `patient_id=eq.${userId}` },
+            () => fetchMoodData(userId)
+          )
+          .subscribe();
       } else {
         setIsLoading(false);
       }
     };
+
     initializeData();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchMoodData = async (userId: string) => {

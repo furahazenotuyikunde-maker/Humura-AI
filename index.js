@@ -74,15 +74,39 @@ app.post('/analyze-progress', async (req, res) => {
     if (!moods || moods.length === 0) {
       return res.status(400).json({ error: "No mood data provided" });
     }
-    const prompt = `Analyze this week's mood data and return a JSON object with "summary" (string) and "recommendations" (array of 3 strings). Mood data: ${JSON.stringify(moods)}. Language: ${lang || 'en'}`;
+
+    // High-performance bilingual prompt for Gemini 3
+    const prompt = `
+      Analyze this 7-day mood history: ${JSON.stringify(moods)}
+      
+      Task: Provide a "Weekly Wellness Recommendation".
+      Requirement: The response MUST be bilingual (English and Kinyarwanda combined).
+      Example format: "Summary: You are doing well. / Incamake: Umeze neza."
+      
+      Format: Return ONLY a JSON object:
+      {
+        "summary": "Bilingual summary here...",
+        "recommendations": [
+          "Bilingual tip 1...",
+          "Bilingual tip 2...",
+          "Bilingual tip 3..."
+        ]
+      }
+    `;
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text().replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(text);
+    
     return res.status(200).json({ success: true, ...parsed });
   } catch (error) {
     console.error("[PROGRESS ERROR]", error);
-    return res.status(500).json({ error: error.message || "Progress analysis failed" });
+    return res.status(500).json({ 
+      success: false, 
+      summary: "Incamake ntibashije kuboneka / Summary unavailable.",
+      recommendations: ["Komeza wandika uko wiyumva / Keep logging your mood."]
+    });
   }
 });
 
