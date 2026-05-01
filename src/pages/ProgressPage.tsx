@@ -101,7 +101,7 @@ const ProgressPage: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${baseUrl}/api/ai/analyze-progress`, {
+      const response = await fetch(`${baseUrl}/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
