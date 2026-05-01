@@ -94,10 +94,23 @@ app.post('/analyze-progress', async (req, res) => {
       }
     `;
 
-    const result = await model.generateContent(prompt);
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+    } catch (modelError) {
+      console.warn("Primary model failed, falling back to gemini-1.5-flash");
+      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      result = await fallbackModel.generateContent(prompt);
+    }
+
     const response = await result.response;
-    const text = response.text().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(text);
+    const rawText = response.text();
+    
+    // Deep-Clean: Extract only the JSON block even if AI adds extra text
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No valid JSON found in AI response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
     
     return res.status(200).json({ success: true, ...parsed });
   } catch (error) {
