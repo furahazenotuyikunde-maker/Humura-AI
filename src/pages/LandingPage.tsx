@@ -79,7 +79,7 @@ export default function LandingPage() {
         </div>
 
         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.2em] pt-10">
-          Humura AI &copy; {new Date().getFullYear()} · Rwanda
+          Humura AI &copy; {new Date().getFullYear()} · Mind Supported, Life Empowered
         </p>
       </main>
     </div>
