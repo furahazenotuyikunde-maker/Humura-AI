@@ -17,6 +17,7 @@ import TranslatorPage from './pages/TranslatorPage';
 import AuthPage from './pages/AuthPage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import IntakePage from './pages/IntakePage';
+import MoodLogPage from './pages/MoodLogPage';
 import LandingPage from './pages/LandingPage';
 import { supabase } from './lib/supabaseClient';
 import { useEffect, useState } from 'react';
@@ -73,6 +74,7 @@ const App: React.FC = () => {
           <Route path="translator" element={<TranslatorPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="intake" element={<IntakePage />} />
+          <Route path="mood" element={<MoodLogPage />} />
         </Route>
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/doctor" element={<DoctorDashboard />} />

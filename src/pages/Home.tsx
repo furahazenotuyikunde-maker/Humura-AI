@@ -228,7 +228,7 @@ export default function Home() {
       <div className="space-y-4">
         {/* Log Mood Card */}
         <button 
-          onClick={() => navigate('/intake')}
+          onClick={() => navigate('/mood')}
           className="w-full p-6 bg-white border-2 border-neutral-50 rounded-3xl flex items-center justify-between hover:border-primary-100 transition-all group"
         >
           <div className="flex items-center gap-4">
