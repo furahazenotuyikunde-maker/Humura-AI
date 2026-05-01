@@ -141,51 +141,88 @@ export default function MeetProfessionalPage() {
           </div>
         </button>
 
-        {/* Professional Handshake Status */}
+        {/* Professional Handshake Status - The Action Zone */}
         {doctor ? (
-          <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center text-primary font-black text-2xl uppercase">
-                  {doctor.full_name?.charAt(0)}
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-0.5">Assigned Professional</p>
-                  <h3 className="text-xl font-black text-primary-900">{doctor.full_name}</h3>
+          <div className="relative group">
+            {/* Background Glow */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary-600/20 rounded-[3rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            
+            <div className="relative bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-xl space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary-700 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-primary/20">
+                      {doctor.full_name?.charAt(0)}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full"></div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">Your Professional</p>
+                    <h3 className="text-2xl font-black text-primary-900 leading-tight">{doctor.full_name}</h3>
+                    <p className="text-xs font-bold text-primary-600/60">Clinical Psychologist · Online</p>
+                  </div>
                 </div>
               </div>
-              <div className="w-10 h-10 bg-primary-50 rounded-full flex items-center justify-center text-primary">
-                <UserCheck size={20} />
+
+              {/* Action Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={handleBookSession}
+                  disabled={bookingLoading}
+                  className="group relative flex flex-col items-center justify-center gap-3 p-6 bg-neutral-50 hover:bg-primary rounded-[2.5rem] transition-all duration-300"
+                >
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary group-hover:bg-white/20 group-hover:text-white transition-all shadow-sm">
+                    <Calendar size={24} />
+                  </div>
+                  <span className="text-xs font-black text-primary-900 group-hover:text-white transition-all uppercase tracking-tighter">
+                    {bookingLoading ? <Loader2 className="animate-spin" /> : (isRw ? 'Guhura' : 'Book Session')}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
+                      navigate('/chat');
+                    } else {
+                      showToast(isRw ? 'Utegereje ko muganga yemera...' : 'Waiting for professional approval...', 'error');
+                    }
+                  }}
+                  className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-[2.5rem] transition-all duration-300 ${
+                    activeSession?.status === 'confirmed' || activeSession?.status === 'active' 
+                      ? 'bg-primary-50 hover:bg-primary ring-2 ring-primary/20' 
+                      : 'bg-neutral-50/50 opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                    activeSession?.status === 'confirmed' || activeSession?.status === 'active'
+                      ? 'bg-white text-primary group-hover:bg-white/20 group-hover:text-white'
+                      : 'bg-neutral-100 text-neutral-300'
+                  }`}>
+                    <MessageCircle size={24} className={activeSession?.status === 'confirmed' ? 'animate-bounce' : ''} />
+                  </div>
+                  <span className={`text-xs font-black uppercase tracking-tighter transition-all ${
+                    activeSession?.status === 'confirmed' || activeSession?.status === 'active'
+                      ? 'text-primary-900 group-hover:text-white'
+                      : 'text-neutral-300'
+                  }`}>
+                    {isRw ? 'Kuvugana' : 'Start Chat'}
+                  </span>
+                  
+                  {(activeSession?.status === 'confirmed' || activeSession?.status === 'active') && (
+                    <div className="absolute top-4 right-4 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
+                  )}
+                </button>
               </div>
-            </div>
 
-            <div className="pt-4 space-y-3">
-              <button 
-                onClick={handleBookSession}
-                disabled={bookingLoading}
-                className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                {bookingLoading ? <Loader2 className="animate-spin" /> : <Calendar size={18} />}
-                {isRw ? 'Saba guhura na muganga' : 'Book Session'}
-              </button>
-
-              <button 
-                onClick={() => {
-                  if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
-                    navigate('/chat');
-                  } else {
-                    showToast(isRw ? 'Utegereje ko muganga yemera...' : 'Waiting for professional approval...', 'error');
-                  }
-                }}
-                className={`w-full py-5 border-2 border-neutral-50 font-black rounded-3xl flex items-center justify-center gap-2 transition-all ${
-                  activeSession?.status === 'confirmed' || activeSession?.status === 'active' 
-                    ? 'bg-primary-50 border-primary-100 text-primary hover:bg-primary hover:text-white' 
-                    : 'text-neutral-400 bg-neutral-50 opacity-60'
-                }`}
-              >
-                <MessageCircle size={18} />
-                {isRw ? 'Vugana na Muganga' : 'Message Professional'}
-              </button>
+              {/* Status Footer */}
+              <div className="pt-2 flex justify-center">
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-neutral-50 rounded-full border border-neutral-100">
+                  <div className={`w-1.5 h-1.5 rounded-full ${activeSession ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+                    {activeSession ? `Status: ${activeSession.status}` : 'Status: Ready to Connect'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
