@@ -66,9 +66,10 @@ export default function DoctorDashboard() {
     // 2. Assigned Patients
     const { data: patientList } = await supabase
       .from('patients')
-      .select('*, patient_info:profiles!inner(full_name, avatar_url, phone)')
+      .select('*, patient_info:profiles(full_name, avatar_url, phone)')
       .eq('doctor_id', user.id);
     setPatients(patientList || []);
+
 
 
     // 3. Today's Sessions
@@ -340,7 +341,7 @@ export default function DoctorDashboard() {
                           className={`p-4 flex items-center gap-4 border-b border-[#F8F5F2] hover:bg-neutral-50 transition-colors cursor-pointer ${selectedPatient?.id === p.id ? 'bg-emerald-50/50' : ''}`}
                         >
                           <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-black text-xs uppercase">
-                            {p.profiles?.full_name?.charAt(0)}
+                            {p.patient_info?.full_name?.charAt(0) || '?'}
                           </div>
                           <div className="flex-1">
                             <p className="text-xs font-black text-[#4A2C1A]">{p.patient_info?.full_name}</p>
