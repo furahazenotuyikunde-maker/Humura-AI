@@ -64,7 +64,8 @@ export default function AuthPage() {
         }
 
         setSuccess(true);
-        setTimeout(() => navigate(redirectTo), 1500);
+        const nextUrl = role === 'free' ? '/intake' : redirectTo;
+        setTimeout(() => navigate(nextUrl), 1500);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,

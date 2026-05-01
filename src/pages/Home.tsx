@@ -39,9 +39,47 @@ export default function Home() {
       
       const userRole = data?.role === 'doctor' || data?.plan_type === 'professional' ? 'doctor' : 'patient';
       setRole(userRole);
+
+      // Check if intake is completed
+      if (userRole === 'patient') {
+        const { data: patient } = await supabase
+          .from('patients')
+          .select('intake_completed_at')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (!patient?.intake_completed_at) {
+          navigate('/intake');
+        }
+      }
     }
     setLoading(false);
   };
+
+  const triggerSOS = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      // 1. Create Crisis Event
+      const { data: event } = await supabase.from('crisis_events').insert([{
+        patient_id: user.id,
+        trigger_type: 'SOS_button',
+        risk_level: 'high',
+        last_message: 'Patient triggered SOS button from dashboard'
+      }]).select().single();
+
+      // 2. Mock SMS/Alert (In real app, this calls Twilio)
+      alert(isRw ? 'Ubufasha buraje! Inshuti yawe na muganga bamenyeshejwe.' : 'Help is on the way! Your emergency contact and doctor have been notified.');
+      
+      navigate('/emergency');
+    } catch (err) {
+      console.error("SOS Error:", err);
+    }
+  };
+
+  // ... (rest of the component)
+
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
     const today = new Date().toISOString().split('T')[0];
     const stored = localStorage.getItem('Humura_moods');
@@ -284,21 +322,55 @@ export default function Home() {
       </section>
 
       {/* Quick crisis banner */}
-      <motion.button
-        onClick={() => navigate('/emergency')}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="w-full text-left flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-2xl hover:bg-red-100 transition-colors"
-      >
-        <Phone size={18} className="text-red-500 flex-shrink-0" />
-        <div className="flex-1 text-left">
-          <p className="font-bold text-red-900 text-xs">{isRw ? 'ubufasha bw’ihutirwa?' : 'Need immediate support?'}</p>
-          <p className="text-red-600 text-xs">116 (Free) · 114 · +250 790 003 002</p>
+      <div className="grid grid-cols-2 gap-3">
+        <motion.button
+          onClick={triggerSOS}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center gap-2 p-4 bg-red-600 text-white rounded-3xl shadow-lg shadow-red-200 hover:scale-[1.02] transition-all"
+        >
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+            <AlertTriangle size={24} />
+          </div>
+          <span className="font-black text-xs uppercase tracking-widest">{isRw ? 'UBUTABAZI' : 'SOS SIGNAL'}</span>
+        </motion.button>
+
+        <motion.button
+          onClick={() => navigate('/emergency')}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center gap-2 p-4 bg-white border-2 border-red-100 text-red-600 rounded-3xl hover:bg-red-50 transition-all"
+        >
+          <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
+            <Phone size={24} />
+          </div>
+          <span className="font-black text-xs uppercase tracking-widest">{isRw ? 'GUHAMAGARA' : 'CALL 116'}</span>
+        </motion.button>
+      </div>
+
+      {/* CBT & Sessions */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass-card rounded-3xl p-6 border-2 border-primary/10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-black text-primary-900">{isRw ? 'Umukoro wa CBT' : 'CBT Homework'}</h3>
+            <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-1 rounded-lg">1 PENDING</span>
+          </div>
+          <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100">
+            <p className="text-xs font-bold text-primary-900 mb-1">Morning thought record</p>
+            <p className="text-[10px] text-primary-600">Assigned by Dr. Uwimana</p>
+            <button className="mt-3 w-full py-2 bg-white text-primary text-[10px] font-black uppercase rounded-xl border border-primary-100">Start Task</button>
+          </div>
         </div>
 
-        <AlertTriangle size={16} className="text-red-400" />
-      </motion.button>
+        <div className="glass-card rounded-3xl p-6 border-2 border-emerald-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-black text-emerald-900">{isRw ? 'Ikiganiro na Muganga' : 'Therapy Session'}</h3>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          </div>
+          <p className="text-[10px] text-emerald-600 font-bold mb-4 uppercase tracking-wider">Next Session: Tomorrow, 9:30 AM</p>
+          <button className="w-full py-3 bg-emerald-600 text-white text-xs font-black uppercase rounded-2xl shadow-lg shadow-emerald-200">Join Room</button>
+        </div>
+      </section>
 
       {/* Sign Language highlight */}
       <motion.button

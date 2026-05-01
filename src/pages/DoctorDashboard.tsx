@@ -5,11 +5,11 @@ import {
   Users, Calendar, AlertCircle, TrendingUp, MessageSquare, 
   Search, Filter, ChevronRight, MoreVertical, Bell,
   FileText, Activity, Clock, Shield, Library, BarChart2,
-  Settings, LogOut, Phone, Send, Info
+  Settings, LogOut, Phone, Send, Info, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-// --- Sub-components (could be moved to separate files later) ---
+// --- Sub-components ---
 const StatCard = ({ label, value, sub, icon: Icon, color }: any) => (
   <div className="bg-white p-5 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between h-32">
     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{label}</p>
@@ -31,25 +31,63 @@ export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Live Data State
+  const [patients, setPatients] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [crisisAlerts, setCrisisAlerts] = useState<any[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
   useEffect(() => {
-    fetchDoctorProfile();
+    fetchInitialData();
+    setupRealtime();
   }, []);
 
-  const fetchDoctorProfile = async () => {
+  const fetchInitialData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('role, plan_type, full_name')
-        .eq('id', user.id)
-        .single();
-      
-      // If not a doctor/professional, we might want to redirect, but for now we let them stay
-      // so the user can verify the UI.
-      setDoctorProfile(data);
-    }
+    if (!user) return;
+
+    // 1. Doctor Profile
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    setDoctorProfile(profile);
+
+    // 2. Assigned Patients
+    const { data: patientList } = await supabase
+      .from('patients')
+      .select('*, profiles(full_name, avatar_url)')
+      .eq('doctor_id', user.id);
+    setPatients(patientList || []);
+
+    // 3. Today's Sessions
+    const today = new Date().toISOString().split('T')[0];
+    const { data: sessionList } = await supabase
+      .from('sessions')
+      .select('*, profiles:patient_id(full_name)')
+      .eq('doctor_id', user.id)
+      .gte('scheduled_at', today);
+    setSessions(sessionList || []);
+
+    // 4. Crisis Alerts
+    const { data: alerts } = await supabase
+      .from('crisis_events')
+      .select('*, profiles:patient_id(full_name)')
+      .is('resolved_at', null);
+    setCrisisAlerts(alerts || []);
+
     setLoading(false);
+  };
+
+  const setupRealtime = () => {
+    // Listen for new crisis events
+    supabase
+      .channel('clinical-ops')
+      .on('postgres_changes', { event: 'INSERT', table: 'crisis_events' }, payload => {
+        fetchInitialData(); // Simple refresh for now
+      })
+      .on('postgres_changes', { event: 'INSERT', table: 'messages' }, payload => {
+        // Notification logic for messages
+      })
+      .subscribe();
   };
 
   if (loading) return (
@@ -68,17 +106,16 @@ export default function DoctorDashboard() {
           </div>
           <div>
             <h1 className="font-black text-[#4A2C1A] text-lg leading-tight">Humura AI</h1>
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Mental health platform</p>
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Clinical Environment</p>
           </div>
         </div>
 
         <nav className="flex-1 space-y-1">
-          <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-4 px-2">Main</p>
           {[
             { id: 'dashboard', icon: Activity, label: 'Dashboard' },
-            { id: 'patients', icon: Users, label: 'My patients', count: 18 },
+            { id: 'patients', icon: Users, label: 'My patients', count: patients.length },
             { id: 'sessions', icon: Calendar, label: 'Sessions' },
-            { id: 'crisis', icon: AlertCircle, label: 'Crisis alerts', count: 2, danger: true },
+            { id: 'crisis', icon: AlertCircle, label: 'Crisis alerts', count: crisisAlerts.length, danger: true },
           ].map((item) => (
             <button
               key={item.id}
@@ -91,7 +128,7 @@ export default function DoctorDashboard() {
             >
               <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-neutral-400'} />
               {item.label}
-              {item.count && (
+              {item.count > 0 && (
                 <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-black ${
                   item.danger ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
                 }`}>
@@ -100,44 +137,16 @@ export default function DoctorDashboard() {
               )}
             </button>
           ))}
-
-          <div className="pt-8 space-y-1">
-            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-4 px-2">Tools</p>
-            {[
-              { id: 'cbt', icon: Library, label: 'CBT library' },
-              { id: 'insights', icon: BarChart2, label: 'Progress insights' },
-              { id: 'braille', icon: FileText, label: 'Braille export' },
-              { id: 'referrals', icon: MessageSquare, label: 'Referral letters' },
-            ].map((item) => (
-              <button key={item.id} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all">
-                <item.icon size={18} className="text-neutral-400" />
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="pt-8 space-y-1">
-            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-4 px-2">Admin</p>
-            {[
-              { id: 'reports', icon: FileText, label: 'Reports' },
-              { id: 'settings', icon: Settings, label: 'Settings' },
-            ].map((item) => (
-              <button key={item.id} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all">
-                <item.icon size={18} className="text-neutral-400" />
-                {item.label}
-              </button>
-            ))}
-          </div>
         </nav>
 
         <div className="mt-auto p-4 bg-[#F8F5F2] rounded-3xl border border-[#E8E1DB]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shadow-md">
-              DR
+              {doctorProfile?.full_name?.charAt(0) || 'DR'}
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs font-black text-[#4A2C1A] truncate">{doctorProfile?.full_name || 'Dr. Uwimana A.'}</p>
-              <p className="text-[9px] font-bold text-[#8B5E3C] uppercase tracking-tighter">Psychiatrist · Kigali</p>
+              <p className="text-xs font-black text-[#4A2C1A] truncate">{doctorProfile?.full_name}</p>
+              <p className="text-[9px] font-bold text-[#8B5E3C] uppercase tracking-tighter">{doctorProfile?.specialty || 'Psychiatrist'}</p>
             </div>
           </div>
         </div>
@@ -145,248 +154,150 @@ export default function DoctorDashboard() {
 
       {/* --- Main Content --- */}
       <main className="flex-1 ml-64 flex flex-col">
-        {/* Header */}
         <header className="h-20 bg-white border-b border-[#E8E1DB] flex items-center justify-between px-10 sticky top-0 z-40">
           <div>
-            <h2 className="text-xl font-black text-[#4A2C1A]">Good morning, Dr. Uwimana</h2>
+            <h2 className="text-xl font-black text-[#4A2C1A]">Good morning, {doctorProfile?.full_name?.split(' ')[0]}</h2>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex bg-[#F8F5F2] p-1 rounded-xl border border-[#E8E1DB]">
               <button className="px-3 py-1 text-[10px] font-black uppercase rounded-lg transition-all bg-white shadow-sm text-emerald-700">EN</button>
               <button className="px-3 py-1 text-[10px] font-black uppercase rounded-lg transition-all text-neutral-400 hover:text-neutral-600">RW</button>
             </div>
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-[#F8F5F2] border border-[#E8E1DB] flex items-center justify-center text-neutral-400 hover:text-emerald-600 cursor-pointer transition-colors">
-                <Bell size={18} />
-              </div>
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-50 text-red-600 text-[10px] font-black flex items-center justify-center rounded-full border border-red-100 shadow-sm">2</span>
-            </div>
           </div>
         </header>
 
         <div className="p-10 flex gap-8">
-          {/* Dashboard Body */}
           <div className="flex-1 space-y-8">
-            {/* Stats Row */}
+            {/* Live Stats */}
             <div className="grid grid-cols-3 gap-6">
-              <StatCard label="Today's Sessions" value="6" sub="Next: 9:30 AM" icon={Calendar} color="bg-emerald-500" />
-              <StatCard label="Active Patients" value="18" sub="3 new this week" icon={Users} color="bg-blue-500" />
-              <StatCard label="Crisis Alerts" value="2" sub="Needs attention" icon={AlertCircle} color="bg-red-500" />
+              <StatCard label="Today's Sessions" value={sessions.length} sub="Real-time" icon={Calendar} color="bg-emerald-500" />
+              <StatCard label="Active Patients" value={patients.length} sub={`${patients.filter(p => p.status === 'active').length} active`} icon={Users} color="bg-blue-500" />
+              <StatCard label="Crisis Alerts" value={crisisAlerts.length} sub="Immediate response" icon={AlertCircle} color="bg-red-500" />
             </div>
 
-            {/* Two Column Section */}
             <div className="grid grid-cols-2 gap-8">
-              {/* Patient Caseload */}
+              {/* Patient Caseload - Real Data */}
               <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] overflow-hidden flex flex-col h-[500px]">
                 <div className="p-6 border-b border-[#E8E1DB] flex items-center justify-between">
                   <h3 className="font-black text-[#4A2C1A]">Patient caseload</h3>
                   <button className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:underline">View all</button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {[
-                    { name: 'Mutesi Uwase', task: 'Anxiety disorder', session: 7, initial: 'MU', color: 'bg-emerald-100 text-emerald-600' },
-                    { name: 'Jean Ndayisaba', task: 'Depression', session: 3, initial: 'JN', color: 'bg-amber-100 text-amber-600' },
-                    { name: 'Aline Rugira', task: 'PTSD', session: 12, initial: 'AR', color: 'bg-blue-100 text-blue-600', active: true },
-                    { name: 'Emmanuel Keza', task: 'Grief', session: 5, initial: 'EK', color: 'bg-purple-100 text-purple-600' },
-                    { name: 'Claudine Akimana', task: 'Bipolar II', session: 9, initial: 'CA', color: 'bg-orange-100 text-orange-600' },
-                  ].map((p, i) => (
-                    <div key={i} className={`p-4 flex items-center gap-4 border-b border-[#F8F5F2] hover:bg-neutral-50 transition-colors cursor-pointer ${p.active ? 'bg-emerald-50/50' : ''}`}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs ${p.color}`}>
-                        {p.initial}
+                  {patients.length === 0 ? (
+                    <div className="p-10 text-center text-neutral-400 font-medium">No patients assigned yet.</div>
+                  ) : patients.map((p, i) => (
+                    <div 
+                      key={p.id} 
+                      onClick={() => setSelectedPatient(p)}
+                      className={`p-4 flex items-center gap-4 border-b border-[#F8F5F2] hover:bg-neutral-50 transition-colors cursor-pointer ${selectedPatient?.id === p.id ? 'bg-emerald-50/50' : ''}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-black text-xs uppercase">
+                        {p.profiles?.full_name?.charAt(0)}
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-black text-[#4A2C1A]">{p.name}</p>
-                        <p className="text-[10px] font-bold text-neutral-400">{p.task} · Session {p.session}</p>
+                        <p className="text-xs font-black text-[#4A2C1A]">{p.profiles?.full_name}</p>
+                        <p className="text-[10px] font-bold text-neutral-400">{p.primary_concern} · PHQ-9: {p.phq9_score}</p>
                       </div>
-                      {p.active && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                      <ChevronRight size={14} className="text-neutral-300" />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Active Session & Today's Appointments */}
+              {/* Active Context */}
               <div className="flex flex-col gap-6">
-                {/* Active Session Chat */}
-                <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] overflow-hidden flex flex-col flex-1">
-                  <div className="p-6 border-b border-[#E8E1DB] flex items-center justify-between bg-[#FDFCFB]/50">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-black text-[#4A2C1A]">Active session</h3>
-                      <span className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase rounded-full">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        Live
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-black text-[#4A2C1A]">Mutesi Uwase</p>
-                  </div>
-                  
-                  <div className="flex-1 p-6 space-y-4 overflow-y-auto text-xs bg-[#FDFCFB]/30">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-black text-[10px]">DR</div>
-                      <div className="bg-indigo-50 p-4 rounded-3xl rounded-tl-none max-w-[80%] text-[#4A2C1A] font-medium leading-relaxed">
-                        Muraho Mutesi, how have you been feeling since our last session?
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <div className="bg-neutral-100 p-4 rounded-3xl rounded-tr-none max-w-[80%] text-[#4A2C1A] font-medium leading-relaxed">
-                        I still feel worried a lot but I tried the breathing exercise. It helped a little.
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-[10px]">MU</div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-black text-[10px]">DR</div>
-                      <div className="bg-indigo-50 p-4 rounded-3xl rounded-tl-none max-w-[80%] text-[#4A2C1A] font-medium leading-relaxed">
-                        That is great to hear. Let's explore what triggered the worry this week.
-                      </div>
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <div className="bg-emerald-50/80 p-4 rounded-3xl border border-emerald-100 text-[11px] leading-relaxed text-emerald-900 font-medium relative">
-                        <div className="absolute -top-2 left-4 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black uppercase rounded-full">AI suggest</div>
-                        Consider introducing a thought record to work on the "worry" — patient shows readiness to identify cognitive distortions. Possible pattern: catastrophic...
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                 {selectedPatient ? (
+                   <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-6 space-y-4 flex-1">
+                     <div className="flex items-center justify-between">
+                       <h3 className="font-black text-[#4A2C1A]">Patient Insights</h3>
+                       <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">{selectedPatient.status}</span>
+                     </div>
+                     <div className="space-y-3">
+                       <div className="p-4 bg-neutral-50 rounded-2xl">
+                         <p className="text-[9px] font-black text-neutral-400 uppercase mb-1">Primary Concern</p>
+                         <p className="text-sm font-black text-primary-900 capitalize">{selectedPatient.primary_concern}</p>
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div className="p-4 bg-neutral-50 rounded-2xl">
+                           <p className="text-[9px] font-black text-neutral-400 uppercase mb-1">PHQ-9 (Depression)</p>
+                           <p className="text-sm font-black text-primary-900">{selectedPatient.phq9_score}/27</p>
+                         </div>
+                         <div className="p-4 bg-neutral-50 rounded-2xl">
+                           <p className="text-[9px] font-black text-neutral-400 uppercase mb-1">GAD-7 (Anxiety)</p>
+                           <p className="text-sm font-black text-primary-900">{selectedPatient.gad7_score}/21</p>
+                         </div>
+                       </div>
+                       <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                         <p className="text-[9px] font-black text-red-400 uppercase mb-1">Risk Assessment</p>
+                         <p className="text-sm font-black text-red-900">
+                           {selectedPatient.self_harm_flag ? '⚠️ Self-harm reported in intake' : 'Low clinical risk'}
+                         </p>
+                       </div>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="bg-white rounded-[2.5rem] border border-dashed border-[#E8E1DB] flex-1 flex flex-col items-center justify-center p-10 text-center">
+                     <Users size={48} className="text-neutral-100 mb-4" />
+                     <p className="text-neutral-400 font-bold">Select a patient from caseload to view live clinical context.</p>
+                   </div>
+                 )}
 
-                {/* Today's Appointments Horizontal */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-[#E8E1DB]">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-black text-[#4A2C1A] text-sm">Today's appointments</h3>
-                    <button className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:underline">Full calendar</button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                      <p className="text-[10px] font-black text-[#4A2C1A]">9:30</p>
-                      <div>
-                        <p className="text-xs font-black text-[#4A2C1A]">Mutesi U.</p>
-                        <p className="text-[9px] font-bold text-neutral-400">CBT session</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                      <p className="text-[10px] font-black text-[#4A2C1A]">11:00</p>
-                      <div>
-                        <p className="text-xs font-black text-[#4A2C1A]">Jean N.</p>
-                        <p className="text-[9px] font-bold text-neutral-400">Crisis follow-up</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                 {/* Appointments - Live */}
+                 <div className="bg-white p-6 rounded-[2.5rem] border border-[#E8E1DB]">
+                   <h3 className="font-black text-[#4A2C1A] text-sm mb-4">Today's appointments</h3>
+                   <div className="space-y-3">
+                     {sessions.length === 0 ? (
+                       <p className="text-xs text-neutral-400">No sessions scheduled for today.</p>
+                     ) : sessions.slice(0, 2).map((s, i) => (
+                       <div key={s.id} className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100">
+                         <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                         <p className="text-[10px] font-black text-[#4A2C1A]">{new Date(s.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                         <div>
+                           <p className="text-xs font-black text-[#4A2C1A]">{s.profiles?.full_name}</p>
+                           <p className="text-[9px] font-bold text-neutral-400">Scheduled Session</p>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Sidebar Area */}
+          {/* Crisis alerts - Real Data */}
           <div className="w-80 space-y-6">
-            {/* Crisis Alerts (Right Sidebar) */}
             <div className="bg-red-50 border border-red-100 p-6 rounded-[2.5rem] space-y-4">
-              <h3 className="text-[10px] font-black text-red-400 uppercase tracking-widest">Crisis alerts (114)</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
+              <h3 className="text-[10px] font-black text-red-400 uppercase tracking-widest">Live Crisis alerts ({crisisAlerts.length})</h3>
+              {crisisAlerts.length === 0 ? (
+                <p className="text-xs text-red-700/50">No active alerts. System stable.</p>
+              ) : crisisAlerts.map(alert => (
+                <div key={alert.id} className="space-y-2 pb-4 border-b border-red-100 last:border-0 last:pb-0">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                    <p className="text-xs font-black text-red-900">Jean Ndayisaba</p>
+                    <p className="text-xs font-black text-red-900">{alert.profiles?.full_name}</p>
                   </div>
-                  <p className="text-[9px] font-bold text-red-600/60 uppercase">SOS triggered · 08:14 AM · Kigali</p>
-                  <p className="text-[10px] font-medium text-red-800 leading-relaxed bg-white/50 p-2 rounded-xl border border-red-100">AI risk: High · Last msg: "I can't do this"</p>
+                  <p className="text-[9px] font-bold text-red-600/60 uppercase">{alert.trigger_type} · {new Date(alert.triggered_at).toLocaleTimeString()}</p>
+                  <p className="text-[10px] font-medium text-red-800 bg-white/50 p-2 rounded-xl border border-red-100 italic">"{alert.last_message}"</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button className="py-2 bg-white text-red-600 text-[10px] font-black uppercase rounded-lg">Call</button>
+                    <button className="py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">Resolve</button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button className="py-2.5 bg-white border border-red-200 text-red-600 text-[10px] font-black uppercase rounded-xl hover:bg-red-100 transition-colors">Call 114</button>
-                  <button className="py-2.5 bg-[#4A2C1A] text-white text-[10px] font-black uppercase rounded-xl hover:bg-black transition-colors">Message</button>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* CBT Progress */}
-            <div className="bg-white border border-[#E8E1DB] p-6 rounded-[2.5rem] space-y-4">
-              <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">CBT progress</h3>
-              <div className="space-y-3">
-                {[
-                  { name: 'Mutesi U.', prog: 72, color: 'bg-emerald-500' },
-                  { name: 'Aline R.', prog: 58, color: 'bg-indigo-500' },
-                  { name: 'Emmanuel K.', prog: 45, color: 'bg-blue-500' },
-                  { name: 'Jean N.', prog: 21, color: 'bg-orange-500' },
-                ].map((p, i) => (
-                  <div key={i} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-[10px] font-bold">
-                      <span className="text-[#4A2C1A]">{p.name}</span>
-                      <span className="text-neutral-400">{p.prog}%</span>
-                    </div>
-                    <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${p.color}`} style={{ width: `${p.prog}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Mood Trend Chart */}
-            <div className="bg-white border border-[#E8E1DB] p-6 rounded-[2.5rem] space-y-4">
-              <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Mutesi — mood trend</h3>
-              <div className="flex items-end justify-between h-20 gap-1.5">
-                {[30, 45, 40, 65, 55, 80, 75].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                    <div 
-                      className={`w-full rounded-md transition-all ${i === 6 ? 'bg-emerald-900' : 'bg-emerald-600/60 group-hover:bg-emerald-600'}`} 
-                      style={{ height: `${h}%` }} 
-                    />
-                    <span className="text-[8px] font-bold text-neutral-400 uppercase">W{i+1}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Accessibility Tools */}
-            <div className="bg-white border border-[#E8E1DB] p-6 rounded-[2.5rem] space-y-4">
-              <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Accessibility tools</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: 'Sign language', icon: '🟢' },
-                  { label: 'Braille export', icon: '⚪' },
-                  { label: 'Kinyarwanda', icon: '🟢' },
-                  { label: 'High contrast', icon: '⚪' },
-                ].map((t, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 bg-[#F8F5F2] rounded-xl border border-[#E8E1DB]">
-                    <span className="text-[8px]">{t.icon}</span>
-                    <span className="text-[9px] font-bold text-[#4A2C1A]">{t.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* AI Insight of the Day */}
-            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2.5rem] space-y-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Info size={48} className="text-indigo-900" />
-              </div>
-              <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">AI insight of the day</h3>
+            {/* AI Clinical Insight */}
+            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2.5rem] space-y-4">
+              <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Clinical Insight</h3>
               <p className="text-xs font-medium text-indigo-900 leading-relaxed">
-                3 of your patients show improving mood scores this week. Aline R. may benefit from graduated exposure therapy based on session patterns.
+                Gemini is monitoring patient activity. {patients.length > 0 ? `Analyzing data for ${patients.length} active cases.` : 'Waiting for more patient data to generate trends.'}
               </p>
-              <button className="text-[10px] font-bold text-indigo-600 hover:underline">Ask AI for full report →</button>
+              <button className="text-[10px] font-bold text-indigo-600 hover:underline">Request clinical summary →</button>
             </div>
           </div>
         </div>
       </main>
-
-      {/* --- Mobile Bottom Nav (not shown in desktop image but kept for responsiveness) --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E8E1DB] h-16 flex items-center justify-around z-50">
-        <Activity size={24} className="text-emerald-600" />
-        <Users size={24} className="text-neutral-400" />
-        <Calendar size={24} className="text-neutral-400" />
-        <AlertCircle size={24} className="text-neutral-400" />
-      </nav>
     </div>
   );
 }
-
-const Loader2 = ({ className, size }: any) => (
-  <svg 
-    className={`animate-spin ${className}`} 
-    width={size} height={size} 
-    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-  >
-    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-  </svg>
-);
 

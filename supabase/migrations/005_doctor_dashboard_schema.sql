@@ -1,107 +1,147 @@
--- Migration 005: Doctor Dashboard Schema (Robust Version)
--- Drop existing tables to ensure clean schema application
+-- Migration 005: Comprehensive Patient-Doctor Architecture
+-- Drop existing tables for a clean slate
 DROP TABLE IF EXISTS public.progress_reports CASCADE;
 DROP TABLE IF EXISTS public.crisis_events CASCADE;
+DROP TABLE IF EXISTS public.cbt_homework CASCADE;
 DROP TABLE IF EXISTS public.messages CASCADE;
 DROP TABLE IF EXISTS public.sessions CASCADE;
+DROP TABLE IF EXISTS public.mood_logs CASCADE;
 DROP TABLE IF EXISTS public.patients CASCADE;
 
--- 1. Update profiles table
+-- 1. Profiles (Users)
+-- Note: 'profiles' already exists, we're adding/confirming columns
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'patient' CHECK (role IN ('patient', 'doctor', 'admin'));
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS disability_flags TEXT[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS language_pref TEXT DEFAULT 'en' CHECK (language_pref IN ('en', 'rw'));
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS disability_flags TEXT[] DEFAULT '{}';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS age INTEGER;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS specialty TEXT; -- For doctors
 
--- Data Migration: Map plan_type to role
-UPDATE public.profiles SET role = 'doctor' WHERE plan_type = 'professional';
-UPDATE public.profiles SET role = 'patient' WHERE role IS NULL;
-
--- 2. Create patients table
+-- 2. Patients Table (Extended)
 CREATE TABLE public.patients (
-    id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     doctor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-    diagnosis TEXT,
-    program_id TEXT,
-    risk_level TEXT DEFAULT 'low' CHECK (risk_level IN ('low', 'medium', 'high')),
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'at-risk', 'discharged')),
-    age INTEGER,
-    location TEXT,
-    preferred_language TEXT DEFAULT 'rw',
-    emergency_contact JSONB,
+    primary_concern TEXT,
+    concern_duration TEXT,
+    phq9_score INTEGER,
+    gad7_score INTEGER,
+    self_harm_flag BOOLEAN DEFAULT FALSE,
+    intake_completed_at TIMESTAMPTZ,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'discharged')),
+    emergency_contact JSONB, -- {name, phone}
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Create sessions table
+-- 3. Mood Logs
+CREATE TABLE public.mood_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    logged_at TIMESTAMPTZ DEFAULT NOW(),
+    mood_score INTEGER CHECK (mood_score BETWEEN 1 AND 10),
+    energy_level INTEGER CHECK (energy_level BETWEEN 1 AND 10),
+    notes TEXT,
+    emoji TEXT,
+    session_id UUID -- Nullable link to a session
+);
+
+-- 4. Sessions
 CREATE TABLE public.sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     doctor_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    date TIMESTAMPTZ DEFAULT NOW(),
-    type TEXT DEFAULT 'chat' CHECK (type IN ('chat', 'voice')),
+    scheduled_at TIMESTAMPTZ,
+    started_at TIMESTAMPTZ,
+    ended_at TIMESTAMPTZ,
+    status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'active', 'completed', 'missed')),
     soap_note JSONB, -- {subjective, objective, assessment, plan}
-    signed_at TIMESTAMPTZ,
+    patient_rating INTEGER CHECK (patient_rating BETWEEN 1 AND 5),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Create messages table
+-- 5. Messages
 CREATE TABLE public.messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sender_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     receiver_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
+    language TEXT DEFAULT 'en',
     translated_content TEXT,
     sent_at TIMESTAMPTZ DEFAULT NOW(),
-    is_read BOOLEAN DEFAULT FALSE
+    read_at TIMESTAMPTZ
 );
 
--- 5. Create crisis_events table
+-- 6. CBT Homework
+CREATE TABLE public.cbt_homework (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    session_id UUID REFERENCES public.sessions(id) ON DELETE SET NULL,
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    task_description TEXT NOT NULL,
+    completed_at TIMESTAMPTZ,
+    patient_response TEXT
+);
+
+-- 7. Crisis Events
 CREATE TABLE public.crisis_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     triggered_at TIMESTAMPTZ DEFAULT NOW(),
+    trigger_type TEXT CHECK (trigger_type IN ('SOS_button', 'AI_detected')),
+    last_message TEXT,
+    location JSONB, -- {lat, lng, district}
     risk_level TEXT CHECK (risk_level IN ('low', 'medium', 'high')),
     resolved_at TIMESTAMPTZ,
-    notes TEXT,
-    location JSONB -- {lat, lng}
+    resolved_by UUID REFERENCES public.profiles(id)
 );
 
--- 6. Create progress_reports table
+-- 8. Progress Reports
 CREATE TABLE public.progress_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     generated_at TIMESTAMPTZ DEFAULT NOW(),
     mood_trend TEXT CHECK (mood_trend IN ('improving', 'stable', 'declining')),
-    ai_summary TEXT,
-    engagement_score INTEGER,
-    recommended_steps TEXT[]
+    avg_mood_score DECIMAL,
+    sessions_completed INTEGER DEFAULT 0,
+    homework_completion_rate DECIMAL DEFAULT 0,
+    ai_summary TEXT
 );
 
--- Enable RLS for all
+-- Enable RLS
 ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mood_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cbt_homework ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crisis_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.progress_reports ENABLE ROW LEVEL SECURITY;
 
--- 7. Policies
+-- 9. RLS Policies
 -- Patients
-CREATE POLICY "Patients can see their own data" ON public.patients FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Patients can see their sessions" ON public.sessions FOR SELECT USING (auth.uid() = patient_id);
-CREATE POLICY "Patients can see their messages" ON public.messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-CREATE POLICY "Patients can send messages" ON public.messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
+CREATE POLICY "Patients view own profile" ON public.patients FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Patients manage own mood" ON public.mood_logs FOR ALL USING (auth.uid() = patient_id);
+CREATE POLICY "Patients see own homework" ON public.cbt_homework FOR SELECT USING (auth.uid() = patient_id);
+CREATE POLICY "Patients update own homework" ON public.cbt_homework FOR UPDATE USING (auth.uid() = patient_id);
+CREATE POLICY "Patients see own sessions" ON public.sessions FOR SELECT USING (auth.uid() = patient_id);
 
 -- Doctors
-CREATE POLICY "Doctors can manage their patients" ON public.patients FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor') AND (doctor_id = auth.uid() OR doctor_id IS NULL)
+CREATE POLICY "Doctors see assigned patients" ON public.patients FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor') AND (doctor_id = auth.uid())
 );
-
-CREATE POLICY "Doctors can manage sessions" ON public.sessions FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor') AND doctor_id = auth.uid()
+CREATE POLICY "Doctors manage assigned sessions" ON public.sessions FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor') AND (doctor_id = auth.uid())
 );
-
-CREATE POLICY "Doctors can manage reports" ON public.progress_reports FOR ALL USING (
+CREATE POLICY "Doctors manage assigned homework" ON public.cbt_homework FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.profiles p JOIN public.patients pt ON p.id = pt.doctor_id WHERE p.id = auth.uid() AND pt.id = patient_id)
+);
+CREATE POLICY "Doctors see assigned patient mood" ON public.mood_logs FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.patients WHERE id = patient_id AND doctor_id = auth.uid())
+);
+CREATE POLICY "Doctors see all crisis events" ON public.crisis_events FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor')
 );
 
-CREATE POLICY "Crisis alerts are public to doctors" ON public.crisis_events FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'doctor')
-);
+-- Messages
+CREATE POLICY "Users view own messages" ON public.messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "Users send messages" ON public.messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
