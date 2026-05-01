@@ -231,6 +231,8 @@ export default function DoctorDashboard() {
                     </div>
                   </div>
                 </div>
+
+                <AnalyticsOverview />
               </motion.div>
             )}
 
