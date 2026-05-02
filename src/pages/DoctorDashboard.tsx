@@ -242,21 +242,20 @@ export default function DoctorDashboard() {
       const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctor/generate-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: patient.id })
+        body: JSON.stringify({
+          dataContext: {
+            primary_concern: patient.primary_concern,
+            phq9: patient.phq9_score,
+            gad7: patient.gad7_score,
+            status: patient.status
+          }
+        })
       });
 
-      if (!response.ok) {
-        throw new Error(isRw ? "Seriveri ntishoboye gusubiza neza" : "Server failed to generate report. Please try again.");
-      }
-
       const data = await response.json();
-      if (data.success) {
-        showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : "Clinical summary generated");
-      } else {
-        throw new Error(data.error || "Generation failed");
-      }
+      showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : "Clinical summary generated");
     } catch (err: any) {
-      showToast(err.message.includes('Unexpected token') ? (isRw ? "Ikibazo kuri Seriveri" : "Server connectivity issue") : err.message, 'error');
+      showToast(err.message, 'error');
     } finally {
       setActionLoading(null);
     }
