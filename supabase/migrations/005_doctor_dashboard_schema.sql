@@ -106,7 +106,8 @@ CREATE TABLE public.progress_reports (
     avg_mood_score DECIMAL,
     sessions_completed INTEGER DEFAULT 0,
     homework_completion_rate DECIMAL DEFAULT 0,
-    ai_summary TEXT
+    ai_summary TEXT,
+    recommendations TEXT[] DEFAULT '{}'
 );
 
 -- Enable RLS
