@@ -29,13 +29,18 @@ async function callAI(prompt) {
 
 // OMNI-PATH: Handle both /api/ and direct paths for Real-Time Progress
 const handleProgress = async (req, res) => {
-  const { moods, journals, isSignLanguage, userId } = req.body;
+  const { moods, journals, isSignLanguage } = req.body;
   
-  // High-performance bilingual prompt with SL awareness
-  const prompt = `Analyze this mood data: ${JSON.stringify(moods)}. 
-  Journals: ${JSON.stringify(journals)}.
-  Accessibility: ${isSignLanguage ? 'User uses Sign Language. Tips must be visual/video-first.' : 'Standard'}.
-  Return ONLY a JSON object: { "success": true, "summary": "...", "recommendations": [] }`;
+  const prompt = `You are an AI Wellness Companion in Rwanda. 
+  Analyze this Patient's data independently:
+  - Recent Moods: ${JSON.stringify(moods)}
+  - Journals: ${JSON.stringify(journals)}
+  - Accessibility: ${isSignLanguage ? 'Patient communicates via Sign Language' : 'None'}
+
+  Return ONLY a valid JSON object:
+  { "success": true, "summary": "...", "recommendations": [] }
+  
+  If Sign Language is active, provide visual-first tips in English and Kinyarwanda.`;
 
   try {
     const result = await callAI(prompt);
@@ -43,7 +48,7 @@ const handleProgress = async (req, res) => {
   } catch (e) {
     res.status(200).json({ 
       success: true, 
-      summary: "You are showing steady progress. / Umeze neza uyu munsi.", 
+      summary: "Umeze neza uyu munsi. / You are showing steady progress.", 
       recommendations: ["Keep logging your daily journey", "Stay hydrated and active"] 
     });
   }
