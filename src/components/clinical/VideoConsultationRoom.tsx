@@ -21,6 +21,7 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showSignLanguage, setShowSignLanguage] = useState(false);
   const [showNotes, setShowNotes] = useState(role === 'doctor');
   const [messages, setMessages] = useState<any[]>([
     { role: 'system', content: isRw ? 'Guhura kwatangiye' : 'Session started' }
@@ -125,6 +126,33 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
                  </div>
                )}
             </div>
+
+            {/* Sign Language Overlay */}
+            <AnimatePresence>
+              {showSignLanguage && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="absolute bottom-6 right-6 w-64 aspect-video bg-neutral-900 rounded-3xl border-2 border-primary shadow-2xl overflow-hidden z-40"
+                >
+                  <div className="w-full h-full relative flex items-center justify-center bg-neutral-800">
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">🤟</div>
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest">SL Interpreter</p>
+                    </div>
+                    <div className="absolute top-2 right-2 flex gap-1">
+                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
+                      <p className="text-[9px] text-white/80 font-medium italic truncate">
+                        {messages[messages.length-1]?.content || 'Waiting...'}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* In-Video Controls */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500 z-30">
@@ -293,7 +321,11 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
           
           <div className="h-10 w-[1px] bg-white/10 mx-4" />
 
-          <button className="p-4 bg-white/5 text-white rounded-2xl hover:bg-white/10 transition-all">
+          <button 
+            onClick={() => setShowSignLanguage(!showSignLanguage)}
+            className={`p-4 rounded-2xl transition-all ${showSignLanguage ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 text-white hover:bg-white/10'}`}
+            aria-label="Toggle Sign Language Interpreter"
+          >
             <HandMetal size={20} />
           </button>
           <button className="p-4 bg-white/5 text-white rounded-2xl hover:bg-white/10 transition-all">

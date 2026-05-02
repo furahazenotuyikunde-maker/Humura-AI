@@ -252,15 +252,19 @@ export default function DoctorDashboard() {
           }
         })
       });
+
+      if (!response.ok) {
+        throw new Error(isRw ? "Seriveri ntishoboye gusubiza neza" : "Server failed to generate report. Please try again.");
+      }
+
       const data = await response.json();
       if (data.success) {
         showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : "Clinical summary generated");
-        // Optionally update UI with the new report
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || "Generation failed");
       }
     } catch (err: any) {
-      showToast(err.message, 'error');
+      showToast(err.message.includes('Unexpected token') ? (isRw ? "Ikibazo kuri Seriveri" : "Server connectivity issue") : err.message, 'error');
     } finally {
       setActionLoading(null);
     }
