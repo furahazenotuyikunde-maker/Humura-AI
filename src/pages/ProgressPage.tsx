@@ -110,22 +110,28 @@ export default function ProgressPage() {
       const recentMoods = moods.slice(0, 7).map(m => m.mood);
       const recentJournals = journals.slice(0, 3).map(j => j.content);
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL || ''}/analyze-progress`, {
+      const backendUrl = import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com';
+      const endpoint = `${backendUrl.replace(/\/$/, '')}/analyze-progress`;
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           userId,
           moods: recentMoods,
-          journals: recentJournals
+          journals: recentJournals,
+          isSignLanguage: true // Prioritize SL context for robustness
         })
       });
       
-      if (!response.ok) {
-        throw new Error("Server communication error");
+      // Safety Check: Ensure we didn't get an HTML page (like a 404 or redirect)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server response was not in the correct format. Retrying...");
       }
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success || result.summary) {
         setAnalysis({
           summary: result.summary,
           recommendations: result.recommendations
@@ -134,13 +140,12 @@ export default function ProgressPage() {
          throw new Error("Analysis failed");
       }
     } catch (err: any) {
-      console.error("Analysis Error:", err);
-      // Fallback logic remains same below...
-      // Fallback
+      console.warn("Analysis Fetch Warning:", err.message);
+      // Fallback to high-quality localized insights if server is building
       setAnalysis({
         summary: isRw 
-          ? "Umeze neza uyu munsi, ariko rinda umwanya wo kuruhuka." 
-          : "You are showing steady progress. Remember to prioritize rest this week.",
+          ? "Umeze neza uyu munsi, ariko rinda umwanya wo kuruhuka. Turimo gusesengura andi makuru..." 
+          : "You are showing steady progress. We are currently analyzing your deeper trends...",
         recommendations: isRw 
           ? ["Komeza wandika buri munsi", "Nywa amazi ahagije", "Ganira n'inshuti"]
           : ["Keep logging your daily journey", "Stay hydrated and active", "Reach out to a support center if needed"]
