@@ -110,35 +110,36 @@ export default function ProgressPage() {
       const recentJournals = journals.slice(0, 3).map(j => j.content);
 
       const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
-      const endpoint = `${backendUrl}/analyze-progress`;
       
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ userId, moods: recentMoods, journals: recentJournals, isSignLanguage: true })
-      });
-      
-      const text = await response.text();
-      if (text.trim().startsWith('{')) {
-        const result = JSON.parse(text);
-        setAnalysis({
-          summary: result.summary,
-          recommendations: result.recommendations || []
-        });
-        return;
+      // Multi-Path Scanning: Try all possible routes for Gemini
+      const paths = [`${backendUrl}/analyze-progress`, `${backendUrl}/api/analyze-progress` ];
+      let lastError = null;
+
+      for (const endpoint of paths) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ userId, moods: recentMoods, journals: recentJournals, isSignLanguage: true })
+          });
+          
+          const text = await response.text();
+          if (text.trim().startsWith('{')) {
+            const result = JSON.parse(text);
+            setAnalysis({
+              summary: result.summary,
+              recommendations: result.recommendations || []
+            });
+            return; // Success!
+          }
+        } catch (e) {
+          lastError = e;
+        }
       }
-      throw new Error("Format Mismatch");
-    } catch (err) {
-      // SILENT FALLBACK: Never show a red toast for this
-      console.warn("Resilience Mode Active");
-      setAnalysis({
-        summary: isRw 
-          ? "Umeze neza uyu munsi, kandi turabona intambwe nshya mu buzima bwawe bwo mu mutwe. Komeza wandika uko wiyumva." 
-          : "You are showing steady progress, and we see positive growth in your mental wellness journey. Keep logging your feelings.",
-        recommendations: isRw 
-          ? ["Komeza wandika buri munsi", "Nywa amazi ahagije", "Ganira n'inshuti wizera"]
-          : ["Keep logging your daily journey", "Stay hydrated and active", "Connect with someone you trust"]
-      });
+      throw lastError || new Error("AI Server Unreachable");
+    } catch (err: any) {
+      console.error("Gemini Scan Error:", err.message);
+      showToast(isRw ? "AI iracyiga amakuru yawe, mwongere kanda..." : "Gemini is still analyzing your context. Please try again in a moment.", 'error');
     } finally {
       setIsAnalyzing(false);
     }
