@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, 
   ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy,
-  BookOpen, Plus, Heart, History, Trash2
+  BookOpen, Plus, Heart, History, Trash2, AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
