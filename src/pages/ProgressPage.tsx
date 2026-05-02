@@ -258,7 +258,7 @@ export default function ProgressPage() {
               <p className={`text-[10px] font-bold uppercase tracking-widest ${activeTab === 'journal' ? 'text-white/60' : 'text-neutral-400'}`}>{journals.length} {isRw ? 'Inyandiko' : 'Entries'}</p>
             </div>
           </button>
-        </div>
+        </header>
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Main Visualization Content */}
