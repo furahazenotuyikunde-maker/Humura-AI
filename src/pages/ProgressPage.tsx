@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, 
   ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy,
-  BookOpen, Plus, Heart, History, Trash2, AlertTriangle
+  BookOpen, Plus, Heart, History, Trash2, AlertTriangle, Video
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
+import { useClinicalEvents } from '../hooks/useClinicalEvents';
+import VideoConsultationRoom from '../components/clinical/VideoConsultationRoom';
 
 interface MoodLog {
   created_at: string;
@@ -38,7 +40,24 @@ export default function ProgressPage() {
   
   // Journal Form State
   const [newJournal, setNewJournal] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState('😊');
+  const [user, setUser] = useState<any>(null);
   const [isSavingJournal, setIsSavingJournal] = useState(false);
+
+  const { activeSession } = useClinicalEvents(user?.id, 'patient');
+  const [isRoomOpen, setIsRoomOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeSession?.status === 'active') {
+      setIsRoomOpen(true);
+    } else {
+      setIsRoomOpen(false);
+    }
+  }, [activeSession?.status]);
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
 
   const moodMap: Record<string, number> = {
     'happy': 5, 'calm': 4, 'neutral': 3, 'sad': 2, 'stressed': 1, 'angry': 1
@@ -48,15 +67,12 @@ export default function ProgressPage() {
     ? ['Kwe', 'Kab', 'Gat', 'Kan', 'Gat', 'Saa', 'Dim'] 
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
   const fetchInitialData = async () => {
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       const userId = session.user.id;
+      setUser(session.user);
       await Promise.all([
         fetchMoodData(userId),
         fetchJournalData(userId)
@@ -178,11 +194,49 @@ export default function ProgressPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-20 px-6">
-      <div className="max-w-4xl mx-auto space-y-10">
-        
-        {/* Selection Cards */}
-        <div className="grid grid-cols-2 gap-4">
+    <div className="min-h-screen bg-[#FDFCFB] p-6 lg:p-10">
+      {/* Video Room Overlay */}
+      <AnimatePresence>
+        {isRoomOpen && activeSession && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100]">
+            <VideoConsultationRoom 
+               session={{ profiles: { full_name: 'Dr. Kalisa' } }} 
+               role="patient"
+               onEnd={() => setIsRoomOpen(false)} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="max-w-6xl mx-auto space-y-10">
+        {/* Active Session Notification */}
+        <AnimatePresence>
+          {activeSession?.status === 'active' && !isRoomOpen && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }} 
+              animate={{ height: 'auto', opacity: 1 }}
+              className="bg-primary text-white p-6 rounded-[2.5rem] shadow-xl shadow-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 mb-10"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse">
+                  <Video className="text-white" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg">{isRw ? 'Guhura kwanjye kuri Live!' : 'Your Session is Live!'}</h3>
+                  <p className="text-sm font-bold opacity-80">{isRw ? 'Umuganga wawe aragutegereje.' : 'Your doctor is waiting for you in the video room.'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsRoomOpen(true)}
+                className="px-8 py-3 bg-white text-primary font-black rounded-2xl shadow-lg hover:scale-105 transition-all"
+              >
+                {isRw ? 'Injira ubu' : 'Join Now'}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <button 
             onClick={() => setActiveTab('mood')}
             className={`p-6 rounded-[2.5rem] border-2 transition-all text-left flex flex-col justify-between h-40 ${activeTab === 'mood' ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'bg-white border-neutral-100 text-primary-900'}`}

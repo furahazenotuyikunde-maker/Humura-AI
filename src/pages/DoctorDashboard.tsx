@@ -13,6 +13,7 @@ import { useClinicalEvents } from '../hooks/useClinicalEvents';
 import { io } from 'socket.io-client';
 import AnalyticsOverview from '../components/doctor/AnalyticsOverview';
 import PatientManagement from '../components/doctor/PatientManagement';
+import VideoConsultationRoom from '../components/clinical/VideoConsultationRoom';
 
 
 // --- Sub-components ---
@@ -46,6 +47,7 @@ export default function DoctorDashboard() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [crisisAlerts, setCrisisAlerts] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [currentSession, setCurrentSession] = useState<any>(null);
   const [moodLogs, setMoodLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -217,6 +219,14 @@ export default function DoctorDashboard() {
       };
 
       showToast(statusLabels[status]);
+      
+      if (status === 'active') {
+        const { data: sessionData } = await supabase.from('sessions').select('*, profiles:patient_id(full_name)').eq('id', sessionId).single();
+        setCurrentSession(sessionData);
+      } else if (status === 'completed' || status === 'missed') {
+        setCurrentSession(null);
+      }
+
       fetchInitialData();
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -286,6 +296,19 @@ export default function DoctorDashboard() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex">
+      {/* Video Consultation Overlay */}
+      <AnimatePresence>
+        {currentSession && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100]">
+            <VideoConsultationRoom 
+              session={currentSession} 
+              role="doctor"
+              onEnd={() => handleUpdateSessionStatus(currentSession.id, 'completed')} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
