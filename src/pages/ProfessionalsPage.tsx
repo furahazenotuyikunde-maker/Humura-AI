@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
@@ -20,16 +20,14 @@ interface Professional {
   avatar_url?: string;
 }
 
-// Hardcoded doctors removed. Using live database data only.0 to-teal-600',
-    mode: ['online', 'phone'],
-  },
-];
-
+// Professionals are fetched dynamically from the database.
 const modeLabels = {
   'in-person': { emoji: '🏥', label: 'In-Person', labelRw: 'Ahantu' },
   'online': { emoji: '💻', label: 'Online', labelRw: 'Kuri Internet' },
   'phone': { emoji: '📱', label: 'Phone', labelRw: 'Telefoni' },
 };
+
+const specialties = ['all', 'Anxiety', 'Depression', 'Trauma', 'PTSD', 'Bipolar', 'Youth'];
 
 export default function ProfessionalsPage() {
   const { i18n } = useTranslation();

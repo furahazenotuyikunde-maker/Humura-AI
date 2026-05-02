@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Calendar, AlertCircle, TrendingUp, MessageSquare, 
@@ -32,6 +33,7 @@ const StatCard = ({ label, value, sub, icon: Icon, color }: any) => (
 
 export default function DoctorDashboard() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const isRw = i18n.language?.startsWith('rw');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [doctorProfile, setDoctorProfile] = useState<any>(null);

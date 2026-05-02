@@ -87,26 +87,27 @@ export default function AuthPage() {
         setTimeout(() => navigate(role === 'patient' ? '/intake' : '/doctor'), 1500);
       } else {
         // Login logic
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: email || `${phone}@humura.ai`,
           password
         });
 
         if (signInError) throw signInError;
+
         // Fetch role to decide where to navigate
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user?.id)
-        .single();
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', signInData.user?.id)
+          .single();
       
-      const userRole = prof?.role || 'patient';
+        const userRole = prof?.role || 'patient';
       
-      if (userRole === 'doctor') {
-        navigate('/doctor');
-      } else {
-        navigate('/');
-      }
+        if (userRole === 'doctor') {
+          navigate('/doctor');
+        } else {
+          navigate('/');
+        }
       }
     } catch (err: any) {
       setError(err.message);
