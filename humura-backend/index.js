@@ -443,6 +443,19 @@ Respond ONLY with this exact JSON (no markdown, no extra text):
     res.json(parsed);
   } catch (error) {
     console.error("analyze-progress error:", error.message);
+    
+    // Friendly rate-limit message
+    const isRateLimit = error.message?.includes('429') || error.message?.includes('quota') || error.message?.includes('Too Many Requests');
+    if (isRateLimit) {
+      return res.status(200).json({
+        success: false,
+        rateLimited: true,
+        summary: "You have reached your daily AI analysis limit. Please try again in 1 hour.",
+        summaryRw: "Wageze ku mupaka wa buri munsi. Ongera ugerageze nyuma y'isaha imwe.",
+        recommendations: []
+      });
+    }
+
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -166,10 +166,18 @@ export default function ProgressPage() {
           currentMoodLabel: moodObj ? (isRw ? moodObj.rw : moodObj.en) : null
         })
       });
-          
+
       const text = await response.text();
       if (text.trim().startsWith('{')) {
         const result = JSON.parse(text);
+        // Handle rate limit gracefully
+        if (result.rateLimited) {
+          setAnalysis({
+            summary: isRw ? result.summaryRw : result.summary,
+            recommendations: []
+          });
+          return;
+        }
         setAnalysis({
           summary: result.summary,
           recommendations: result.recommendations || []
@@ -179,6 +187,12 @@ export default function ProgressPage() {
       }
     } catch (err: any) {
       console.error("Gemini Analysis Error:", err.message);
+      setAnalysis({
+        summary: isRw
+          ? "Wageze ku mupaka wa buri munsi. Ongera ugerageze nyuma y'isaha imwe."
+          : "You have reached your daily AI analysis limit. Please try again in 1 hour.",
+        recommendations: []
+      });
     } finally {
       setIsAnalyzing(false);
     }
