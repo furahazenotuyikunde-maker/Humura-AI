@@ -120,6 +120,10 @@ export default function ProgressPage() {
         })
       });
       
+      if (!response.ok) {
+        throw new Error("Server communication error");
+      }
+
       const result = await response.json();
       if (result.success) {
         setAnalysis({
@@ -129,7 +133,9 @@ export default function ProgressPage() {
       } else {
          throw new Error("Analysis failed");
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Analysis Error:", err);
+      // Fallback logic remains same below...
       // Fallback
       setAnalysis({
         summary: isRw 
