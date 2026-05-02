@@ -285,6 +285,7 @@ export default function DoctorDashboard() {
             <h1 className="font-black text-[#4A2C1A] text-lg leading-tight">Humura AI</h1>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Clinical Environment</p>
           </div>
+        </div>
           <button
             onClick={() => navigate('/')}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all mb-4"
@@ -292,6 +293,7 @@ export default function DoctorDashboard() {
             <Library size={18} />
             {isRw ? 'Garuka ahabanza' : 'Main App'}
           </button>
+
 
         <nav className="flex-1 space-y-1">
           {[
@@ -707,24 +709,23 @@ export default function DoctorDashboard() {
                             {isRw ? 'Kemura ikibazo' : 'Resolve & Close'}
                           </button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Insights Tab */}
-            {activeTab === 'insights' && (
-              <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Ubushakashatsi n\'Isesengura' : 'Clinical Analytics'}</h3>
-                  <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <AnalyticsOverview />
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* Insights Tab */}
+              {activeTab === 'insights' && (
+                <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
+                  <div className="mb-8">
+                    <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Ubushakashatsi n\'Isesengura' : 'Clinical Analytics'}</h3>
+                    <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
+                  </div>
+                  <AnalyticsOverview />
+                </div>
+              )}
+            </div>
 
           {/* Right Sidebar - Dynamic Context */}
           {activeTab === 'dashboard' && (
