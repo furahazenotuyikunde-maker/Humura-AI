@@ -110,7 +110,7 @@ export default function ProgressPage() {
       const recentMoods = moods.slice(0, 7).map(m => m.mood);
       const recentJournals = journals.slice(0, 3).map(j => j.content);
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/analyze-progress`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL || ''}/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
