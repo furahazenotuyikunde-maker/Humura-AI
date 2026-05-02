@@ -96,7 +96,7 @@ export default function ProgressPage() {
         created_at: new Date().toISOString()
       });
       await fetchMoodData(user.id);
-      analyzeProgress(user.id);
+      analyzeProgress(user.id, moodId);
     } catch (err) {
       console.error('Mood log error:', err);
     } finally {
@@ -144,43 +144,41 @@ export default function ProgressPage() {
     setJournals(data || []);
   };
 
-  const analyzeProgress = async (userId: string) => {
+  const analyzeProgress = async (userId: string, currentMood?: string) => {
     try {
       setIsAnalyzing(true);
       const recentMoods = moods.slice(0, 7).map(m => m.mood);
       const recentJournals = journals.slice(0, 3).map(j => j.content);
+      const moodObj = currentMood ? MOODS.find(m => m.id === currentMood) : null;
 
       const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
       
-      // Use the exact path registered in humura-backend/index.js
-      const paths = [`${backendUrl}/api/analyze-progress`];
-      let lastError = null;
-
-      for (const endpoint of paths) {
-        try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ userId, moods: recentMoods, journals: recentJournals, isSignLanguage: true })
-          });
+      const response = await fetch(`${backendUrl}/api/analyze-progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          moods: recentMoods,
+          journals: recentJournals,
+          isSignLanguage: true,
+          currentMood: currentMood || null,
+          currentMoodEmoji: moodObj?.emoji || null,
+          currentMoodLabel: moodObj ? (isRw ? moodObj.rw : moodObj.en) : null
+        })
+      });
           
-          const text = await response.text();
-          if (text.trim().startsWith('{')) {
-            const result = JSON.parse(text);
-            setAnalysis({
-              summary: result.summary,
-              recommendations: result.recommendations || []
-            });
-            return; // Success!
-          }
-        } catch (e) {
-          lastError = e;
-        }
+      const text = await response.text();
+      if (text.trim().startsWith('{')) {
+        const result = JSON.parse(text);
+        setAnalysis({
+          summary: result.summary,
+          recommendations: result.recommendations || []
+        });
+      } else {
+        throw new Error("Non-JSON response from server");
       }
-      throw lastError || new Error("AI Server Unreachable");
     } catch (err: any) {
-      console.error("Gemini Scan Error:", err.message);
-      showToast(isRw ? "AI iracyiga amakuru yawe, mwongere kanda..." : "Gemini is still analyzing your context. Please try again in a moment.", 'error');
+      console.error("Gemini Analysis Error:", err.message);
     } finally {
       setIsAnalyzing(false);
     }

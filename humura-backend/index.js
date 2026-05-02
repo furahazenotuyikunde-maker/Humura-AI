@@ -395,20 +395,44 @@ app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.0 Unified
 // Patient Dashboard: Direct Gemini Analysis (no DB lookup blocking)
 const handleAnalyzeProgress = async (req, res) => {
   try {
-    const { moods, journals, isSignLanguage } = req.body;
+    const { moods, journals, isSignLanguage, currentMood, currentMoodEmoji, currentMoodLabel } = req.body;
 
-    const prompt = `You are an AI Wellness Companion for Humura AI in Rwanda.
-Analyze this patient's data and give a warm, personalized response.
+    const journalContext = journals && journals.length > 0
+      ? `Patient's recent journal entries (read these carefully, they contain the patient's real thoughts):\n${journals.map((j, i) => `- Entry ${i+1}: "${j}"`).join('\n')}`
+      : 'No journal entries yet.';
 
-Patient Mood History (1-10 scale): ${JSON.stringify(moods || [])}
-Patient Journal Entries: ${JSON.stringify(journals || [])}
-Sign Language User: ${isSignLanguage ? 'YES – provide visual-first, video-based tips in English and Kinyarwanda' : 'NO'}
+    const moodContext = currentMood
+      ? `The patient just logged they are feeling ${currentMoodEmoji || ''} "${currentMoodLabel || currentMood}" RIGHT NOW.`
+      : `Recent mood pattern: ${JSON.stringify(moods || [])}`;
 
-Respond ONLY with this exact JSON structure, no extra text:
+    const prompt = `You are Humura AI — a compassionate, bilingual mental health companion serving patients in Rwanda.
+
+CURRENT EMOTIONAL STATE:
+${moodContext}
+
+MOOD HISTORY (last 7 days): ${JSON.stringify(moods || [])}
+
+${journalContext}
+
+Sign Language User: ${isSignLanguage ? 'YES — include visual/video-based tips in English and Kinyarwanda' : 'NO'}
+
+YOUR TASK:
+1. Read the journal entries carefully. Reference specific things the patient wrote to show you truly listened.
+2. Acknowledge the current mood (${currentMoodLabel || currentMood || 'general'}) warmly and by name.
+3. Connect the mood with what they wrote in their journal — find the emotional thread.
+4. Give 3 practical, specific recommendations based on BOTH their mood AND their journal content.
+5. If they wrote about stress, loneliness, or crisis — prioritize coping strategies and support resources.
+6. Keep a warm, human tone — like a trusted counselor, not a robot.
+
+Respond ONLY with this exact JSON (no markdown, no extra text):
 {
   "success": true,
-  "summary": "A warm 2-3 sentence summary of this patient's emotional week",
-  "recommendations": ["tip 1", "tip 2", "tip 3"]
+  "summary": "2-3 sentences that reference their specific mood and journal content to show you truly heard them",
+  "recommendations": [
+    "specific recommendation based on their mood and journal",
+    "specific recommendation based on their mood and journal",
+    "specific recommendation based on their mood and journal"
+  ]
 }`;
 
     const result = await geminiModel.generateContent(prompt);
