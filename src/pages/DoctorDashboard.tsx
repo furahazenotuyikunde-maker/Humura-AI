@@ -151,18 +151,6 @@ export default function DoctorDashboard() {
     }
   }, [selectedPatient]);
 
-  const fetchMoodLogs = async (patientId: string) => {
-    const { data } = await supabase
-      .from('mood_logs')
-      .select('*')
-      .eq('patient_id', patientId)
-      .order('logged_at', { ascending: false })
-      .limit(5);
-    setMoodLogs(data || []);
-  };
-
-  useEffect(() => {
-
   const handleResolveCrisis = async (alertId: string) => {
     setActionLoading(alertId);
     try {
