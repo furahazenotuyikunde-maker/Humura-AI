@@ -690,7 +690,7 @@ export default function DoctorDashboard() {
                         </div>
                         
                         <div className="bg-red-50/50 p-6 rounded-2xl border border-red-100 italic text-red-900 font-medium">
-                          "{alert.last_message}"
+                          {alert.last_message}
                         </div>
 
                         <div className="flex gap-4">
@@ -710,23 +710,23 @@ export default function DoctorDashboard() {
                             {isRw ? 'Kemura ikibazo' : 'Resolve & Close'}
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Insights Tab */}
-              {activeTab === 'insights' && (
-                <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
-                  <div className="mb-8">
-                    <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Ubushakashatsi n\'Isesengura' : 'Clinical Analytics'}</h3>
-                    <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
+                      </div>
+                    ))}
                   </div>
-                  <AnalyticsOverview />
+                )}
+              </div>
+            )}
+
+            {/* Insights Tab */}
+            {activeTab === 'insights' && (
+              <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? "Ubushakashatsi n'Isesengura" : 'Clinical Analytics'}</h3>
+                  <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
                 </div>
-              )}
-            </div>
+                <AnalyticsOverview />
+              </div>
+            )}
 
           {/* Right Sidebar - Dynamic Context */}
           {activeTab === 'dashboard' && (
