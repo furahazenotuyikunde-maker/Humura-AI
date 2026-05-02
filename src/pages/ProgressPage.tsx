@@ -111,8 +111,8 @@ export default function ProgressPage() {
 
       const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
       
-      // Multi-Path Scanning: Try all possible routes for Gemini
-      const paths = [`${backendUrl}/analyze-progress`, `${backendUrl}/api/analyze-progress` ];
+      // Use the exact path registered in humura-backend/index.js
+      const paths = [`${backendUrl}/api/analyze-progress`];
       let lastError = null;
 
       for (const endpoint of paths) {

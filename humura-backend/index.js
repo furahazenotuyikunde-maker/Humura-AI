@@ -390,43 +390,37 @@ app.get('/chat', (req, res) => res.json({ status: "Chat is live." }));
 
 app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.0 Unified Live!', engine: 'Gemini 3 Flash Preview' }));
 
-// 4h. Classic Independent Progress Analysis (Patient Dashboard)
+// Patient Dashboard: Direct Gemini Analysis (no DB lookup blocking)
 const handleAnalyzeProgress = async (req, res) => {
   try {
     const { moods, journals, isSignLanguage } = req.body;
 
-    const prompt = `You are an AI Wellness Companion in Rwanda. 
-    Analyze this Patient's data independently:
-    - Recent Moods: ${JSON.stringify(moods)}
-    - Journals: ${JSON.stringify(journals)}
-    - Accessibility: ${isSignLanguage ? 'Patient communicates via Sign Language' : 'None'}
+    const prompt = `You are an AI Wellness Companion for Humura AI in Rwanda.
+Analyze this patient's data and give a warm, personalized response.
 
-    Return ONLY a valid JSON object:
-    {
-      "success": true,
-      "summary": "...",
-      "recommendations": []
-    }
-    
-    If Sign Language is active, provide visual-first tips in English and Kinyarwanda.`;
+Patient Mood History (1-10 scale): ${JSON.stringify(moods || [])}
+Patient Journal Entries: ${JSON.stringify(journals || [])}
+Sign Language User: ${isSignLanguage ? 'YES – provide visual-first, video-based tips in English and Kinyarwanda' : 'NO'}
 
-    const result = await callGemini(prompt);
-    // Robust cleaning to ensure valid JSON
-    const jsonStr = result.match(/\{[\s\S]*\}/)?.[0] || result;
-    const finalResult = JSON.parse(jsonStr.replace(/```json|```/g, '').trim());
-    
-    res.status(200).json(finalResult);
+Respond ONLY with this exact JSON structure, no extra text:
+{
+  "success": true,
+  "summary": "A warm 2-3 sentence summary of this patient's emotional week",
+  "recommendations": ["tip 1", "tip 2", "tip 3"]
+}`;
+
+    const result = await geminiModel.generateContent(prompt);
+    const text = (await result.response).text();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Gemini returned no JSON");
+    const parsed = JSON.parse(jsonMatch[0]);
+    res.json(parsed);
   } catch (error) {
-    console.error("Analysis Error:", error);
-    res.status(200).json({ 
-      success: true, 
-      summary: "Umeze neza uyu munsi. / You are doing well today.", 
-      recommendations: ["Stay hydrated", "Keep logging your journey"] 
-    });
+    console.error("analyze-progress error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 app.post('/api/analyze-progress', handleAnalyzeProgress);
-app.post('/analyze-progress', handleAnalyzeProgress);
 
 server.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
