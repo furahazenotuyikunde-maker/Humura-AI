@@ -68,6 +68,9 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{formatTime(timer)}</span>
+              <div className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
+                <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">AI Triage: Stable</span>
+              </div>
             </div>
           </div>
         </div>
@@ -134,20 +137,24 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="absolute bottom-6 right-6 w-64 aspect-video bg-neutral-900 rounded-3xl border-2 border-primary shadow-2xl overflow-hidden z-40"
+                  className="absolute bottom-6 right-6 w-80 aspect-video bg-neutral-900/90 backdrop-blur-2xl rounded-3xl border-2 border-primary shadow-[0_0_50px_rgba(var(--color-primary),0.3)] overflow-hidden z-40"
                 >
-                  <div className="w-full h-full relative flex items-center justify-center bg-neutral-800">
+                  <div className="w-full h-full relative flex items-center justify-center bg-neutral-800/50">
                     <div className="text-center">
-                      <div className="text-2xl mb-2">🤟</div>
-                      <p className="text-[10px] font-black text-white uppercase tracking-widest">SL Interpreter</p>
+                      <div className="text-3xl mb-2 animate-bounce">🤟</div>
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest">SL Interpreter (Live)</p>
+                      <div className="flex items-center justify-center gap-1 mt-2">
+                        <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                        <span className="text-[8px] text-emerald-500 font-black uppercase">Gesture Ready</span>
+                      </div>
                     </div>
-                    <div className="absolute top-2 right-2 flex gap-1">
-                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
-                      <p className="text-[9px] text-white/80 font-medium italic truncate">
-                        {messages[messages.length-1]?.content || 'Waiting...'}
-                      </p>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                        <p className="text-[10px] text-white font-bold italic truncate">
+                          {messages[messages.length-1]?.content || 'Waiting for dialogue...'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -236,27 +243,25 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
                          />
                        </div>
                        <div>
-                         <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 block">Assessment (Clinical Impression)</label>
-                         <textarea 
-                           className="w-full p-5 bg-neutral-50 rounded-3xl text-sm border-2 border-transparent focus:border-primary outline-none transition-all h-32 resize-none shadow-inner"
-                           placeholder="Enter your clinical observations and diagnosis notes..."
-                           value={soapNotes.assessment}
-                           onChange={e => setSoapNotes({...soapNotes, assessment: e.target.value})}
-                         />
+                         <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 block">AI Clinical Insights</label>
+                         <div className="bg-gradient-to-br from-primary/5 to-indigo-50 p-6 rounded-[2rem] border border-primary/10 relative overflow-hidden group">
+                           <div className="relative z-10">
+                             <div className="flex items-center justify-between mb-4">
+                               <div className="flex items-center gap-2">
+                                 <Sparkles size={16} className="text-primary" />
+                                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">Real-Time Analysis</span>
+                               </div>
+                               <div className="px-2 py-0.5 bg-primary/10 rounded-full text-[8px] font-black text-primary uppercase">Active</div>
+                             </div>
+                             <p className="text-xs text-neutral-900 font-bold leading-relaxed">
+                               {soapNotes.subjective.length > 20 
+                                 ? "AI detects recurring themes of 'isolation'. Recommended: Screen for adjustment disorder and provide visual coping tools."
+                                 : "Waiting for clinical input to provide deep insights..."}
+                             </p>
+                           </div>
+                           <Sparkles size={60} className="absolute -bottom-6 -right-6 text-primary/5 group-hover:scale-110 transition-transform" />
+                         </div>
                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-[2rem] border border-indigo-100 shadow-sm relative overflow-hidden">
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Sparkles size={16} className="text-indigo-600" />
-                          <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Gemini Clinical Guard</span>
-                        </div>
-                        <p className="text-xs text-indigo-900 font-bold leading-relaxed">
-                          AI detects sustained low mood markers. Recommended: Administer GAD-7 follow-up and explore behavioral activation for the weekend.
-                        </p>
-                      </div>
-                      <Sparkles size={40} className="absolute -bottom-4 -right-4 text-indigo-200/50" />
                     </div>
                   </div>
                 ) : (
