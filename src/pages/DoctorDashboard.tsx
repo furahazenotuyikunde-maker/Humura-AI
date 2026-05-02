@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useClinicalEvents } from '../hooks/useClinicalEvents';
+import { io } from 'socket.io-client';
 import AnalyticsOverview from '../components/doctor/AnalyticsOverview';
+import PatientManagement from '../components/doctor/PatientManagement';
 
 
 // --- Sub-components ---
@@ -50,7 +52,26 @@ export default function DoctorDashboard() {
   useEffect(() => {
     fetchInitialData();
     setupRealtime();
-  }, []); // Only fetch once on mount
+    const cleanup = setupSocketPresence();
+    return () => cleanup && cleanup();
+  }, []); 
+
+  const setupSocketPresence = () => {
+    const socket = io(import.meta.env.VITE_RENDER_BACKEND_URL, {
+      query: { 
+        userId: doctorProfile?.id,
+        role: 'doctor'
+      },
+      transports: ["websocket"]
+    });
+
+    socket.on("patient:assigned", (data: any) => {
+      showToast(`${isRw ? 'Umurwayi mushya' : 'New Patient'}: ${data.patient_name}`, 'success');
+      fetchInitialData(); // Refresh list
+    });
+
+    return () => socket.disconnect();
+  };
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -507,52 +528,17 @@ export default function DoctorDashboard() {
 
             {/* Patients Tab */}
             {activeTab === 'patients' && (
-              <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Abarwayi bose' : 'All Patients'}</h3>
-                  <div className="flex gap-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
-                      <input 
-                        type="text" 
-                        placeholder={isRw ? "Shaka..." : "Search patients..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-4 py-2 bg-[#F8F5F2] border border-[#E8E1DB] rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  {patients
-                    .filter(p => p.patient_info?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .map(p => (
-                    <div key={p.id} className="p-6 bg-white border border-[#E8E1DB] rounded-3xl flex items-center justify-between hover:shadow-md transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center font-black text-lg">
-                          {p.patient_info?.full_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-black text-[#4A2C1A]">{p.patient_info?.full_name}</p>
-                          <p className="text-xs font-bold text-neutral-400">{p.primary_concern} · Joined {new Date(p.created_at).toLocaleDateString()}</p>
-                        </div>
-
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-center">
-                          <p className="text-[10px] font-black text-neutral-400 uppercase">PHQ-9</p>
-                          <p className={`font-black ${p.phq9_score > 15 ? 'text-red-500' : 'text-emerald-500'}`}>{p.phq9_score}</p>
-                        </div>
-                        <button 
-                          onClick={() => { setSelectedPatient(p); setActiveTab('dashboard'); }}
-                          className="px-6 py-2 bg-[#F8F5F2] text-[#4A2C1A] font-black text-xs uppercase rounded-xl hover:bg-neutral-100"
-                        >
-                          {isRw ? 'Reba amakuru' : 'View Profile'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8 h-[calc(100vh-200px)]">
+                <PatientManagement 
+                  patients={patients.map(p => ({
+                    id: p.id,
+                    name: p.patient_info?.full_name || 'Anonymous',
+                    location: 'Rwanda',
+                    risk: p.phq9_score > 15 ? 'high' : 'low',
+                    status: p.status,
+                    diagnosis: p.primary_concern
+                  }))} 
+                />
               </div>
             )}
 

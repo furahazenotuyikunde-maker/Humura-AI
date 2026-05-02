@@ -29,9 +29,32 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 
-// 3. Socket.io Logic
-io.on('connection', (socket) => {
+// 3. Socket.io Presence & Logic
+const onlineDoctors = new Set();
+
+io.on('connection', async (socket) => {
   console.log('User connected:', socket.id);
+  
+  // Custom authentication (mocked here, should use JWT)
+  const userId = socket.handshake.query.userId;
+  const role = socket.handshake.query.role;
+
+  if (userId) {
+    socket.join(`user:${userId}`);
+    
+    if (role === 'doctor') {
+      onlineDoctors.add(userId);
+      console.log(`Doctor ${userId} is online`);
+      
+      // Update DB
+      await supabase.from('doctor_profiles')
+        .update({ is_available: true, last_seen_at: new Date().toISOString() })
+        .eq('user_id', userId);
+        
+      // Broadcast to all
+      io.emit('doctor:online', { doctor_id: userId });
+    }
+  }
 
   socket.on('join_doctor_room', (doctorId) => {
     socket.join(`doctor:${doctorId}`);
@@ -41,14 +64,24 @@ io.on('connection', (socket) => {
     socket.join(`patient:${patientId}`);
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
+    if (userId && role === 'doctor') {
+      onlineDoctors.delete(userId);
+      console.log(`Doctor ${userId} is offline`);
+      
+      await supabase.from('doctor_profiles')
+        .update({ is_available: false, last_seen_at: new Date().toISOString() })
+        .eq('user_id', userId);
+        
+      io.emit('doctor:offline', { doctor_id: userId });
+    }
     console.log('User disconnected');
   });
 });
 
-// Helper: Broadcast to Doctor
-const notifyDoctor = (doctorId, event, data) => {
-  io.to(`doctor:${doctorId}`).emit(event, data);
+// Helper: Broadcast to User Room
+const notifyUser = (userId, event, data) => {
+  io.to(`user:${userId}`).emit(event, data);
 };
 
 // --- Endpoints ---
@@ -68,40 +101,103 @@ app.post('/api/ai/intake-ack', async (req, res) => {
   }
 });
 
-// 4b. Doctor Matching & Assignment
-app.post('/api/patients/match-doctor', async (req, res) => {
+// 4b. Fetch Real Available Doctors
+app.get('/api/doctors/available', async (req, res) => {
   try {
-    const { patientId, concern, lang } = req.body;
+    const { concern, language, available_now } = req.query;
+    
+    let query = supabase.from('doctors_public').select('*');
+    
+    if (concern) {
+      query = query.contains('specialisations', [concern]);
+    }
+    if (language) {
+      query = query.contains('languages', [language]);
+    }
+    if (available_now === 'true') {
+      query = query.eq('is_available', true);
+    }
+    
+    // Safety limit and ordering
+    query = query.lt('caseload_count', 25)
+                 .order('is_available', { ascending: false })
+                 .order('rating_avg', { ascending: false });
 
-    // 1. Fetch doctors with matching specialization and language
-    const { data: doctors, error: docError } = await supabase
-      .from('profiles')
-      .select('id, specialty, full_name, language_pref')
-      .eq('role', 'doctor');
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
-    if (docError) throw docError;
+// 4c. Patient-Doctor Assignment
+app.post('/api/patients/assign-doctor', async (req, res) => {
+  try {
+    const { patientId, doctorId } = req.body;
 
-    // 2. Simple matching logic: speciality match + caseload check
-    let assignedDoctor = doctors.find(d => 
-      d.specialty?.toLowerCase().includes(concern?.toLowerCase() || '')
-    ) || doctors[0];
+    // 1. Update patient record
+    const { error: patientErr } = await supabase
+      .from('patients')
+      .update({ doctor_id: doctorId, status: 'active' })
+      .eq('id', patientId);
+    
+    if (patientErr) throw patientErr;
 
-    if (!assignedDoctor) return res.status(404).json({ error: "No doctors available" });
+    // 2. Increment doctor caseload
+    // We fetch current count first as Supabase JS client doesn't have an 'increment' operator in one go easily
+    const { data: profile } = await supabase.from('doctor_profiles').select('caseload_count').eq('user_id', doctorId).single();
+    await supabase.from('doctor_profiles').update({ caseload_count: (profile?.caseload_count || 0) + 1 }).eq('user_id', doctorId);
 
-    // 3. Update Patient record
-    await supabase.from('patients').update({ doctor_id: assignedDoctor.id }).eq('id', patientId);
+    // 3. Fetch patient info for notification
+    const { data: patientProfile } = await supabase.from('profiles').select('full_name').eq('id', patientId).single();
+    const { data: patientIntake } = await supabase.from('patients').select('primary_concern').eq('id', patientId).single();
 
-    // 4. Notify Doctor (WebSocket + Mock Twilio)
-    notifyDoctor(assignedDoctor.id, 'patient:assigned', {
+    // 4. Notify Doctor via Socket
+    notifyUser(doctorId, 'patient:assigned', {
       patient_id: patientId,
-      name: "A new patient",
-      concern_type: concern,
-      mood_score: 3
+      patient_name: patientProfile?.full_name || "New Patient",
+      concern_type: patientIntake?.primary_concern || "General Support"
     });
 
-    console.log(`[Twilio Mock] SMS to Doctor ${assignedDoctor.full_name}: New patient assigned: ${concern}`);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
-    return res.status(200).json({ success: true, doctor: assignedDoctor });
+// 4d. Fetch Doctor's Live Patients
+app.get('/api/doctor/patients', async (req, res) => {
+  try {
+    const { doctorId } = req.query;
+    
+    const { data, error } = await supabase
+      .from('patients')
+      .select(`
+        id,
+        status,
+        primary_concern,
+        profiles (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('doctor_id', doctorId);
+
+    if (error) throw error;
+    
+    // Map to a cleaner format
+    const formatted = data.map(p => ({
+      id: p.id,
+      name: p.profiles?.full_name,
+      concern_type: p.primary_concern,
+      status: p.status,
+      unread: 0, // In a real app, calculate from messages
+      risk_level: "low" // In a real app, fetch from crisis_events
+    }));
+
+    return res.status(200).json(formatted);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

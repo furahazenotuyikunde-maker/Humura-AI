@@ -31,7 +31,16 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState(''); // Email is still needed for Supabase auth, but we can generate/mock it from phone if user only provides phone. However, for reliability, we'll keep email.
+  const [email, setEmail] = useState('');
+  
+  // Doctor-specific fields
+  const [specialisations, setSpecialisations] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>(['en']);
+  const [bio, setBio] = useState('');
+  const [yearsExperience, setYearsExperience] = useState('0');
+
+  const specialisationOptions = ['Anxiety', 'Depression', 'Trauma', 'PTSD', 'Grief', 'Bipolar', 'Youth', 'Family'];
+  const languageOptions = ['en', 'rw', 'fr'];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +61,7 @@ export default function AuthPage() {
         if (signUpError) throw signUpError;
 
         if (data.user) {
+          // 1. Create Profile
           await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
@@ -60,6 +70,17 @@ export default function AuthPage() {
             language_pref: isRw ? 'rw' : 'en',
             updated_at: new Date().toISOString()
           });
+
+          // 2. Create Doctor Profile if applicable
+          if (role === 'doctor') {
+            await supabase.from('doctor_profiles').insert({
+              user_id: data.user.id,
+              specialisations,
+              languages,
+              bio,
+              years_experience: parseInt(yearsExperience) || 0
+            });
+          }
         }
 
         setSuccess(true);
@@ -168,6 +189,60 @@ export default function AuthPage() {
                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm transition-all"
               />
             </div>
+
+            {mode === 'signup' && role === 'doctor' && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-neutral-100">
+                <p className="text-[10px] font-black uppercase text-primary-400 tracking-widest">Professional Details</p>
+                
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-neutral-400">Specialisations</p>
+                  <div className="flex flex-wrap gap-2">
+                    {specialisationOptions.map(opt => (
+                      <button
+                        key={opt} type="button"
+                        onClick={() => setSpecialisations(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${specialisations.includes(opt) ? 'bg-primary text-white' : 'bg-neutral-50 text-primary-600 border border-neutral-100'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                   <p className="text-[10px] font-bold text-neutral-400">Languages</p>
+                   <div className="flex gap-2">
+                    {languageOptions.map(opt => (
+                      <button
+                        key={opt} type="button"
+                        onClick={() => setLanguages(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
+                        className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${languages.includes(opt) ? 'bg-primary text-white' : 'bg-neutral-50 text-primary-600 border border-neutral-100'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-neutral-400">Exp (Years)</p>
+                    <input 
+                      type="number" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-neutral-400">Short Bio</p>
+                    <input 
+                      type="text" placeholder="Bio (max 100 chars)" maxLength={100}
+                      value={bio} onChange={e => setBio(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center">{error}</p>}
 

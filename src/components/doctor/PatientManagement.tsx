@@ -6,14 +6,26 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const patients = [
-  { id: '1', name: 'Kanyange Ancilla', age: 24, location: 'Kigali', risk: 'low', status: 'active', disability: 'Deaf', diagnosis: 'Anxiety Disorder' },
-  { id: '2', name: 'Mugabo Eric', age: 29, location: 'Musanze', risk: 'high', status: 'at-risk', disability: 'Blind', diagnosis: 'Major Depression' },
-  { id: '3', name: 'Kamana John', age: 31, location: 'Rubavu', risk: 'medium', status: 'active', disability: 'None', diagnosis: 'PTSD' },
-];
+interface Patient {
+  id: string;
+  name: string;
+  age?: number;
+  location?: string;
+  risk?: 'low' | 'medium' | 'high';
+  status: string;
+  disability?: string;
+  diagnosis?: string;
+}
 
-export default function PatientManagement() {
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+export default function PatientManagement({ patients = [] }: { patients?: Patient[] }) {
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredPatients = patients.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -23,6 +35,8 @@ export default function PatientManagement() {
           <input 
             type="text" 
             placeholder="Search by name, ID, or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary-50 rounded-2xl text-sm focus:border-primary/50 outline-none transition-all"
           />
         </div>
@@ -42,36 +56,43 @@ export default function PatientManagement() {
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-3 gap-8 min-h-0">
         {/* Patient List */}
         <div className="xl:col-span-2 overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-primary-100">
-          {patients.map((patient) => (
-            <motion.button
-              key={patient.id}
-              whileHover={{ x: 5 }}
-              onClick={() => setSelectedPatient(patient)}
-              className={`w-full glass-card p-5 rounded-3xl flex items-center gap-4 text-left transition-all border-2 ${
-                selectedPatient?.id === patient.id ? 'border-primary bg-primary/5 shadow-inner' : 'border-transparent'
-              }`}
-            >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center text-2xl">
-                {patient.disability === 'Deaf' ? '🤟' : patient.disability === 'Blind' ? '👨‍🦯' : '👤'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-black text-primary-900 truncate">{patient.name}</h3>
-                  <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-full ${
-                    patient.risk === 'high' ? 'bg-red-100 text-red-600' : 
-                    patient.risk === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                  }`}>
-                    {patient.risk} risk
-                  </span>
+          {filteredPatients.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-10 bg-neutral-50 rounded-[2.5rem] border-2 border-dashed border-primary-100">
+              <Users size={32} className="text-primary-100 mb-4" />
+              <p className="text-primary-300 font-bold text-sm">No patients found</p>
+            </div>
+          ) : (
+            filteredPatients.map((patient) => (
+              <motion.button
+                key={patient.id}
+                whileHover={{ x: 5 }}
+                onClick={() => setSelectedPatient(patient)}
+                className={`w-full glass-card p-5 rounded-3xl flex items-center gap-4 text-left transition-all border-2 ${
+                  selectedPatient?.id === patient.id ? 'border-primary bg-primary/5 shadow-inner' : 'border-transparent'
+                }`}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center text-2xl font-black text-primary">
+                  {patient.name.charAt(0)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-primary-400 font-bold">
-                  <span className="flex items-center gap-1"><MapPin size={12} /> {patient.location}</span>
-                  <span className="flex items-center gap-1"><Activity size={12} /> {patient.diagnosis}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-black text-primary-900 truncate">{patient.name}</h3>
+                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-full ${
+                      patient.risk === 'high' ? 'bg-red-100 text-red-600' : 
+                      patient.risk === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                    }`}>
+                      {patient.risk || 'low'} risk
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-primary-400 font-bold">
+                    <span className="flex items-center gap-1"><MapPin size={12} /> {patient.location || 'Kigali'}</span>
+                    <span className="flex items-center gap-1"><Activity size={12} /> {patient.diagnosis || 'Active'}</span>
+                  </div>
                 </div>
-              </div>
-              <ChevronRight size={20} className={selectedPatient?.id === patient.id ? 'text-primary' : 'text-primary-100'} />
-            </motion.button>
-          ))}
+                <ChevronRight size={20} className={selectedPatient?.id === patient.id ? 'text-primary' : 'text-primary-100'} />
+              </motion.button>
+            ))
+          )}
         </div>
 
         {/* Detail Panel */}

@@ -305,29 +305,23 @@ export const Shell: React.FC<ShellProps> = () => {
                 </ul>
               </div>
 
-              {/* Column 4: Testimonies */}
+              {/* Column 4: Community Voice */}
               <div className="space-y-6">
                 <h4 className="font-black text-primary-900 text-xs uppercase tracking-[0.2em]">
-                  {isRw ? "Ubuhamya" : "Testimonies"}
+                  {isRw ? "Ibijwi by'Abaturage" : "Community Voices"}
                 </h4>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
-                      "{isRw ? "uru rubuga rwamfashije mu bihe bikomeye. AI ya humura irumva cyane" : "This platform helped me through a dark time. Humura's AI is incredibly empathetic."}"
+                      "{isRw ? "Uru rubuga rwampaye icyizere gishya mu buzima." : "This platform gave me a new perspective on life and mental wellness."}"
                     </p>
-                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Kamana John</p>
+                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— {isRw ? "Umukoresha" : "Community Member"}</p>
                   </div>
                   <div className="space-y-2">
                     <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
-                      "{isRw ? "Uburyo bw’amarenga nibwo nshobora gukoresha kuko ntumva si ntavuge. Urakoze humura AI" : "The sign language feature is what I've been waiting for. Thank you Humura AI!"}"
+                      "{isRw ? "Ikoranabuhanga ridakumira ryafashije umuryango wacu cyane." : "The inclusive technology has made a real difference for our family."}"
                     </p>
-                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Kanyange Ancilla</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs italic text-neutral-500 leading-relaxed font-medium">
-                      "{isRw ? "Uburyo bwa braille bwaramfashije cyane kuko mfite ubumuga bwo kutabona, ubu nshobora kubona ubufasha bw'inzobere mu buryo bworoshye." : "The Braille generator is a lifesaver. As someone with a visual impairment, I can finally access professional help independently."}"
-                    </p>
-                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— Mugabo Eric</p>
+                    <p className="text-[10px] font-black text-primary-600 uppercase tracking-wider">— {isRw ? "Ababyeyi" : "Family Support Member"}</p>
                   </div>
                 </div>
               </div>
