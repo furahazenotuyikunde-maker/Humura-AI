@@ -104,16 +104,14 @@ export default function ProgressPage() {
   };
 
   const analyzeProgress = async (userId: string) => {
-    setIsAnalyzing(true);
     try {
-      // Get recent data for analysis context
+      setIsAnalyzing(true);
       const recentMoods = moods.slice(0, 7).map(m => m.mood);
       const recentJournals = journals.slice(0, 3).map(j => j.content);
 
-      const backendUrl = import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com';
-      const endpoint = `${backendUrl.replace(/\/$/, '')}/analyze-progress`;
+      const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+      const endpoint = `${backendUrl}/analyze-progress`;
       
-      // Ultimate JSON Force: Maximize robustness for real-time results
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -121,15 +119,18 @@ export default function ProgressPage() {
       });
       
       const text = await response.text();
-      if (!text.trim().startsWith('{')) throw new Error("Invalid Server Response");
-
-      const result = JSON.parse(text);
-      setAnalysis({
-        summary: result.summary || (isRw ? "Umeze neza uyu munsi. Komeza inzira watangiye." : "You are doing great today. Stay on your path."),
-        recommendations: result.recommendations || []
-      });
-    } catch (err: any) {
-      console.warn("Using Dashboard Resilience Fallback");
+      if (text.trim().startsWith('{')) {
+        const result = JSON.parse(text);
+        setAnalysis({
+          summary: result.summary,
+          recommendations: result.recommendations || []
+        });
+        return;
+      }
+      throw new Error("Format Mismatch");
+    } catch (err) {
+      // SILENT FALLBACK: Never show a red toast for this
+      console.warn("Resilience Mode Active");
       setAnalysis({
         summary: isRw 
           ? "Umeze neza uyu munsi, kandi turabona intambwe nshya mu buzima bwawe bwo mu mutwe. Komeza wandika uko wiyumva." 
