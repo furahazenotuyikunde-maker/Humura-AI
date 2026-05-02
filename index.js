@@ -1,4 +1,4 @@
-// Humura AI - Real-Time Clinical Backend v1.2.0
+// Humura AI - Omni-Path Real-Time Backend v1.3.0
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -19,52 +19,65 @@ app.use(express.json());
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-// Direct Real-Time AI Call
+// High-Performance AI Bridge
 async function callAI(prompt) {
   const result = await model.generateContent(prompt);
-  return (await result.response).text();
+  const text = (await result.response).text();
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  return jsonMatch ? JSON.parse(jsonMatch[0]) : { success: true, summary: text };
 }
 
-// 1. Real-Time Progress Analysis
-app.post('/api/analyze-progress', async (req, res) => {
+// OMNI-PATH: Handle both /api/ and direct paths for Real-Time Progress
+const handleProgress = async (req, res) => {
   const { moods, journals, isSignLanguage } = req.body;
-  const prompt = `Analyze this mood data instantly: ${JSON.stringify(moods)}. Journals: ${JSON.stringify(journals)}.
-  ${isSignLanguage ? 'CRITICAL: User uses Sign Language. Provide visual/video-first tips.' : ''}
+  const prompt = `Analyze this mood data: ${JSON.stringify(moods)}. 
+  ${isSignLanguage ? 'User uses Sign Language. Tips must be visual/video-first.' : ''}
   Return JSON: { "summary": "...", "recommendations": [] }`;
 
   try {
-    const response = await callAI(prompt);
-    res.json(JSON.parse(response.match(/\{[\s\S]*\}/)[0]));
+    const result = await callAI(prompt);
+    res.json({ success: true, ...result });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(200).json({ success: false, summary: "Analysis temporary unavailable.", recommendations: [] });
   }
-});
+};
 
-// 2. Real-Time Clinical Report
-app.post('/api/doctor/generate-report', async (req, res) => {
+app.post('/api/analyze-progress', handleProgress);
+app.post('/analyze-progress', handleProgress);
+
+// OMNI-PATH: Handle both /api/ and direct paths for Clinical Reports
+const handleReport = async (req, res) => {
   const { dataContext } = req.body;
-  const prompt = `Clinical AI: Generate a real-time progress report for this data: ${JSON.stringify(dataContext)}.
+  const prompt = `Clinical Report: ${JSON.stringify(dataContext)}. 
   Return JSON: { "mood_trend": "...", "ai_summary": "...", "recommendations": [] }`;
 
   try {
-    const response = await callAI(prompt);
-    res.json(JSON.parse(response.match(/\{[\s\S]*\}/)[0]));
+    const result = await callAI(prompt);
+    res.json({ success: true, ...result });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(200).json({ success: false, error: e.message });
   }
-});
+};
 
-// 3. Real-Time Chat
+app.post('/api/doctor/generate-report', handleReport);
+app.post('/doctor/generate-report', handleReport);
+
+// Real-Time Chat
 app.post('/chat', async (req, res) => {
-  const { message, history } = req.body;
   try {
+    const { message, history } = req.body;
     const result = await model.generateContent({ contents: [...(history || []), { role: "user", parts: [{ text: message }] }] });
-    res.json({ reply: (await result.response).text() });
+    res.json({ success: true, reply: (await result.response).text() });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(200).json({ success: false, error: e.message });
   }
 });
 
-app.get('/', (req, res) => res.send('Humura AI Real-Time Engine Live.'));
+// Force JSON for all 404s to prevent "!DOCTYPE" errors
+app.use((req, res) => {
+  res.status(200).json({ error: "Route not found", path: req.url });
+});
 
-server.listen(port, () => console.log(`🚀 Real-Time Engine on ${port}`));
+app.get('/', (req, res) => res.send('Humura AI Omni-Engine Live.'));
+
+server.listen(port, () => console.log(`🚀 Omni-Engine running on ${port}`));
