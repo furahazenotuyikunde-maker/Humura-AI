@@ -277,7 +277,7 @@ export default function DoctorDashboard() {
 
       {/* --- Sidebar --- */}
       <aside className="w-64 bg-white border-r border-[#E8E1DB] flex flex-col p-6 fixed h-full z-50">
-        <div className="flex items-center gap-3 mb-10 px-2">
+        <div className="flex items-center gap-3 mb-4 px-2">
           <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center font-black text-xl border border-emerald-100">
             H
           </div>
@@ -286,14 +286,14 @@ export default function DoctorDashboard() {
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Clinical Environment</p>
           </div>
         </div>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all mb-4"
-          >
-            <Library size={18} />
-            {isRw ? 'Garuka ahabanza' : 'Main App'}
-          </button>
 
+        <button
+          onClick={() => navigate('/')}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all mb-6"
+        >
+          <Library size={18} />
+          {isRw ? 'Garuka ahabanza' : 'Main App'}
+        </button>
 
         <nav className="flex-1 space-y-1">
           {[
@@ -307,8 +307,8 @@ export default function DoctorDashboard() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-                activeTab === item.id 
-                  ? 'bg-emerald-50 text-emerald-700 shadow-sm' 
+                activeTab === item.id
+                  ? 'bg-emerald-50 text-emerald-700 shadow-sm'
                   : 'text-neutral-500 hover:bg-neutral-50'
               }`}
             >
@@ -326,7 +326,7 @@ export default function DoctorDashboard() {
         </nav>
 
         <div className="mt-auto space-y-4">
-          <button 
+          <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all"
           >
@@ -347,6 +347,7 @@ export default function DoctorDashboard() {
           </div>
         </div>
       </aside>
+
 
       {/* --- Main Content --- */}
       <main className="flex-1 ml-64 flex flex-col">
