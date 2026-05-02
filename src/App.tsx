@@ -58,10 +58,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={
-          !session ? <LandingPage /> : 
-          role === 'doctor' ? <Navigate to="/doctor" replace /> : <Shell />
-        }>
+        <Route path="/" element={!session ? <LandingPage /> : <Shell />}>
           <Route index element={<Home />} />
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />

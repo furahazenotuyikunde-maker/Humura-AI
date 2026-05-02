@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useClinicalEvents } from '../hooks/useClinicalEvents';
+import AnalyticsOverview from '../components/doctor/AnalyticsOverview';
 
 
 // --- Sub-components ---
@@ -49,7 +50,7 @@ export default function DoctorDashboard() {
   useEffect(() => {
     fetchInitialData();
     setupRealtime();
-  }, [doctorProfile?.id]);
+  }, []); // Only fetch once on mount
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -63,36 +64,39 @@ export default function DoctorDashboard() {
       return;
     }
 
-    // 1. Doctor Profile
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setDoctorProfile(profile);
+    try {
+      // 1. Doctor Profile
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setDoctorProfile(profile);
 
-    // 2. Assigned Patients
-    const { data: patientList } = await supabase
-      .from('patients')
-      .select('*, patient_info:profiles(full_name, avatar_url, phone)')
-      .eq('doctor_id', user.id);
-    setPatients(patientList || []);
+      // 2. Assigned Patients
+      const { data: patientList } = await supabase
+        .from('patients')
+        .select('*, patient_info:profiles(full_name, avatar_url, phone)')
+        .eq('doctor_id', user.id);
+      setPatients(patientList || []);
 
+      // 3. Today's Sessions
+      const today = new Date().toISOString().split('T')[0];
+      const { data: sessionList } = await supabase
+        .from('sessions')
+        .select('*, profiles:patient_id(full_name)')
+        .eq('doctor_id', user.id)
+        .gte('scheduled_at', today);
+      setSessions(sessionList || []);
 
-
-    // 3. Today's Sessions
-    const today = new Date().toISOString().split('T')[0];
-    const { data: sessionList } = await supabase
-      .from('sessions')
-      .select('*, profiles:patient_id(full_name)')
-      .eq('doctor_id', user.id)
-      .gte('scheduled_at', today);
-    setSessions(sessionList || []);
-
-    // 4. Crisis Alerts
-    const { data: alerts } = await supabase
-      .from('crisis_events')
-      .select('*, profiles:patient_id(full_name, phone)')
-      .is('resolved_at', null);
-    setCrisisAlerts(alerts || []);
-
-    setLoading(false);
+      // 4. Crisis Alerts
+      const { data: alerts } = await supabase
+        .from('crisis_events')
+        .select('*, profiles:patient_id(full_name, phone)')
+        .is('resolved_at', null);
+      setCrisisAlerts(alerts || []);
+    } catch (err: any) {
+      console.error("Dashboard data fetch failed:", err);
+      showToast(isRw ? "Gushaka amakuru byanze" : "Failed to load dashboard data", 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchMoodLogs = async (patientId: string) => {
@@ -281,11 +285,18 @@ export default function DoctorDashboard() {
             <h1 className="font-black text-[#4A2C1A] text-lg leading-tight">Humura AI</h1>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Clinical Environment</p>
           </div>
-        </div>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all mb-4"
+          >
+            <Library size={18} />
+            {isRw ? 'Garuka ahabanza' : 'Main App'}
+          </button>
 
         <nav className="flex-1 space-y-1">
           {[
             { id: 'dashboard', icon: Activity, label: isRw ? 'Inshamake' : 'Dashboard' },
+            { id: 'insights', icon: BarChart2, label: isRw ? 'Ubushakashatsi' : 'Clinical Insights' },
             { id: 'patients', icon: Users, label: isRw ? 'Abarwayi banjye' : 'My patients', count: patients.length },
             { id: 'sessions', icon: Calendar, label: isRw ? 'Guhura' : 'Sessions' },
             { id: 'crisis', icon: AlertCircle, label: isRw ? 'Ibitabaza' : 'Crisis alerts', count: crisisAlerts.length, danger: true },
@@ -700,6 +711,17 @@ export default function DoctorDashboard() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Insights Tab */}
+            {activeTab === 'insights' && (
+              <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? 'Ubushakashatsi n\'Isesengura' : 'Clinical Analytics'}</h3>
+                  <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
+                </div>
+                <AnalyticsOverview />
               </div>
             )}
           </div>
