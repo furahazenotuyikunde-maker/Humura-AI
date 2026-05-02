@@ -53,27 +53,40 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     fetchInitialData();
-    setupRealtime();
-    const cleanup = setupSocketPresence();
-    return () => cleanup && cleanup();
+    
+    // Setup Realtime with cleanup
+    const channel = supabase
+      .channel('clinical-ops')
+      .on('postgres_changes', { event: '*', table: 'crisis_events' }, () => fetchInitialData())
+      .on('postgres_changes', { event: '*', table: 'patients' }, () => fetchInitialData())
+      .on('postgres_changes', { event: '*', table: 'sessions' }, () => fetchInitialData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []); 
 
-  const setupSocketPresence = () => {
-    const socket = io(import.meta.env.VITE_RENDER_BACKEND_URL, {
-      query: { 
-        userId: doctorProfile?.id,
-        role: 'doctor'
-      },
-      transports: ["websocket"]
-    });
+  useEffect(() => {
+    if (doctorProfile?.id) {
+      const socket = io(import.meta.env.VITE_RENDER_BACKEND_URL, {
+        query: { 
+          userId: doctorProfile.id,
+          role: 'doctor'
+        },
+        transports: ["websocket"]
+      });
 
-    socket.on("patient:assigned", (data: any) => {
-      showToast(`${isRw ? 'Umurwayi mushya' : 'New Patient'}: ${data.patient_name}`, 'success');
-      fetchInitialData(); // Refresh list
-    });
+      socket.on("patient:assigned", (data: any) => {
+        showToast(`${isRw ? 'Umurwayi mushya' : 'New Patient'}: ${data.patient_name}`, 'success');
+        fetchInitialData();
+      });
 
-    return () => socket.disconnect();
-  };
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [doctorProfile?.id, isRw]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -138,14 +151,17 @@ export default function DoctorDashboard() {
     }
   }, [selectedPatient]);
 
-  const setupRealtime = () => {
-    supabase
-      .channel('clinical-ops')
-      .on('postgres_changes', { event: '*', table: 'crisis_events' }, () => fetchInitialData())
-      .on('postgres_changes', { event: '*', table: 'patients' }, () => fetchInitialData())
-      .on('postgres_changes', { event: '*', table: 'sessions' }, () => fetchInitialData())
-      .subscribe();
+  const fetchMoodLogs = async (patientId: string) => {
+    const { data } = await supabase
+      .from('mood_logs')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('logged_at', { ascending: false })
+      .limit(5);
+    setMoodLogs(data || []);
   };
+
+  useEffect(() => {
 
   const handleResolveCrisis = async (alertId: string) => {
     setActionLoading(alertId);
@@ -564,7 +580,7 @@ export default function DoctorDashboard() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-4">
-                    {sessions.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()).map(s => (
+                    {[...sessions].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()).map(s => (
                       <div key={s.id} className="p-6 bg-white border border-[#E8E1DB] rounded-3xl flex items-center justify-between hover:shadow-md transition-all">
                         <div className="flex items-center gap-6">
                           <div className="w-16 h-16 bg-[#F8F5F2] rounded-2xl border border-[#E8E1DB] flex flex-col items-center justify-center">
