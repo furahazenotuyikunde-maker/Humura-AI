@@ -1,28 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, 
+  ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy,
+  BookOpen, Plus, Heart, History, Trash2
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
 interface MoodLog {
   created_at: string;
   mood: string;
+  emoji?: string;
+  score?: number;
 }
 
-const ProgressPage: React.FC = () => {
+interface JournalEntry {
+  id: string;
+  content: string;
+  mood_emoji: string;
+  created_at: string;
+}
+
+type TabType = 'mood' | 'journal';
+
+export default function ProgressPage() {
   const { i18n } = useTranslation();
-  
-  // Safe-Start: Ensure we have a valid translation context
   const isRw = i18n?.language?.startsWith('rw') || false;
   
+  const [activeTab, setActiveTab] = useState<TabType>('mood');
   const [moods, setMoods] = useState<MoodLog[]>([]);
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [analysis, setAnalysis] = useState<{ summary: string; recommendations: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Journal Form State
+  const [newJournal, setNewJournal] = useState('');
+  const [isSavingJournal, setIsSavingJournal] = useState(false);
 
-  // Mood to value mapping for the chart
   const moodMap: Record<string, number> = {
     'happy': 5, 'calm': 4, 'neutral': 3, 'sad': 2, 'stressed': 1, 'angry': 1
   };
@@ -32,354 +49,363 @@ const ProgressPage: React.FC = () => {
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   useEffect(() => {
-    let channel: any;
-
-    const initializeData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const userId = session.user.id;
-        fetchMoodData(userId);
-
-        // Real-time listener for instant UI updates
-        channel = supabase
-          .channel('mood-updates')
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'mood_logs', filter: `user_id=eq.${userId}` },
-            () => fetchMoodData(userId)
-          )
-          .subscribe();
-      } else {
-        setIsLoading(false);
-      }
-    };
-
-    initializeData();
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    fetchInitialData();
   }, []);
 
-  const fetchMoodData = async (userId: string) => {
+  const fetchInitialData = async () => {
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('mood_logs')
-        .select('created_at, mood')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(30);
-
-      if (error) throw error;
-      const validMoods = data || [];
-      setMoods(validMoods);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const userId = session.user.id;
+      await Promise.all([
+        fetchMoodData(userId),
+        fetchJournalData(userId)
+      ]);
       
-      // Trigger AI analysis only if we have data and backend exists
-      if (validMoods.length > 0 && import.meta.env.VITE_RENDER_BACKEND_URL) {
-        analyzeMoods(validMoods);
-      }
-    } catch (err) {
-      console.error("Error fetching moods:", err);
-      setMoods([]);
-    } finally {
-      setIsLoading(false);
+      // Trigger AI analysis with combined context
+      analyzeProgress(userId);
     }
+    setIsLoading(false);
   };
 
-  const analyzeMoods = async (data: MoodLog[]) => {
+  const fetchMoodData = async (userId: string) => {
+    const { data } = await supabase
+      .from('mood_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    setMoods(data || []);
+  };
+
+  const fetchJournalData = async (userId: string) => {
+    const { data } = await supabase
+      .from('journals')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    setJournals(data || []);
+  };
+
+  const analyzeProgress = async (userId: string) => {
     setIsAnalyzing(true);
     try {
-      const moodHistory = data.map(m => ({ 
-        date: m.created_at ? new Date(m.created_at).toLocaleDateString() : 'N/A', 
-        mood: m.mood 
-      }));
+      // Get recent data for analysis context
+      const recentMoods = moods.slice(0, 7).map(m => m.mood);
+      const recentJournals = journals.slice(0, 3).map(j => j.content);
 
-      const baseUrl = import.meta.env.VITE_RENDER_BACKEND_URL;
-      if (!baseUrl) throw new Error("No backend URL");
-
-      // Add a 5-second timeout for the AI
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(`${baseUrl}/analyze-progress`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moods: moodHistory }),
-        signal: controller.signal
+        body: JSON.stringify({ 
+          userId,
+          moods: recentMoods,
+          journals: recentJournals
+        })
       });
-
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Server returned ${response.status}`);
-
-      const dataResult = await response.json();
-      if (dataResult.success) {
+      
+      const result = await response.json();
+      if (result.success) {
         setAnalysis({
-          summary: dataResult.summary,
-          recommendations: dataResult.recommendations
+          summary: result.summary,
+          recommendations: result.recommendations
         });
-        return;
+      } else {
+         throw new Error("Analysis failed");
       }
-      throw new Error("API success flag was false");
-
     } catch (err) {
-      console.error("AI Analysis Error - using local fallback:", err);
-      // LOCAL FALLBACK: If AI is slow or fails, show beautiful bilingual advice immediately
+      // Fallback
       setAnalysis({
-        summary: "Umeze neza cyane! Komeza ulande gahunda yawe / You are making great progress! Continue following your routine.",
-        recommendations: [
-          "Komeza wandika uko wiyumva buri munsi / Keep logging your mood daily.",
-          "Nywa amazi ahagije kandi usinzire neza / Stay hydrated and get enough rest.",
-          "Ganira n'inshuti cyangwa umuryango / Connect with a friend today."
-        ]
+        summary: isRw 
+          ? "Umeze neza uyu munsi, ariko rinda umwanya wo kuruhuka." 
+          : "You are showing steady progress. Remember to prioritize rest this week.",
+        recommendations: isRw 
+          ? ["Komeza wandika buri munsi", "Nywa amazi ahagije", "Ganira n'inshuti"]
+          : ["Keep logging your daily journey", "Stay hydrated and active", "Reach out to a support center if needed"]
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const getWeeklyData = () => {
+  const handleSaveJournal = async () => {
+    if (!newJournal.trim()) return;
+    setIsSavingJournal(true);
     try {
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split('T')[0];
-      }).reverse();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      return last7Days.map(date => {
-        const log = moods.find(m => m.created_at && m.created_at.startsWith(date));
-        return {
-          date,
-          value: log ? (moodMap[log.mood] || 3) : 0,
-          mood: log?.mood || 'none'
-        };
+      const { error } = await supabase.from('journals').insert({
+        user_id: session.user.id,
+        content: newJournal,
+        mood_emoji: '📝'
       });
-    } catch (e) {
-      console.error("Critical error in getWeeklyData:", e);
-      return [];
+
+      if (error) throw error;
+      setNewJournal('');
+      await fetchJournalData(session.user.id);
+      analyzeProgress(session.user.id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingJournal(false);
     }
   };
 
-  const handleShare = async () => {
-    if (!analysis) return;
+  const getWeeklyData = () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
 
-    const shareText = `${isRw ? 'Raporo y\'Iterambere rya Humura AI' : 'Humura AI Progress Report'}\n\n` +
-      `${isRw ? 'Incamake' : 'Summary'}: ${analysis.summary}\n\n` +
-      `${isRw ? 'Inama' : 'Recommendations'}:\n${analysis.recommendations.map(r => `• ${r}`).join('\n')}\n\n` +
-      `${isRw ? 'Byoherejwe binyuze kuri Humura AI' : 'Shared via Humura AI'}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: isRw ? 'Iterambere rya Humura AI' : 'Humura AI Progress',
-          text: shareText,
-        });
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setShowShareModal(true);
-        }
-      }
-    } else {
-      setShowShareModal(true);
-    }
-  };
-
-  const shareText = analysis ? `${isRw ? 'Raporo y\'Iterambere rya Humura AI' : 'Humura AI Progress Report'}\n\n` +
-    `${isRw ? 'Incamake' : 'Summary'}: ${analysis.summary}\n\n` +
-    `${isRw ? 'Inama' : 'Recommendations'}:\n${analysis.recommendations.map(r => `• ${r}`).join('\n')}\n\n` +
-    `${isRw ? 'Byoherejwe binyuze kuri Humura AI' : 'Shared via Humura AI'}` : '';
-
-  const handlePlatformShare = (platform: string) => {
-    const encodedText = encodeURIComponent(shareText);
-    const subject = encodeURIComponent(isRw ? 'Iterambere rya Humura AI' : 'Humura AI Progress Report');
-
-    switch (platform) {
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-        break;
-      case 'telegram':
-        window.open(`https://t.me/share/url?url=&text=${encodedText}`, '_blank');
-        break;
-      case 'email':
-        window.open(`mailto:?subject=${subject}&body=${encodedText}`, '_blank');
-        break;
-      case 'copy':
-        navigator.clipboard.writeText(shareText);
-        alert(isRw ? 'Byakopewe!' : 'Copied to clipboard!');
-        break;
-    }
-    setShowShareModal(false);
+    return last7Days.map(date => {
+      const log = moods.find(m => m.created_at && m.created_at.startsWith(date));
+      return {
+        date,
+        value: log ? (moodMap[log.mood] || 3) : 0,
+        mood: log?.mood || 'none'
+      };
+    });
   };
 
   const weeklyData = getWeeklyData();
 
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-primary" size={48} />
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-12 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#4A2C1A]">{isRw ? 'Iterambere Ryawe' : 'Your Progress'}</h1>
-            <p className="text-[#8B5E3C] mt-1">{isRw ? 'Uko umerewe muri iki cyumweru' : 'How you\'ve been feeling this week'}</p>
-          </div>
-          <div className="p-3 bg-white rounded-2xl shadow-sm border border-[#E8E1DB]">
-            <Calendar className="text-[#8B5E3C]" size={24} />
-          </div>
+    <div className="min-h-screen bg-[#FDFCFB] pt-24 pb-20 px-6">
+      <div className="max-w-4xl mx-auto space-y-10">
+        
+        {/* Selection Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          <button 
+            onClick={() => setActiveTab('mood')}
+            className={`p-6 rounded-[2.5rem] border-2 transition-all text-left flex flex-col justify-between h-40 ${activeTab === 'mood' ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'bg-white border-neutral-100 text-primary-900'}`}
+          >
+            <Heart size={32} fill={activeTab === 'mood' ? 'white' : 'transparent'} className={activeTab === 'mood' ? 'opacity-100' : 'text-primary opacity-20'} />
+            <div>
+              <h3 className="font-black text-lg leading-tight">{isRw ? 'Uko Ndwaye' : 'Mood Journey'}</h3>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${activeTab === 'mood' ? 'text-white/60' : 'text-neutral-400'}`}>{moods.length} {isRw ? 'Ibimaze kwandikwa' : 'Logs recorded'}</p>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('journal')}
+            className={`p-6 rounded-[2.5rem] border-2 transition-all text-left flex flex-col justify-between h-40 ${activeTab === 'journal' ? 'bg-[#8B5E3C] border-[#8B5E3C] text-white shadow-xl shadow-[#8B5E3C]/20' : 'bg-white border-neutral-100 text-primary-900'}`}
+          >
+            <BookOpen size={32} fill={activeTab === 'journal' ? 'white' : 'transparent'} className={activeTab === 'journal' ? 'opacity-100' : 'text-[#8B5E3C] opacity-20'} />
+            <div>
+              <h3 className="font-black text-lg leading-tight">{isRw ? 'Inyandiko Zanjye' : 'Daily Journal'}</h3>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${activeTab === 'journal' ? 'text-white/60' : 'text-neutral-400'}`}>{journals.length} {isRw ? 'Inyandiko' : 'Entries'}</p>
+            </div>
+          </button>
         </div>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <Loader2 className="animate-spin text-[#8B5E3C]" size={48} />
-            <p className="text-[#8B5E3C] italic">{isRw ? 'Turi gukusanya amakuru...' : 'Gathering your progress...'}</p>
-          </div>
-        ) : moods.length === 0 ? (
-          <div className="bg-white p-12 rounded-3xl border border-[#E8E1DB] text-center shadow-sm">
-            <Sparkles className="mx-auto text-[#E8E1DB] mb-4" size={64} />
-            <h2 className="text-xl font-bold text-[#4A2C1A] mb-2">{isRw ? 'Nta makuru aragaragara' : 'No data yet'}</h2>
-            <p className="text-[#8B5E3C] max-w-sm mx-auto">
-              {isRw ? 'Tangira wandika uko umerewe buri munsi kugira ngo urebe amajyambere yawe hano.' : 'Start logging your mood daily to see your weekly trends and AI insights here.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Chart Card */}
-            <div className="md:col-span-2 bg-white p-8 rounded-3xl border border-[#E8E1DB] shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <TrendingUp className="text-[#8B5E3C]" size={20} />
-                <h2 className="text-lg font-bold text-[#4A2C1A]">{isRw ? 'Imyitwarire y’Umutima' : 'Mood Trends'}</h2>
-              </div>
-              
-              <div className="flex items-end justify-between h-48 gap-2">
-                {weeklyData.map((day, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-3 group">
-                    <div className="w-full relative flex flex-col justify-end h-full">
-                      <motion.div 
-                        initial={{ height: 0 }}
-                        animate={{ height: `${(day.value / 5) * 100}%` }}
-                        className={`w-full rounded-t-xl transition-all ${
-                          day.value === 0 ? 'bg-gray-100' : 'bg-[#D4A373] group-hover:bg-[#8B5E3C]'
-                        }`}
-                      />
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Main Visualization Content */}
+          <div className="md:col-span-2 space-y-8">
+            <AnimatePresence mode="wait">
+              {activeTab === 'mood' ? (
+                <motion.div 
+                  key="mood-view"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="text-primary" size={20} />
+                      <h2 className="text-xl font-black text-primary-900">{isRw ? 'Imiterere y\'Icyumweru' : 'Weekly Trends'}</h2>
                     </div>
-                    <span className="text-xs font-medium text-[#8B5E3C] uppercase">{dayNames[idx]}</span>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* AI Insights Card */}
-            <div className="bg-[#8B5E3C] p-8 rounded-3xl text-white shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-6">
-                  <Sparkles size={20} />
-                  <h2 className="text-lg font-bold">{isRw ? 'Gusobanurirwa' : 'AI Insights'}</h2>
+                  <div className="flex items-end justify-between h-56 gap-2">
+                    {weeklyData.map((day, idx) => (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-4">
+                        <div className="w-full relative flex flex-col justify-end h-full">
+                          <motion.div 
+                            initial={{ height: 0 }}
+                            animate={{ height: `${(day.value / 5) * 100}%` }}
+                            className={`w-full rounded-t-2xl transition-all ${
+                              day.value === 0 ? 'bg-neutral-50' : 'bg-primary shadow-lg shadow-primary/10'
+                            }`}
+                          />
+                        </div>
+                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-tighter">{dayNames[idx]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="journal-view"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-6"
+                >
+                  {/* Journal Input */}
+                  <div className="bg-white p-6 rounded-[2.5rem] border-2 border-[#8B5E3C]/10 shadow-sm space-y-4">
+                    <h2 className="text-lg font-black text-[#8B5E3C] flex items-center gap-2">
+                      <Plus size={20} />
+                      {isRw ? 'Andika inyandiko nshya' : 'Write a new entry'}
+                    </h2>
+                    <textarea 
+                      value={newJournal}
+                      onChange={(e) => setNewJournal(e.target.value)}
+                      placeholder={isRw ? 'Andika uko wiyumva...' : 'How was your day? Pour your heart out...'}
+                      className="w-full h-32 p-4 bg-neutral-50 rounded-2xl border-none focus:ring-2 ring-[#8B5E3C]/20 outline-none font-medium text-sm"
+                    />
+                    <button 
+                      onClick={handleSaveJournal}
+                      disabled={isSavingJournal || !newJournal.trim()}
+                      className="w-full py-4 bg-[#8B5E3C] text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-[#8B5E3C]/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {isSavingJournal ? <Loader2 className="animate-spin" /> : <Send size={16} />}
+                      {isRw ? 'Bika' : 'Save Entry'}
+                    </button>
+                  </div>
+
+                  {/* Journal List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest">
+                       <History size={12} />
+                       {isRw ? 'Ibyanditswe' : 'Previous Entries'}
+                    </div>
+                    {journals.length === 0 ? (
+                      <div className="p-10 text-center text-neutral-300 font-bold italic border-2 border-dashed border-neutral-100 rounded-3xl">
+                        No entries yet. Start writing to see your journey.
+                      </div>
+                    ) : (
+                      journals.map(j => (
+                        <div key={j.id} className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm space-y-3">
+                           <div className="flex items-center justify-between">
+                             <span className="text-[10px] font-black text-neutral-300">{new Date(j.created_at).toLocaleDateString()}</span>
+                             <span className="text-lg">{j.mood_emoji}</span>
+                           </div>
+                           <p className="text-sm font-medium text-primary-900 leading-relaxed">{j.content}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* AI Recommendations Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-primary p-8 rounded-[3rem] text-white shadow-2xl shadow-primary/20 flex flex-col justify-between h-full min-h-[500px]">
+              <div className="space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
+                    <Sparkles size={20} />
+                  </div>
+                  <h2 className="text-xl font-black">{isRw ? 'Ubujyanama' : 'AI Insights'}</h2>
                 </div>
                 
                 {isAnalyzing ? (
-                  <div className="space-y-4 py-8">
-                    <Loader2 className="animate-spin opacity-50" size={32} />
-                    <p className="text-sm italic opacity-80">{isRw ? 'Humura AI arasesengura...' : 'Humura AI is analyzing...'}</p>
+                  <div className="space-y-6 py-10">
+                    <div className="flex gap-2">
+                       <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                       <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
+                       <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-60">{isRw ? 'Humura AI arasesengura...' : 'Analyzing your week...'}</p>
                   </div>
                 ) : analysis ? (
-                  <div className="space-y-6">
-                    <p className="text-sm leading-relaxed font-medium">"{analysis.summary}"</p>
-                    <div className="space-y-3">
-                      {analysis.recommendations.map((tip, i) => (
-                        <div key={i} className="flex gap-2 text-xs bg-white/10 p-3 rounded-xl border border-white/10">
-                          <ChevronRight size={14} className="flex-shrink-0" />
-                          <span>{tip}</span>
-                        </div>
-                      ))}
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{isRw ? 'Inshamake' : 'Weekly Summary'}</p>
+                       <p className="text-sm font-medium leading-relaxed italic">"{analysis.summary}"</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{isRw ? 'Inama' : 'Recommendations'}</p>
+                      <div className="space-y-3">
+                        {analysis.recommendations.map((tip, i) => (
+                          <div key={i} className="flex gap-3 text-xs bg-white/10 p-4 rounded-2xl border border-white/10 group hover:bg-white/20 transition-all cursor-default">
+                            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                               <ChevronRight size={10} />
+                            </div>
+                            <span className="font-bold">{tip}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-sm opacity-80">
-                    <AlertCircle size={16} />
-                    <span>{isRw ? 'Ntabwo twashoboye gusesengura.' : 'Could not generate analysis.'}</span>
+                  <div className="flex flex-col items-center gap-4 py-20 text-center opacity-40">
+                    <AlertCircle size={40} />
+                    <p className="text-xs font-bold uppercase tracking-widest">{isRw ? 'Nta makuru ahagije' : 'Not enough data for insights'}</p>
                   </div>
                 )}
               </div>
               
               <button 
-                onClick={handleShare}
+                onClick={() => setShowShareModal(true)}
                 disabled={!analysis || isAnalyzing}
-                className="mt-8 w-full py-3 bg-white text-[#8B5E3C] rounded-2xl text-sm font-bold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="mt-10 w-full py-4 bg-white text-primary rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 <Share2 size={18} />
-                {isRw ? 'Sangira n’Inshuti' : 'Share Progress'}
+                {isRw ? 'Sangira Raporo' : 'Share Report'}
               </button>
             </div>
+            
+            {/* Crisis Quick Link */}
+            <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100 flex items-center gap-4">
+               <div className="w-10 h-10 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                 <AlertTriangle size={20} />
+               </div>
+               <div>
+                 <p className="text-xs font-black text-red-900">{isRw ? 'Ubufasha bwihutirwa?' : 'Need urgent help?'}</p>
+                 <button onClick={() => window.location.href = '/emergency'} className="text-[10px] font-bold text-red-600 hover:underline">
+                   {isRw ? 'Kanda hano ubu' : 'Click here now'} →
+                 </button>
+               </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Share Modal */}
+      {/* Share Modal - Reused from previous version but styled better */}
       <AnimatePresence>
         {showShareModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowShareModal(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-[#E8E1DB] flex items-center justify-between">
-                <h3 className="text-lg font-bold text-[#4A2C1A]">{isRw ? 'Sangira Raporo' : 'Share Report'}</h3>
-                <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-[#FDFCFB] rounded-full transition-colors">
-                  <X size={20} className="text-[#8B5E3C]" />
-                </button>
-              </div>
-              <div className="p-6 grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => handlePlatformShare('whatsapp')}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-green-50 hover:border-green-200 transition-all group"
-                >
-                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
-                    <MessageCircle size={24} />
-                  </div>
-                  <span className="text-xs font-bold text-[#4A2C1A]">WhatsApp</span>
-                </button>
-                <button 
-                  onClick={() => handlePlatformShare('telegram')}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-blue-50 hover:border-blue-200 transition-all group"
-                >
-                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                    <Send size={24} />
-                  </div>
-                  <span className="text-xs font-bold text-[#4A2C1A]">Telegram</span>
-                </button>
-                <button 
-                  onClick={() => handlePlatformShare('email')}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-red-50 hover:border-red-200 transition-all group"
-                >
-                  <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
-                    <Mail size={24} />
-                  </div>
-                  <span className="text-xs font-bold text-[#4A2C1A]">Email</span>
-                </button>
-                <button 
-                  onClick={() => handlePlatformShare('copy')}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-[#E8E1DB] hover:bg-[#FDFCFB] transition-all group"
-                >
-                  <div className="w-12 h-12 bg-[#8B5E3C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#8B5E3C]/20 group-hover:scale-110 transition-transform">
-                    <Copy size={24} />
-                  </div>
-                  <span className="text-xs font-bold text-[#4A2C1A]">{isRw ? 'Kopiye' : 'Copy'}</span>
-                </button>
-              </div>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} className="absolute inset-0 bg-primary-900/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative w-full max-w-sm bg-white rounded-[3rem] shadow-2xl overflow-hidden p-8 space-y-8">
+               <div className="flex items-center justify-between">
+                 <h3 className="text-xl font-black text-primary-900">{isRw ? 'Sangira Raporo' : 'Share Progress'}</h3>
+                 <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors">
+                   <X size={20} className="text-neutral-300" />
+                 </button>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'whatsapp', icon: MessageCircle, color: 'bg-green-500', label: 'WhatsApp' },
+                    { id: 'telegram', icon: Send, color: 'bg-blue-500', label: 'Telegram' },
+                    { id: 'email', icon: Mail, color: 'bg-red-500', label: 'Email' },
+                    { id: 'copy', icon: Copy, color: 'bg-primary', label: isRw ? 'Kopiye' : 'Copy' },
+                  ].map(p => (
+                    <button key={p.id} className="flex flex-col items-center gap-3 p-6 rounded-[2rem] bg-neutral-50 hover:bg-neutral-100 transition-all group">
+                       <div className={`w-12 h-12 ${p.color} text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                         <p.icon size={20} />
+                       </div>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-primary-900">{p.label}</span>
+                    </button>
+                  ))}
+               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
     </div>
   );
-};
-
-export default ProgressPage;
+}
