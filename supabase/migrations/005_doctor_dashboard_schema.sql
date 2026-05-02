@@ -55,7 +55,7 @@ CREATE TABLE public.sessions (
     scheduled_at TIMESTAMPTZ,
     started_at TIMESTAMPTZ,
     ended_at TIMESTAMPTZ,
-    status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'active', 'completed', 'missed')),
+    status TEXT DEFAULT 'scheduled' CHECK (status IN ('pending', 'scheduled', 'confirmed', 'active', 'completed', 'missed')),
     soap_note JSONB, -- {subjective, objective, assessment, plan}
     patient_rating INTEGER CHECK (patient_rating BETWEEN 1 AND 5),
     created_at TIMESTAMPTZ DEFAULT NOW()
