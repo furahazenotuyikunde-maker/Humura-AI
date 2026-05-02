@@ -242,15 +242,7 @@ export default function DoctorDashboard() {
       const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctor/generate-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: patient.id,
-          dataContext: {
-            primary_concern: patient.primary_concern,
-            phq9: patient.phq9_score,
-            gad7: patient.gad7_score,
-            status: patient.status
-          }
-        })
+        body: JSON.stringify({ patientId: patient.id })
       });
 
       if (!response.ok) {

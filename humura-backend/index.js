@@ -281,21 +281,57 @@ app.post('/api/ai/translate', async (req, res) => {
 // 4f. Doctor Dashboard Generate Report
 app.post('/api/doctor/generate-report', async (req, res) => {
   try {
-    const { patientId, dataContext } = req.body;
-    const prompt = `You are a clinical AI. Analyze this patient's data and generate a progress report.
-    Patient Data: ${JSON.stringify(dataContext)}
-    Return JSON only: { "mood_trend": "improving|stable|declining", "ai_summary": "...", "recommendations": [] }`;
+    const { patientId } = req.body;
+
+    // 1. Fetch real-time data context from DB to ensure accuracy
+    const [moodLogs, journals, patientInfo] = await Promise.all([
+      supabase.from('mood_logs').select('*').eq('patient_id', patientId).order('logged_at', { ascending: false }).limit(14),
+      supabase.from('user_journals').select('*').eq('user_id', patientId).order('created_at', { ascending: false }).limit(5),
+      supabase.from('patients').select('*').eq('id', patientId).single()
+    ]);
+
+    const dataContext = {
+      primary_concern: patientInfo.data?.primary_concern,
+      phq9: patientInfo.data?.phq9_score,
+      gad7: patientInfo.data?.gad7_score,
+      mood_history: moodLogs.data?.map(m => ({ score: m.mood_score, energy: m.energy_level, date: m.logged_at })),
+      recent_journals: journals.data?.map(j => j.content)
+    };
+
+    const prompt = `You are a professional clinical AI assistant for mental health professionals in Rwanda. 
+    Analyze this patient's real-time data and generate a clinical progress report.
+    
+    PATIENT DATA:
+    - Primary Concern: ${dataContext.primary_concern}
+    - Baseline Scores: PHQ9=${dataContext.phq9}, GAD7=${dataContext.gad7}
+    - Recent Mood History: ${JSON.stringify(dataContext.mood_history)}
+    - Recent Journal Thoughts: ${JSON.stringify(dataContext.recent_journals)}
+
+    Return a JSON object only:
+    {
+      "mood_trend": "improving" | "stable" | "declining",
+      "avg_mood_score": number,
+      "ai_summary": "A 2-3 sentence clinical overview of the patient's current state.",
+      "recommendations": ["specific clinical step 1", "specific clinical step 2"]
+    }`;
 
     const text = await callGemini(prompt);
     const reportData = JSON.parse(text.replace(/```json|```/g, '').trim());
     
-    await supabase.from('progress_reports').insert([{
+    // Save the generated report
+    const { data: savedReport, error: insertError } = await supabase.from('progress_reports').insert([{
       patient_id: patientId,
-      ...reportData
-    }]);
+      mood_trend: reportData.mood_trend,
+      avg_mood_score: reportData.avg_mood_score,
+      ai_summary: reportData.ai_summary,
+      recommendations: reportData.recommendations
+    }]).select().single();
 
-    return res.status(200).json({ success: true, report: reportData });
+    if (insertError) throw insertError;
+
+    return res.status(200).json({ success: true, report: savedReport });
   } catch (error) {
+    console.error("Report Generation Error:", error);
     return res.status(500).json({ error: error.message });
   }
 });
