@@ -7,6 +7,8 @@ const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { callGemini } = require('./lib/gemini');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 
 dotenv.config();
@@ -422,5 +424,52 @@ Respond ONLY with this exact JSON structure, no extra text:
 };
 
 app.post('/api/analyze-progress', handleAnalyzeProgress);
+
+// ─── Sign Language: Camera Image Analysis ───────────────────────────────────
+app.post('/analyze-sign', upload.single('image'), async (req, res) => {
+  try {
+    const prompt = req.body.prompt || 'Analyze this sign language gesture and return JSON: {"detectedSign": "...", "explanation": "..."}';
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype || 'image/jpeg';
+
+    const result = await geminiModel.generateContent([
+      { text: prompt },
+      { inlineData: { mimeType, data: base64Image } }
+    ]);
+
+    const text = (await result.response).text();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const reply = jsonMatch ? jsonMatch[0] : text;
+
+    res.json({ success: true, reply });
+  } catch (error) {
+    console.error('analyze-sign error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Sign Language: Text Chat ────────────────────────────────────────────────
+app.post('/chat', async (req, res) => {
+  try {
+    const { message, history = [], lang } = req.body;
+
+    const contents = [
+      ...(history || []),
+      { role: 'user', parts: [{ text: message }] }
+    ];
+
+    const result = await geminiModel.generateContent({ contents });
+    const reply = (await result.response).text();
+    res.json({ success: true, reply });
+  } catch (error) {
+    console.error('chat error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 server.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
