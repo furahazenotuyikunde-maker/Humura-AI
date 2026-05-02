@@ -728,6 +728,8 @@ export default function DoctorDashboard() {
               </div>
             )}
 
+          </div>
+
           {/* Right Sidebar - Dynamic Context */}
           {activeTab === 'dashboard' && (
             <div className="w-80 space-y-6">
