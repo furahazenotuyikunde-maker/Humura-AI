@@ -150,10 +150,10 @@ export default function IntakePage() {
           <Users size={32} className="text-primary" />
         </div>
         <h2 className="text-3xl font-black text-primary-900 mb-2">
-          {isRw ? 'Hitamo umuvuzi wawe' : 'Choose your professional'}
+          {isRw ? 'Hitamo umuvuzi wawe' : 'Choose your mental health professional'}
         </h2>
         <p className="text-sm font-medium text-primary-600">
-          {isRw ? 'Dufite inzobere ziteguye kugufasha uyu munsi.' : 'We have professionals ready to support you today.'}
+          {isRw ? 'Dufite inzobere ziteguye kugufasha uyu munsi.' : 'We have mental health professionals ready to support you today.'}
         </p>
       </header>
 
@@ -162,7 +162,7 @@ export default function IntakePage() {
           <div className="flex flex-col items-center justify-center p-10 text-center space-y-4">
             <Loader2 className="animate-spin text-primary" size={40} />
             <p className="text-sm font-bold text-neutral-400">
-               {isRw ? 'Turashaka abavuzi...' : 'Looking for available professionals...'}
+                {isRw ? 'Turashaka abavuzi...' : 'Looking for mental health professionals...'}
             </p>
           </div>
         ) : (
@@ -297,7 +297,7 @@ export default function IntakePage() {
                   {isRw ? 'Andi makuru make' : 'A little more'}
                 </h2>
                 <p className="text-sm font-medium text-primary-600">
-                  {isRw ? 'Ibi bidufasha kugushakira umuganga w\'ukuri.' : 'This helps us find the right professional for you.'}
+                  {isRw ? 'Ibi bidufasha kugushakira umuganga w\'ukuri.' : 'This helps us find the right mental health professional for you.'}
                 </p>
               </div>
 
@@ -336,7 +336,7 @@ export default function IntakePage() {
                   onClick={handleComplete}
                   className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                 >
-                  {isRw ? 'Reba inzobere' : 'View professionals'} <ChevronRight size={20} />
+                  {isRw ? 'Reba inzobere' : 'View mental health professionals'} <ChevronRight size={20} />
                 </button>
                 <button 
                   onClick={handleComplete}

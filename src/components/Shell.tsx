@@ -107,7 +107,7 @@ export const Shell: React.FC<ShellProps> = () => {
   // Bottom mobile nav (primary 4)
   const mobileNavItems = [
     { to: '/', icon: Home, label: t('nav.home') },
-    { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Muganga' : 'Professional' },
+    { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Inzobere' : 'Mental Health Professional' },
     { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
     { to: '/progress', icon: BarChart2, label: t('nav.progress') },
   ];
@@ -118,7 +118,7 @@ export const Shell: React.FC<ShellProps> = () => {
       title: isRw ? 'Ibihingwa' : 'Core',
       items: [
         { index: true, to: '/', icon: Home, label: t('nav.home') },
-        { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Gura na Muganga' : 'Meet Professional' },
+        { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Inzobere mu buzima' : 'Meet Mental Health Professional' },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
         { to: '/notifications', icon: Bell, label: isRw ? 'Imenyesha' : 'Notifications' },

@@ -65,7 +65,7 @@ export default function LandingPage() {
             className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/20 flex items-center justify-center gap-3 group"
           >
             <Heart size={20} className="group-hover:fill-white transition-all" />
-            {isRw ? 'Nshaka ubufasha' : 'I need support'}
+            {isRw ? 'Shaka ubufasha mu buzima bwo mu mutwe' : 'Seek mental health support'}
           </motion.button>
 
           <motion.button
@@ -74,7 +74,7 @@ export default function LandingPage() {
             className="w-full py-5 bg-neutral-50 text-primary-900 font-black rounded-3xl border-2 border-neutral-100 flex items-center justify-center gap-3 hover:bg-neutral-100 transition-all"
           >
             <Briefcase size={20} />
-            {isRw ? 'Ndi inzobere' : 'I am a professional'}
+            {isRw ? 'Inzobere mu buzima bwo mu mutwe' : 'Mental health professional'}
           </motion.button>
         </div>
 

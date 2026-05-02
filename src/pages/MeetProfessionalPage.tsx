@@ -119,7 +119,7 @@ export default function MeetProfessionalPage() {
             {isRw ? 'Gura na Muganga' : 'Clinical Workspace'}
           </h1>
           <p className="text-sm font-medium text-primary-600/70 italic">
-            {isRw ? 'Ubufasha bw’inzobere mu gihe ubuvukeneye.' : 'Professional support when you need it most.'}
+            {isRw ? 'Ubufasha bw’inzobere mu gihe ubuvukeneye.' : 'Mental health professional support when you need it most.'}
           </p>
         </header>
 
@@ -157,7 +157,7 @@ export default function MeetProfessionalPage() {
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full"></div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">Your Professional</p>
+                    <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">Your Mental Health Professional</p>
                     <h3 className="text-2xl font-black text-primary-900 leading-tight">{doctor.full_name}</h3>
                     <p className="text-xs font-bold text-primary-600/60">Clinical Psychologist · Online</p>
                   </div>
@@ -184,7 +184,7 @@ export default function MeetProfessionalPage() {
                     if (activeSession?.status === 'confirmed' || activeSession?.status === 'active') {
                       navigate('/chat');
                     } else {
-                      showToast(isRw ? 'Utegereje ko muganga yemera...' : 'Waiting for professional approval...', 'error');
+                      showToast(isRw ? 'Utegereje ko muganga yemera...' : 'Waiting for mental health professional approval...', 'error');
                     }
                   }}
                   className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-[2.5rem] transition-all duration-300 ${
@@ -231,16 +231,16 @@ export default function MeetProfessionalPage() {
               <Users size={40} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-primary-900">{isRw ? 'Nta muvuzi urahabwa' : 'No Professional Assigned'}</h3>
+              <h3 className="text-xl font-black text-primary-900">{isRw ? 'Nta muvuzi urahabwa' : 'No Mental Health Professional Assigned'}</h3>
               <p className="text-xs font-bold text-neutral-400">
-                {isRw ? 'Ugomba guhitamo umuvuzi kugira ngo utangire.' : 'You need to select a professional to begin your journey.'}
+                {isRw ? 'Ugomba guhitamo umuvuzi kugira ngo utangire.' : 'You need to select a mental health professional to begin your journey.'}
               </p>
             </div>
             <button 
               onClick={() => navigate('/intake')}
               className="w-full py-5 bg-primary text-white font-black rounded-3xl flex items-center justify-center gap-2"
             >
-              {isRw ? 'Hitamo umuvuzi' : 'Find Professional'}
+              {isRw ? 'Hitamo umuvuzi' : 'Find Mental Health Professional'}
               <ChevronRight size={18} />
             </button>
           </div>

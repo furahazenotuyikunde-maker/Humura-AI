@@ -291,7 +291,7 @@ export default function ProfessionalsPage() {
         <div className="flex items-center gap-2 mb-1">
           <User className="text-primary" size={28} />
           <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-            {isRw ? 'Inzobere z\'Ubuzima bwo mu Mutwe' : 'Meet Professionals'}
+            {isRw ? 'Inzobere z\'Ubuzima bwo mu Mutwe' : 'Meet Mental Health Professionals'}
           </h1>
         </div>
         <p className="text-primary-600 text-sm">
@@ -337,12 +337,12 @@ export default function ProfessionalsPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="animate-spin text-primary" size={32} />
             <p className="text-sm font-bold text-primary-400 uppercase tracking-widest">
-              {isRw ? 'Turi gushaka abaganga...' : 'Finding professionals...'}
+              {isRw ? 'Turi gushaka abaganga...' : 'Finding mental health professionals...'}
             </p>
           </div>
         ) : filteredProfessionals.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-neutral-400 font-bold">{isRw ? 'Nta nzirabere zashoboye kuboneka.' : 'No professionals found matching your filter.'}</p>
+            <p className="text-neutral-400 font-bold">{isRw ? 'Nta nzirabere zashoboye kuboneka.' : 'No mental health professionals found matching your filter.'}</p>
           </div>
         ) : (
           filteredProfessionals.map((pro, idx) => (

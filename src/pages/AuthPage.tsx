@@ -121,7 +121,7 @@ export default function AuthPage() {
       <div className="w-full max-w-sm space-y-10">
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-black text-primary-900 tracking-tight">
-            {mode === 'login' ? (isRw ? 'Injira' : 'Welcome Back') : (isRw ? 'Twagufasha' : 'Let\'s get you help')}
+            {mode === 'login' ? (isRw ? 'Injira' : 'Welcome Back') : (isRw ? 'Twagufasha' : 'Get mental health support')}
           </h1>
           <p className="text-primary-600 font-bold">
             {mode === 'login' ? (isRw ? 'Komeza urugendo rwawe' : 'Continue your journey') : (isRw ? 'Andika imyirondoro yawe' : 'Tell us a little about yourself')}

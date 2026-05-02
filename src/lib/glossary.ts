@@ -35,7 +35,7 @@ export const MENTAL_HEALTH_GLOSSARY: Record<string, { rw: string; en: string; ca
   "meditate": { en: "Meditate", rw: "itekerezeho", category: "Action" },
   "rest": { en: "Rest", rw: "Ruhuka", category: "Action" },
   "talk to someone": { en: "Talk to someone", rw: "Bwira umuntu", category: "Action" },
-  "seek help": { en: "Seek help", rw: "Shaka ubufasha", category: "Action" },
+  "seek mental health support": { en: "Seek mental health support", rw: "Shaka ubufasha mu buzima bwo mu mutwe", category: "Action" },
   "exercise": { en: "Exercise", rw: "Imyitozo ngororamubiri", category: "Action" },
   "sleep": { en: "Sleep", rw: "Sinzira", category: "Action" },
   "eat well": { en: "Eat well", rw: "Rya neza", category: "Action" },

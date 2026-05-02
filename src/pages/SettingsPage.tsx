@@ -133,7 +133,7 @@ export default function SettingsPage() {
               <div>
                 <p className="font-black text-lg">{profile?.full_name || 'Humura User'}</p>
                 <p className="text-sm font-medium">
-                  {profile?.role === 'doctor' ? (isRw ? 'Inzobere mu Buzima' : 'Clinical Professional') : (isRw ? 'Umurwayi' : 'Patient User')}
+                  {profile?.role === 'doctor' ? (isRw ? 'Inzobere mu Buzima' : 'Mental Health Professional') : (isRw ? 'Umurwayi' : 'Patient User')}
                 </p>
               </div>
             </div>
@@ -155,7 +155,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2 border-b-2 border-black pb-2">
               <Settings size={20} className="text-primary" />
               <h2 className="text-lg font-black uppercase text-primary">
-                {isRw ? 'Umwirondoro w\'Akazi' : 'Professional Profile'}
+                {isRw ? 'Umwirondoro w\'Akazi' : 'Mental Health Professional Profile'}
               </h2>
             </div>
             <div className="p-6 border-2 border-black rounded-2xl bg-primary-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-6">
