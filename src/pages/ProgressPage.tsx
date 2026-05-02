@@ -59,8 +59,49 @@ export default function ProgressPage() {
     fetchInitialData();
   }, []);
 
-  const moodMap: Record<string, number> = {
-    'happy': 5, 'calm': 4, 'neutral': 3, 'sad': 2, 'stressed': 1, 'angry': 1
+  const MOODS = [
+    { id: 'happy',     emoji: '😊', en: 'Happy',      rw: 'Ndishimye',     score: 5, color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
+    { id: 'excited',   emoji: '🤩', en: 'Excited',    rw: 'Nshonje',       score: 5, color: 'bg-orange-50 border-orange-200 text-orange-700' },
+    { id: 'grateful',  emoji: '🙏', en: 'Grateful',   rw: 'Ndashimira',    score: 5, color: 'bg-green-50 border-green-200 text-green-700' },
+    { id: 'calm',      emoji: '😌', en: 'Calm',       rw: 'Ntuze',         score: 4, color: 'bg-blue-50 border-blue-200 text-blue-700' },
+    { id: 'hopeful',   emoji: '🌟', en: 'Hopeful',    rw: 'Nzizi',         score: 4, color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
+    { id: 'loved',     emoji: '🥰', en: 'Loved',      rw: 'Nkundwa',       score: 5, color: 'bg-pink-50 border-pink-200 text-pink-700' },
+    { id: 'neutral',   emoji: '😐', en: 'Neutral',    rw: 'Ahagaze',       score: 3, color: 'bg-gray-50 border-gray-200 text-gray-700' },
+    { id: 'tired',     emoji: '😴', en: 'Tired',      rw: 'Narushye',      score: 2, color: 'bg-slate-50 border-slate-200 text-slate-700' },
+    { id: 'lonely',    emoji: '🥺', en: 'Lonely',     rw: 'Ndi Ngenyine',  score: 2, color: 'bg-purple-50 border-purple-200 text-purple-700' },
+    { id: 'confused',  emoji: '😕', en: 'Confused',   rw: 'Sinsobanukiwe', score: 2, color: 'bg-amber-50 border-amber-200 text-amber-700' },
+    { id: 'sad',       emoji: '😢', en: 'Sad',        rw: 'Ndababaye',     score: 2, color: 'bg-blue-50 border-blue-300 text-blue-800' },
+    { id: 'anxious',   emoji: '😰', en: 'Anxious',    rw: 'Mfite ubwoba',  score: 1, color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
+    { id: 'stressed',  emoji: '😤', en: 'Stressed',   rw: 'Nagoye',        score: 1, color: 'bg-red-50 border-red-200 text-red-700' },
+    { id: 'angry',     emoji: '😠', en: 'Angry',      rw: 'Ndarakaye',     score: 1, color: 'bg-red-50 border-red-300 text-red-800' },
+    { id: 'hopeless',  emoji: '😞', en: 'Hopeless',   rw: 'Ntakizere',     score: 1, color: 'bg-neutral-50 border-neutral-300 text-neutral-700' },
+    { id: 'scared',    emoji: '😨', en: 'Scared',     rw: 'Ndigutinya',    score: 1, color: 'bg-violet-50 border-violet-200 text-violet-700' },
+  ];
+
+  const moodMap: Record<string, number> = Object.fromEntries(MOODS.map(m => [m.id, m.score]));
+  const [isLoggingMood, setIsLoggingMood] = useState(false);
+  const [lastLoggedMood, setLastLoggedMood] = useState<string | null>(null);
+
+  const logMood = async (moodId: string) => {
+    if (!user || isLoggingMood) return;
+    setIsLoggingMood(true);
+    setLastLoggedMood(moodId);
+    try {
+      const moodObj = MOODS.find(m => m.id === moodId)!;
+      await supabase.from('mood_logs').insert({
+        user_id: user.id,
+        mood: moodId,
+        emoji: moodObj.emoji,
+        score: moodObj.score,
+        created_at: new Date().toISOString()
+      });
+      await fetchMoodData(user.id);
+      analyzeProgress(user.id);
+    } catch (err) {
+      console.error('Mood log error:', err);
+    } finally {
+      setIsLoggingMood(false);
+    }
   };
 
   const dayNames = isRw 
@@ -271,30 +312,61 @@ export default function ProgressPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm"
+                  className="space-y-6"
                 >
-                  <div className="flex items-center justify-between mb-10">
-                    <div className="flex items-center gap-3">
+                  {/* Mood Logger */}
+                  <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Heart className="text-primary" size={20} />
+                      <h2 className="text-xl font-black text-primary-900">{isRw ? 'Ubu Wiyumva Bite?' : 'How Are You Feeling Now?'}</h2>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {MOODS.map(mood => (
+                        <motion.button
+                          key={mood.id}
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => logMood(mood.id)}
+                          disabled={isLoggingMood}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase tracking-tight ${
+                            lastLoggedMood === mood.id
+                              ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                              : `${mood.color} hover:scale-105`
+                          } disabled:opacity-50`}
+                        >
+                          <span className="text-2xl">{mood.emoji}</span>
+                          <span className="leading-tight text-center">{isRw ? mood.rw : mood.en}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                    {lastLoggedMood && (
+                      <p className="text-center text-xs text-primary font-bold mt-4 animate-pulse">
+                        ✓ {isRw ? 'Byabitseho! AI irimo gusesengura...' : 'Logged! AI is analyzing your data...'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Weekly Trends Chart */}
+                  <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-10">
                       <TrendingUp className="text-primary" size={20} />
                       <h2 className="text-xl font-black text-primary-900">{isRw ? 'Imiterere y\'Icyumweru' : 'Weekly Trends'}</h2>
                     </div>
-                  </div>
-
-                  <div className="flex items-end justify-between h-56 gap-2">
-                    {weeklyData.map((day, idx) => (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-4">
-                        <div className="w-full relative flex flex-col justify-end h-full">
-                          <motion.div 
-                            initial={{ height: 0 }}
-                            animate={{ height: `${(day.value / 5) * 100}%` }}
-                            className={`w-full rounded-t-2xl transition-all ${
-                              day.value === 0 ? 'bg-neutral-50' : 'bg-primary shadow-lg shadow-primary/10'
-                            }`}
-                          />
+                    <div className="flex items-end justify-between h-56 gap-2">
+                      {weeklyData.map((day, idx) => (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-4">
+                          <div className="w-full relative flex flex-col justify-end h-full">
+                            <motion.div 
+                              initial={{ height: 0 }}
+                              animate={{ height: `${(day.value / 5) * 100}%` }}
+                              className={`w-full rounded-t-2xl transition-all ${
+                                day.value === 0 ? 'bg-neutral-50' : 'bg-primary shadow-lg shadow-primary/10'
+                              }`}
+                            />
+                          </div>
+                          <span className="text-[10px] font-black text-neutral-400 uppercase tracking-tighter">{dayNames[idx]}</span>
                         </div>
-                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-tighter">{dayNames[idx]}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               ) : (
