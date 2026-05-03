@@ -237,6 +237,18 @@ export default function SignLanguagePage() {
     }, 'image/jpeg', 0.8);
   };
 
+  const generateFallback = () => {
+    const quotaMessage = isRw
+      ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
+      : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
+    if (selected.some(s => s.isCrisis)) {
+      return isRw
+        ? `Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.`
+        : `I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.`;
+    }
+    return quotaMessage;
+  };
+
   const handleSend = async () => {
     if (selected.length === 0 || isSendingRef.current) return;
     const message = composeMessage();
@@ -244,28 +256,6 @@ export default function SignLanguagePage() {
     setAiResponse('');
     setErrorMessage('');
     isSendingRef.current = true;
-
-    const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('too many requests');
-    if (isQuota) return isRw
-      ? "Wageze ku mupaka wa buri munsi. Gerageza nyuma y'isaha 1."
-      : "You've hit the quota limit. Please try again in 1 hour.";
-    return isRw
-      ? "Ibibazo by'itumanaho. Gerageza nanone."
-      : "Connection error. Please try again.";
-  };
-
-  const generateFallback = () => {
-      const quotaMessage = isRw
-        ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
-        : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
-
-      if (selected.some(s => s.isCrisis)) {
-        return isRw
-          ? `Ndakwumva cyane, kandi nishimye ko watugezeho. Ubuzima bwawe bufite agaciro kanini. Ndakwinginga hamagara ako kanya: 114 cyangwa +250 790 003 002. Ntugomba kubicamo wenyine.`
-          : `I hear you deeply, and I am so glad you reached out. Your life has incredible value. Please call right now: 114 or +250 790 003 002. You absolutely do not have to face this alone.`;
-      }
-      return quotaMessage;
-    };
 
     try {
       console.log('[GEMINI] ▶ Request fired (Sign) | timestamp=' + Date.now());
@@ -291,16 +281,6 @@ export default function SignLanguagePage() {
       console.error('[RENDER] ✖ Error:', err.message);
       setAiResponse(generateFallback());
       setErrorMessage(friendlyError(err));
-      addNotification({
-        type: 'therapy',
-        titleEn: 'Sign Language AI Error',
-        titleRw: 'Ikosa rya AI ku Marenga',
-        messageEn: 'You may have hit the system limit. Please try again in 2 hours.',
-        messageRw: 'Ushobora kuba wageze ku mupaka wa sisitemu. Gerageza nyuma y\'amasaha 2.',
-        icon: 'MessageCircle',
-        color: 'text-red-500 bg-red-50',
-        link: '/sign-language'
-      });
     } finally {
       setIsAnalyzing(false);
       setIsLoading(false);
