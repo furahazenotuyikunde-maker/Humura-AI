@@ -1,4 +1,4 @@
-// AUDITED — max 1 Gemini 2.5 Flash call per user message
+// AUDITED — max 1 Gemini 3 Flash Preview call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// SINGLE Gemini 2.5 Flash call — deduplication guards applied
+// SINGLE Gemini 3 Flash Preview call — deduplication guards applied
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -24,9 +24,9 @@ serve(async (req) => {
 
     console.log('[GEMINI] ▶ Request fired (Sign-Detect) | timestamp=' + Date.now());
 
-    // Call Gemini 3-Flash Vision
+    // Call Gemini 3 Flash Preview Vision
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

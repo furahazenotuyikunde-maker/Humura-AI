@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2, MapPin } from 'lucide-react';
+import { AlertTriangle, Phone, Send, X, Volume2, VolumeX, RotateCcw, Camera, CameraOff, ScanEye, Loader2, MapPin, AlertCircle, RefreshCcw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { addNotification } from '../lib/notifications';
 
@@ -636,7 +636,7 @@ export default function SignLanguagePage() {
                   {isRw ? 'Sikanira Byikora (AI)' : 'Auto-Detect Signs'}
                 </span>
                 <span className="text-[10px] text-primary-600 leading-tight">
-                  {isRw ? 'Gemini 2.5 Flash isoma ibimenyetso' : 'Gemini 2.5 Flash scans your body language'}
+                  {isRw ? 'Gemini 3 Flash Preview isoma ibimenyetso' : 'Gemini 3 Flash Preview scans your body language'}
                 </span>
               </div>
               <button
@@ -747,8 +747,7 @@ export default function SignLanguagePage() {
                   window.speechSynthesis.speak(utterance);
                   setIsSpeaking(true);
                 }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${isSpeaking ? 'bg-primary text-white' : 'bg-primary-50 text-primary hover:bg-primary-100'
-                  }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${isSpeaking ? 'bg-primary text-white' : 'bg-primary-50 text-primary hover:bg-primary-100'}`}
               >
                 {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
                 {isSpeaking ? (isRw ? 'Hagarika' : 'Stop') : (isRw ? 'Wumva' : 'Listen')}
@@ -776,19 +775,33 @@ export default function SignLanguagePage() {
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="bg-red-50 text-red-700 px-4 py-2 rounded-2xl text-xs flex items-center gap-2 border border-red-100 shadow-sm">
-              <AlertTriangle size={14} />
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="flex flex-col items-center gap-4 py-6 bg-red-50/50 rounded-3xl border border-red-100 shadow-sm"
+          >
+            <div className="flex items-center gap-2 text-red-700 font-black text-[11px] uppercase tracking-widest px-4 text-center">
+              <AlertCircle size={14} />
               {errorMessage}
             </div>
-            <button
-              onClick={() => navigate('/centers')}
-              className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary-200 rounded-2xl text-xs font-black shadow-sm hover:bg-primary-50 transition-all active:scale-95"
-            >
-              <MapPin size={14} />
-              {isRw ? 'Hamagara / Reba Amavuriro' : 'Call / View Support Directory'}
-            </button>
-          </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setErrorMessage(''); handleSend(); }}
+                className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-primary/5 transition-all active:scale-95"
+              >
+                <RefreshCcw size={14} />
+                {isRw ? 'Ongera ugerageze' : 'Try Reconnecting'}
+              </button>
+              <button
+                onClick={() => navigate('/centers')}
+                className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95"
+              >
+                <MapPin size={14} />
+                {isRw ? 'Amavuriro' : 'Support'}
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
 

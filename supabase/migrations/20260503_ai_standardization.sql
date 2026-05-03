@@ -1,6 +1,6 @@
 -- Migration 20260503_ai_standardization: Update AI Bridge and Create Insights Archive
 
--- 1. Update the AI Bridge to use Gemini 2.5 Flash Preview
+-- 1. Update the AI Bridge to use Gemini 3 Flash Preview
 CREATE OR REPLACE FUNCTION public.fn_ai_accessibility_bridge(
   p_text TEXT, 
   p_lang TEXT DEFAULT 'en'
@@ -23,7 +23,7 @@ BEGIN
               'Respond ONLY with a JSON object: {"simplified_text": "...", "sign_concepts": [...], "braille_unicode": "...", "tone": "..."}';
 
   SELECT * INTO v_response FROM http_post(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview:generateContent?key=' || v_api_key,
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' || v_api_key,
     jsonb_build_object(
       'contents', jsonb_build_array(
         jsonb_build_object('parts', jsonb_build_array(jsonb_build_object('text', v_prompt)))
