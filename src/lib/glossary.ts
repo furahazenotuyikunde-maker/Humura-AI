@@ -40,7 +40,7 @@ export const MENTAL_HEALTH_GLOSSARY: Record<string, { rw: string; en: string; ca
   "sleep": { en: "Sleep", rw: "Sinzira", category: "Action" },
   "eat well": { en: "Eat well", rw: "Rya neza", category: "Action" },
   "how are you feeling?": { en: "How are you feeling?", rw: "Umeze ute?", category: "App UI" },
-  "you are not alone": { en: "You are not alone", rw: "Nturiwenyine", category: "App UI" },
+  "you are not alone": { en: "MIND SUPPORTED, LIFE EMPOWERED", rw: "GUSHYIGIKIRA IMITEKEREREZE, GUKOMEZA UBUZIMA", category: "App UI" },
   "we are here for you": { en: "We are here for you", rw: "Turi hano ngo tugufashe", category: "App UI" },
   "take a deep breath": { en: "Take a deep breath", rw: "Humeka neza", category: "App UI" },
   "log your mood": { en: "Log your mood", rw: "Andika uko wiyumva", category: "App UI" },

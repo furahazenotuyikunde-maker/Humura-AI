@@ -52,9 +52,9 @@ export default function LandingPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="text-lg font-bold text-primary-600"
+            className="text-lg font-bold text-primary-600 uppercase tracking-wider"
           >
-            {isRw ? 'Ntabwo uri wenyine.' : 'You are not alone.'}
+            {isRw ? 'GUSHYIGIKIRA IMITEKEREREZE, GUKOMEZA UBUZIMA' : 'MIND SUPPORTED, LIFE EMPOWERED'}
           </motion.p>
         </div>
 

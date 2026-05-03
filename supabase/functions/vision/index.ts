@@ -32,8 +32,8 @@ serve(async (req) => {
     const arrayBuffer = await imageFile.arrayBuffer();
     const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    // 3. Call Gemini 2.5 Flash
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+    // 3. Call Gemini 3 Flash
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`
 
     console.log('[GEMINI] ▶ Multipart Request Fired | size=' + arrayBuffer.byteLength);
 

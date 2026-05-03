@@ -1,13 +1,13 @@
 const axios = require('axios');
 
 /**
- * Call Gemini 2.5 Flash via Google AI Studio REST API
+ * Call Gemini 3 Flash via Google AI Studio REST API
  * No SDKs used as per specification.
  */
 async function callGemini(prompt) {
   try {
     const res = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
