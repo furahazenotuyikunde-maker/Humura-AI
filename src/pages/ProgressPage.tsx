@@ -187,10 +187,11 @@ export default function ProgressPage() {
       }
     } catch (err: any) {
       console.error("Gemini Analysis Error:", err.message);
+      const errorMsg = isRw
+        ? "Imiterere ya sisitemu ntabwo iri gukora neza ubu. Gerageza nyuma gato."
+        : "The AI system is temporarily unavailable. Please try again in a few minutes.";
       setAnalysis({
-        summary: isRw
-          ? "Wageze ku mupaka wa buri munsi. Ongera ugerageze nyuma y'isaha imwe."
-          : "You have reached your daily AI analysis limit. Please try again in 1 hour.",
+        summary: errorMsg,
         recommendations: []
       });
     } finally {

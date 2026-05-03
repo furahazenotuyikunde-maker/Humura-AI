@@ -1,4 +1,4 @@
-// AUDITED — max 1 Gemini 3.0 Flash call per user message
+// AUDITED — max 1 Gemini 2.5 Flash call per user message
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -543,7 +543,7 @@ return (
                 {isRw ? 'Sikanira Byikora (AI)' : 'Auto-Detect Signs'}
               </span>
               <span className="text-[10px] text-primary-600 leading-tight">
-                {isRw ? 'Gemini 3 Flash isoma ibimenyetso' : 'Gemini 3 Flash scans your body language'}
+                {isRw ? 'Gemini 2.5 Flash isoma ibimenyetso' : 'Gemini 2.5 Flash scans your body language'}
               </span>
             </div>
             <button

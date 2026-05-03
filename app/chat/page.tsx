@@ -6,7 +6,7 @@ import { useAuth } from '../layout';
 
 /**
  * AI Chat Page
- * Features: Gemini 3.0 Flash integration, strict deduplication guards,
+ * Features: Gemini 2.5 Flash integration, strict deduplication guards,
  * useRef for history management, and premium dark-mode design.
  */
 export default function ChatPage() {
@@ -74,7 +74,7 @@ export default function ChatPage() {
       setInput('');
 
       // Rule: console.log before every fetch
-      console.log('[CHAT] ▶ Gemini 3.0 Flash request fired | id=REQ-' + Date.now());
+      console.log('[CHAT] ▶ Gemini 2.5 Flash request fired | id=REQ-' + Date.now());
 
       try {
         const response = await fetch('/api/chat', {
@@ -128,7 +128,7 @@ export default function ChatPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold tracking-tight text-white">AI Assistant</h2>
-        <p className="text-white/50">Powered by Gemini 3.0 Flash</p>
+        <p className="text-white/50">Powered by Gemini 2.5 Flash</p>
       </div>
 
       <div className="flex flex-col h-[600px] bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">

@@ -1,5 +1,5 @@
 
-// AUDITED — max 1 Gemini 3.0 Flash call per user message
+// AUDITED — max 1 Gemini 2.5 Flash call per user message
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { checkRateLimit } from "../_shared/rateLimiter.ts"
 
@@ -54,7 +54,7 @@ serve(async (req) => {
         parts: [{ text: m.content }]
       }))
 
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 40000)

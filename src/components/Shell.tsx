@@ -293,7 +293,7 @@ export const Shell: React.FC<ShellProps> = () => {
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-                    Gemini 3 Flash Preview
+                    Gemini 2.5 Flash
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />

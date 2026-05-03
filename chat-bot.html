@@ -1,4 +1,4 @@
-// DEDUPLICATION GUARDS APPLIED — exactly 1 Gemini 3.0 Flash call per user message
+// DEDUPLICATION GUARDS APPLIED — exactly 1 Gemini 2.5 Flash call per user message
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,7 +78,7 @@
         isSending = true;
 
         // Guard 6: CONSOLE LOGGING (Before request)
-        console.log('[CHAT] ▶ Gemini 3.0 Flash request | id=REQ-' + Date.now() + ' | msg="' + text + '"');
+        console.log('[CHAT] ▶ Gemini 2.5 Flash request | id=REQ-' + Date.now() + ' | msg="' + text + '"');
 
         // Add user message to UI
         addMessage(text, 'user');

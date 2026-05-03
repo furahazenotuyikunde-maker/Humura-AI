@@ -1,4 +1,4 @@
-// SINGLE Gemini 3.0 Flash call — deduplication guards applied
+// SINGLE Gemini 2.5 Flash call — deduplication guards applied
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 

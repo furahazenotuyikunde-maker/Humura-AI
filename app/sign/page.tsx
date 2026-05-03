@@ -7,7 +7,7 @@ import { useAuth } from '../layout';
 /**
  * Sign Language Detection Page
  * Features: Real-time webcam feed, frame capture with client-side compression (max 512px, JPEG 0.7),
- * and Gemini 3.0 Flash Vision integration.
+ * and Gemini 2.5 Flash Vision integration.
  */
 export default function SignDetectPage() {
   const { session } = useAuth();
@@ -87,7 +87,7 @@ export default function SignDetectPage() {
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-      console.log('[SIGN] ▶ Gemini 3.0 Flash Vision request fired | id=REQ-' + Date.now());
+      console.log('[SIGN] ▶ Gemini 2.5 Flash Vision request fired | id=REQ-' + Date.now());
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sign-detect`, {
         method: 'POST',
@@ -162,7 +162,7 @@ export default function SignDetectPage() {
             Capture Frame
           </button>
           <div className="p-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] text-white/40 leading-relaxed">
-            Position your hand clearly within the frame. Gemini 3.0 Flash Vision will analyze the visual patterns to identify sign language letters and words.
+            Position your hand clearly within the frame. Gemini 2.5 Flash Vision will analyze the visual patterns to identify sign language letters and words.
           </div>
         </div>
       </div>
