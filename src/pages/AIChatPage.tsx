@@ -215,9 +215,9 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pt-20">
-      {/* Header */}
-      <header className="fixed top-20 inset-x-0 bg-white/80 backdrop-blur-md border-b border-neutral-100 z-[40] px-6 py-3">
+    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+      {/* Inline Chat Header */}
+      <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-neutral-100 z-10 px-6 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/')} className="p-2 -ml-2 text-neutral-400"><ChevronLeft size={20} /></button>
@@ -227,7 +227,7 @@ export default function AIChatPage() {
             <div>
               <h1 className="text-sm font-black text-primary-900 leading-none">Humura AI</h1>
               <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
                 {isRw ? 'Ikirere Kiratekanye' : 'Safe Space Active'}
               </p>
             </div>
@@ -239,21 +239,21 @@ export default function AIChatPage() {
             <Trash2 size={18} />
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-6 space-y-6 pb-40 pt-10">
-        <div className="max-w-xl mx-auto">
-           {/* Center Logo Placeholder */}
-           <div className="flex flex-col items-center justify-center py-20 opacity-[0.03] pointer-events-none">
-            <img src="/logo.png" alt="Humura" className="w-32 h-32 grayscale" />
+      {/* Chat Messages — scrollable area */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        <div className="max-w-xl mx-auto space-y-6">
+          {/* Watermark */}
+          <div className="flex flex-col items-center justify-center py-16 opacity-[0.03] pointer-events-none select-none">
+            <img src="/logo.png" alt="Humura" className="w-28 h-28 grayscale" />
             <p className="text-sm font-black uppercase tracking-[0.5em] mt-6">CBT COMPANION</p>
           </div>
 
           {messages.map((msg, idx) => (
             <motion.div 
               key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col mb-8 group ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col group ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div className={`max-w-[85%] p-4 rounded-2xl relative transition-all ${
                 msg.role === 'user' 
@@ -262,13 +262,12 @@ export default function AIChatPage() {
               }`}>
                 {msg.image && <img src={msg.image} className="w-full rounded-xl mb-3 border border-white/10" />}
                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                
                 <div className={`text-[8px] mt-2 font-black uppercase opacity-30 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
 
-              {/* Message Actions - Positioned below like ChatGPT */}
+              {/* Message Actions */}
               <div className={`flex gap-3 mt-1.5 px-2 opacity-0 group-hover:opacity-100 transition-all duration-300 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {msg.role === 'user' && (
                   <button onClick={() => startEdit(idx)} className="text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
@@ -301,17 +300,17 @@ export default function AIChatPage() {
         </div>
       </div>
 
-      {/* Controls - Positioned above mobile footer and respecting desktop sidebar */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 md:left-64 right-0 p-6 z-[40] bg-white/90 backdrop-blur-xl border-t border-neutral-100/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+      {/* ── Input Bar — sits inside the page, above the footer, NOT floating over faces ── */}
+      <div className="border-t border-neutral-100/80 bg-white/95 backdrop-blur-xl px-6 py-4 shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.06)]">
         <div className="max-w-xl mx-auto">
           {error && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-2 mb-4">
-               <p className="text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-2 mb-3">
+              <p className="text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                 <AlertCircle size={14} /> {error}
-               </p>
-               <button onClick={handleSend} className="text-[10px] font-bold text-primary flex items-center gap-1 uppercase hover:underline">
-                 <RefreshCcw size={10} /> {isRw ? 'Ongera ugerageze' : 'Try Reconnecting'}
-               </button>
+              </p>
+              <button onClick={handleSend} className="text-[10px] font-bold text-primary flex items-center gap-1 uppercase hover:underline">
+                <RefreshCcw size={10} /> {isRw ? 'Ongera ugerageze' : 'Try Reconnecting'}
+              </button>
             </motion.div>
           )}
 
