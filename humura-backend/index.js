@@ -134,37 +134,53 @@ app.get('/api/doctors/available', async (req, res) => {
   }
 });
 
-// 4c. Patient-Doctor Assignment
+// 4c. Patient-Doctor Assignment (Clinical Handshake)
 app.post('/api/patients/assign-doctor', async (req, res) => {
   try {
     const { patientId, doctorId } = req.body;
 
-    // 1. Update patient record
-    const { error: patientErr } = await supabase
-      .from('patients')
-      .update({ doctor_id: doctorId, status: 'active' })
-      .eq('id', patientId);
-    
-    if (patientErr) throw patientErr;
+    // 1. Check if already assigned to prevent duplicates
+    const { data: existing } = await supabase
+      .from('patient_caseload')
+      .select('*')
+      .eq('patient_id', patientId)
+      .eq('doctor_id', doctorId)
+      .single();
 
-    // 2. Increment doctor caseload
-    // We fetch current count first as Supabase JS client doesn't have an 'increment' operator in one go easily
+    if (existing) {
+      return res.status(200).json({ success: true, message: "Already assigned" });
+    }
+
+    // 2. Insert into caseload table (Triggers Real-time)
+    const { data: caseload, error: caseloadErr } = await supabase
+      .from('patient_caseload')
+      .insert([{ 
+        patient_id: patientId, 
+        doctor_id: doctorId, 
+        status: 'active' 
+      }])
+      .select()
+      .single();
+
+    if (caseloadErr) throw caseloadErr;
+
+    // 3. Increment doctor caseload count in profiles
     const { data: profile } = await supabase.from('doctor_profiles').select('caseload_count').eq('user_id', doctorId).single();
     await supabase.from('doctor_profiles').update({ caseload_count: (profile?.caseload_count || 0) + 1 }).eq('user_id', doctorId);
 
-    // 3. Fetch patient info for notification
-    const { data: patientProfile } = await supabase.from('profiles').select('full_name').eq('id', patientId).single();
-    const { data: patientIntake } = await supabase.from('patients').select('primary_concern').eq('id', patientId).single();
+    // 4. Update primary patient record
+    await supabase.from('patients').update({ doctor_id: doctorId, status: 'active' }).eq('id', patientId);
 
-    // 4. Notify Doctor via Socket
+    // 5. Notify Doctor via Socket (Redundancy for Instant UI feedback)
+    const { data: patientProfile } = await supabase.from('profiles').select('full_name').eq('id', patientId).single();
     notifyUser(doctorId, 'patient:assigned', {
       patient_id: patientId,
-      patient_name: patientProfile?.full_name || "New Patient",
-      concern_type: patientIntake?.primary_concern || "General Support"
+      patient_name: patientProfile?.full_name || "New Patient"
     });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, data: caseload });
   } catch (error) {
+    console.error("Assignment Error:", error);
     return res.status(500).json({ error: error.message });
   }
 });

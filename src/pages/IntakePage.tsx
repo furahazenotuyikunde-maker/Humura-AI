@@ -110,7 +110,7 @@ export default function IntakePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Save Intake Data
+      // 1. Save Intake Data into Patients table
       await supabase.from('patients').upsert({
         id: user.id,
         doctor_id: docId,
@@ -121,7 +121,19 @@ export default function IntakePage() {
         status: 'active'
       });
 
-      // 2. Initial Mood Log
+      // 2. Call Clinical Handshake Backend (Inserts into patient_caseload & notifies doctor)
+      const res = await fetch(`${getBackendUrl()}/api/patients/assign-doctor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          patientId: user.id, 
+          doctorId: docId 
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to assign doctor via handshake");
+
+      // 3. Initial Mood Log
       if (mood) {
         await supabase.from('mood_logs').insert([{
           patient_id: user.id,
@@ -133,7 +145,7 @@ export default function IntakePage() {
 
       navigate('/');
     } catch (err) {
-      console.error(err);
+      console.error("Selection Error:", err);
     } finally {
       setLoading(false);
     }

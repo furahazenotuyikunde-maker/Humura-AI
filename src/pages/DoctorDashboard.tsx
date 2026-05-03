@@ -65,12 +65,26 @@ export default function DoctorDashboard() {
       .on('postgres_changes', { event: '*', table: 'crisis_events' }, () => fetchInitialData())
       .on('postgres_changes', { event: '*', table: 'patients' }, () => fetchInitialData())
       .on('postgres_changes', { event: '*', table: 'sessions' }, () => fetchInitialData())
+      .on(
+        'postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'patient_caseload',
+          filter: doctorProfile?.id ? `doctor_id=eq.${doctorProfile.id}` : undefined
+        }, 
+        async (payload) => {
+          console.log('[DASHBOARD] Real-time caseload update received:', payload);
+          showToast(isRw ? 'Umurwayi mushya yongeyeho!' : 'New patient assigned to caseload!', 'success');
+          fetchInitialData(); // Refresh all lists
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []); 
+  }, [doctorProfile?.id]); 
 
   useEffect(() => {
     if (doctorProfile?.id) {
