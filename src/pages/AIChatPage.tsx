@@ -106,8 +106,29 @@ export default function AIChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedMood]);
 
+  const MOOD_SCORES: Record<string, number> = {
+    Calm: 4, Anxious: 1, Hopeful: 4, Sad: 2, Tired: 2, Grateful: 5
+  };
+
   const handleSelectMood = async (mood: typeof MOODS[0]) => {
     setSelectedMood(mood.label);
+
+    // ── Persist to mood_logs with real-time timestamp ──
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('mood_logs').insert({
+          user_id: user.id,
+          mood: mood.label.toLowerCase(),
+          emoji: mood.emoji,
+          score: MOOD_SCORES[mood.label] ?? 3,
+          created_at: new Date().toISOString()  // real-time UTC timestamp
+        });
+      }
+    } catch (err) {
+      console.error('Mood log error:', err);
+    }
+
     const content = isRw
       ? `Ubu numva: ${mood.emoji} ${mood.labelRw}`
       : `My current mood: ${mood.emoji} ${mood.label}`;

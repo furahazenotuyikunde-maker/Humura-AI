@@ -223,14 +223,24 @@ export default function ProgressPage() {
   };
 
   const getWeeklyData = () => {
+    // Build last 7 days in LOCAL timezone (not UTC) to avoid off-by-one for +02:00 users
+    const toLocalDate = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
+      return toLocalDate(d);
     }).reverse();
 
     return last7Days.map(date => {
-      const log = moods.find(m => m.created_at && m.created_at.startsWith(date));
+      // Find the LAST mood logged on this local calendar day
+      const dayLogs = moods.filter(m => m.created_at && toLocalDate(new Date(m.created_at)) === date);
+      const log = dayLogs[dayLogs.length - 1]; // most recent entry for that day
       return {
         date,
         value: log ? (moodMap[log.mood] || 3) : 0,
