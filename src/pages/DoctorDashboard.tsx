@@ -223,6 +223,22 @@ export default function DoctorDashboard() {
       if (status === 'active') {
         const { data: sessionData } = await supabase.from('sessions').select('*, profiles:patient_id(full_name)').eq('id', sessionId).single();
         setCurrentSession(sessionData);
+        
+        // Notify Patient via Backend Socket
+        try {
+          await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/session/notify-start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              patientId: sessionData.patient_id,
+              sessionId: sessionId,
+              doctorName: doctorProfile?.full_name || "Doctor"
+            })
+          });
+          console.log('[DASHBOARD] Real-time join notification sent to patient');
+        } catch (e) {
+          console.error('[DASHBOARD] Failed to send real-time notification', e);
+        }
       } else if (status === 'completed' || status === 'missed') {
         setCurrentSession(null);
       }

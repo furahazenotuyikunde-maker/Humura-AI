@@ -6,6 +6,7 @@ import {
   HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut, Activity, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { io } from 'socket.io-client';
 
 import { useTranslation } from 'react-i18next';
 
@@ -106,6 +107,32 @@ export const Shell: React.FC<ShellProps> = () => {
     window.addEventListener('humura-notification-added', triggerShake);
     return () => window.removeEventListener('humura-notification-added', triggerShake);
   }, []);
+
+  // Real-time Session Notification Listener
+  const [incomingSession, setIncomingSession] = useState<any>(null);
+
+  useEffect(() => {
+    if (user && role === 'patient') {
+      const socket = io(import.meta.env.VITE_RENDER_BACKEND_URL, {
+        query: { 
+          userId: user.id, 
+          role: 'patient' 
+        },
+        transports: ["websocket"]
+      });
+
+      socket.on('session:started', (data: any) => {
+        console.log('[SHELL] 🎥 Incoming live session:', data);
+        setIncomingSession(data);
+        setShouldShake(true);
+        setTimeout(() => setShouldShake(false), 3000);
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [user, role]);
 
   const handleSafetyExit = () => {
     window.location.replace('https://www.google.com');
@@ -218,6 +245,56 @@ export const Shell: React.FC<ShellProps> = () => {
           )}
         </div>
       </header>
+
+      {/* Real-time Session Join Notification */}
+      <AnimatePresence>
+        {incomingSession && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md"
+          >
+            <div className={`p-1 rounded-[2rem] shadow-2xl ${dk ? 'bg-gradient-to-r from-emerald-500/20 to-blue-500/20 backdrop-blur-xl border border-emerald-500/30' : 'bg-white/90 backdrop-blur-xl border border-emerald-100'}`}>
+              <div className={`flex items-center gap-4 p-4 rounded-[1.8rem] ${dk ? 'bg-[#131c2e]/80' : 'bg-white'}`}>
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white animate-pulse">
+                    <Phone size={24} />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-black uppercase tracking-widest ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                    {isRw ? 'Ikiganiro kiratangiye' : 'Live Session Started'}
+                  </p>
+                  <p className={`text-sm font-bold truncate ${dk ? 'text-white' : 'text-primary-900'}`}>
+                    {isRw ? `Muganga ${incomingSession.doctorName} aragutegereje` : `Dr. ${incomingSession.doctorName} is waiting for you`}
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setIncomingSession(null)}
+                    className={`p-2 rounded-xl transition-colors ${dk ? 'hover:bg-white/5 text-neutral-500' : 'hover:bg-neutral-50 text-neutral-400'}`}
+                  >
+                    <X size={18} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIncomingSession(null);
+                      navigate('/meet-professional');
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    {isRw ? 'INJIRA' : 'JOIN NOW'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 animate-in fade-in duration-500 flex flex-col">

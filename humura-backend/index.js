@@ -280,6 +280,29 @@ app.post('/api/ai/translate', async (req, res) => {
   }
 });
 
+// 4f. Live Session: Notify Patient to Join
+app.post('/api/session/notify-start', async (req, res) => {
+  try {
+    const { patientId, sessionId, doctorName } = req.body;
+    
+    if (!patientId) return res.status(400).json({ error: "Missing patientId" });
+
+    console.log(`[SESSION] 🔔 Notifying patient ${patientId} to join session ${sessionId}`);
+
+    // Notify Patient via Socket
+    notifyUser(patientId, 'session:started', {
+      sessionId,
+      doctorName: doctorName || "Your Doctor",
+      timestamp: new Date().toISOString()
+    });
+
+    return res.status(200).json({ success: true, message: "Patient notified" });
+  } catch (error) {
+    console.error("Session Notify Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // 4f. Doctor Dashboard Generate Report
 app.post('/api/doctor/generate-report', async (req, res) => {
   try {
