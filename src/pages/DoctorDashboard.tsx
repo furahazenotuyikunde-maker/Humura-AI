@@ -124,12 +124,34 @@ export default function DoctorDashboard() {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setDoctorProfile(profile);
 
-      // 2. Assigned Patients
-      const { data: patientList } = await supabase
-        .from('patients')
-        .select('*, patient_info:profiles(full_name, avatar_url, phone)')
-        .eq('doctor_id', user.id);
-      setPatients(patientList || []);
+      // 2. Assigned Patients (via Handshake table)
+      const { data: caseloadData } = await supabase
+        .from('patient_caseload')
+        .select(`
+          *,
+          patient:patient_id(
+            full_name, avatar_url, phone
+          ),
+          clinical_info:patients!patient_id(
+            primary_concern, phq9_score, gad7_score, status, self_harm_flag, concern_duration, emergency_contact
+          )
+        `)
+        .eq('doctor_id', user.id)
+        .eq('status', 'active');
+      
+      const formattedPatients = (caseloadData || []).map(item => ({
+        id: item.patient_id,
+        status: item.clinical_info?.[0]?.status || item.status,
+        primary_concern: item.clinical_info?.[0]?.primary_concern,
+        phq9_score: item.clinical_info?.[0]?.phq9_score,
+        gad7_score: item.clinical_info?.[0]?.gad7_score,
+        self_harm_flag: item.clinical_info?.[0]?.self_harm_flag,
+        concern_duration: item.clinical_info?.[0]?.concern_duration,
+        emergency_contact: item.clinical_info?.[0]?.emergency_contact,
+        patient_info: item.patient
+      }));
+
+      setPatients(formattedPatients);
 
       // 3. Today's Sessions
       const today = new Date().toISOString().split('T')[0];
