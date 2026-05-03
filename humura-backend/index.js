@@ -434,7 +434,8 @@ app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.0 Unified
 // Patient Dashboard: Direct Gemini Analysis (no DB lookup blocking)
 const handleAnalyzeProgress = async (req, res) => {
   try {
-    const { moods, journals, isSignLanguage, currentMood, currentMoodEmoji, currentMoodLabel } = req.body;
+    const { moods, journals, isSignLanguage, currentMood, currentMoodEmoji, currentMoodLabel, lang } = req.body;
+    const languageName = lang === 'rw' ? 'Kinyarwanda' : 'English';
 
     const journalContext = journals && journals.length > 0
       ? `Patient's recent journal entries (read these carefully, they contain the patient's real thoughts):\n${journals.map((j, i) => `- Entry ${i+1}: "${j}"`).join('\n')}`
@@ -466,11 +467,11 @@ YOUR TASK:
 Respond ONLY with this exact JSON (no markdown, no extra text):
 {
   "success": true,
-  "summary": "2-3 sentences in ${lang === 'rw' ? 'Kinyarwanda' : 'English'} that reference their specific mood and journal content to show you truly heard them",
+  "summary": "2-3 sentences in ${languageName} that reference their specific mood and journal content to show you truly heard them",
   "recommendations": [
-    "specific recommendation 1 in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}",
-    "specific recommendation 2 in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}",
-    "specific recommendation 3 in ${lang === 'rw' ? 'Kinyarwanda' : 'English'}"
+    "specific recommendation 1 in ${languageName}",
+    "specific recommendation 2 in ${languageName}",
+    "specific recommendation 3 in ${languageName}"
   ]
 }`;
 
@@ -479,6 +480,14 @@ Respond ONLY with this exact JSON (no markdown, no extra text):
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Gemini returned no JSON");
     const parsed = JSON.parse(jsonMatch[0]);
+    
+    // Safety Fallback
+    if (!parsed.summary) {
+      parsed.summary = lang === 'rw' 
+        ? "Isesengura ryabonetse neza. Komeza ukoreshe porogaramu usangize ibyiyumvo byawe."
+        : "Analysis completed successfully. Continue logging your thoughts to see more insights.";
+    }
+
     res.json(parsed);
   } catch (error) {
     console.error("analyze-progress error:", error.message);

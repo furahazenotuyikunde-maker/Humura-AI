@@ -163,7 +163,8 @@ export default function ProgressPage() {
           isSignLanguage: true,
           currentMood: currentMood || null,
           currentMoodEmoji: moodObj?.emoji || null,
-          currentMoodLabel: moodObj ? (isRw ? moodObj.rw : moodObj.en) : null
+          currentMoodLabel: moodObj ? (isRw ? moodObj.rw : moodObj.en) : null,
+          lang: isRw ? 'rw' : 'en'
         })
       });
 
