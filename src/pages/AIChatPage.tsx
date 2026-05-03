@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, AlertCircle, Loader2, Mic, MicOff, 
+import {
+  Send, AlertCircle, Loader2, Mic, MicOff,
   ImagePlus, Square, Edit2, X, Trash2,
   CheckCircle, RefreshCcw, ChevronLeft, Star, Bell, LogOut
 } from 'lucide-react';
@@ -18,11 +18,11 @@ interface Message {
 }
 
 const MOODS = [
-  { emoji: '😊', label: 'Calm',     labelRw: 'Amahoro' },
-  { emoji: '😰', label: 'Anxious',  labelRw: 'Impungenge' },
-  { emoji: '🌱', label: 'Hopeful',  labelRw: 'Ibyiringiro' },
-  { emoji: '😔', label: 'Sad',      labelRw: 'Agahinda' },
-  { emoji: '😓', label: 'Tired',    labelRw: 'Umunaniro' },
+  { emoji: '😊', label: 'Calm', labelRw: 'Amahoro' },
+  { emoji: '😰', label: 'Anxious', labelRw: 'Impungenge' },
+  { emoji: '🌱', label: 'Hopeful', labelRw: 'Ibyiringiro' },
+  { emoji: '😔', label: 'Sad', labelRw: 'Agahinda' },
+  { emoji: '😓', label: 'Tired', labelRw: 'Umunaniro' },
   { emoji: '🙏', label: 'Grateful', labelRw: 'Gukenguruka' },
 ];
 
@@ -171,7 +171,7 @@ export default function AIChatPage() {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error('No API Key');
         const fallbackRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -235,20 +235,20 @@ export default function AIChatPage() {
       recorder.onstop = () => { setInput(isRw ? "[Ubutumwa bw'ijwi]" : "[Voice Message]"); stream.getTracks().forEach(t => t.stop()); };
       recorder.start();
       setIsRecording(true);
-    } catch {}
+    } catch { }
   };
   const stopRecording = () => { mediaRecorderRef.current?.stop(); setIsRecording(false); };
 
   // Colour tokens
   const dk = isDark;
-  const bg       = dk ? 'bg-[#0d1117]'  : 'bg-white';
-  const surface  = dk ? 'bg-[#131c2e]'  : 'bg-neutral-50';
-  const border   = dk ? 'border-[#1f2d47]' : 'border-neutral-100';
-  const textPri  = dk ? 'text-[#e2e8f0]' : 'text-primary-900';
-  const textMut  = dk ? 'text-[#6b7a99]' : 'text-neutral-400';
+  const bg = dk ? 'bg-[#0d1117]' : 'bg-white';
+  const surface = dk ? 'bg-[#131c2e]' : 'bg-neutral-50';
+  const border = dk ? 'border-[#1f2d47]' : 'border-neutral-100';
+  const textPri = dk ? 'text-[#e2e8f0]' : 'text-primary-900';
+  const textMut = dk ? 'text-[#6b7a99]' : 'text-neutral-400';
   const aiBubble = dk ? 'bg-[#0f2d22] border-[#1a4a35]' : 'bg-neutral-50 border-neutral-100';
-  const inputBg  = dk ? 'bg-[#131c2e] border-[#1f2d47]' : 'bg-neutral-50 border-neutral-100';
-  const sendBtn  = dk ? 'bg-gradient-to-br from-[#34d399] to-[#6366f1]' : 'bg-primary';
+  const inputBg = dk ? 'bg-[#131c2e] border-[#1f2d47]' : 'bg-neutral-50 border-neutral-100';
+  const sendBtn = dk ? 'bg-gradient-to-br from-[#34d399] to-[#6366f1]' : 'bg-primary';
 
   const initials = profile?.full_name ? profile.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'U';
 
@@ -267,9 +267,8 @@ export default function AIChatPage() {
             <div className={`flex items-center rounded-full p-1 border ${dk ? 'bg-[#1a2543] border-[#1f2d47]' : 'bg-primary-50 border-primary-100'}`}>
               {['en', 'rw'].map(lang => (
                 <button key={lang} onClick={() => i18n.changeLanguage(lang)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    i18n.language?.startsWith(lang) ? 'bg-primary text-white shadow' : dk ? 'text-[#6b7a99] hover:bg-[#1f2d47]' : 'text-primary-600 hover:bg-primary-100'
-                  }`}>
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${i18n.language?.startsWith(lang) ? 'bg-primary text-white shadow' : dk ? 'text-[#6b7a99] hover:bg-[#1f2d47]' : 'text-primary-600 hover:bg-primary-100'
+                    }`}>
                   {lang === 'en' ? 'English' : 'Kinyarwanda'}
                 </button>
               ))}
@@ -341,9 +340,8 @@ export default function AIChatPage() {
               <div className="flex flex-wrap gap-2">
                 {MOODS.map(mood => (
                   <button key={mood.label} onClick={() => handleSelectMood(mood)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold border transition-all hover:scale-105 active:scale-95 ${
-                      dk ? 'bg-[#131c2e] border-[#1f2d47] text-[#a0aec0] hover:border-[#34d399] hover:text-[#34d399]'
-                         : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:border-primary hover:text-primary'}`}>
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold border transition-all hover:scale-105 active:scale-95 ${dk ? 'bg-[#131c2e] border-[#1f2d47] text-[#a0aec0] hover:border-[#34d399] hover:text-[#34d399]'
+                        : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:border-primary hover:text-primary'}`}>
                     {mood.emoji} {isRw ? mood.labelRw : mood.label}
                   </button>
                 ))}

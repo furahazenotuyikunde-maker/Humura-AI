@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  TrendingUp, Calendar, Sparkles, AlertCircle, Loader2, 
+import {
+  TrendingUp, Calendar, Sparkles, AlertCircle, Loader2,
   ChevronRight, Share2, X, MessageCircle, Send, Mail, Copy,
   BookOpen, Plus, Heart, History, Trash2, AlertTriangle, Video
 } from 'lucide-react';
@@ -29,7 +29,7 @@ type TabType = 'mood' | 'journal';
 export default function ProgressPage() {
   const { i18n } = useTranslation();
   const isRw = i18n?.language?.startsWith('rw') || false;
-  
+
   const [activeTab, setActiveTab] = useState<TabType>('mood');
   const [moods, setMoods] = useState<MoodLog[]>([]);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
@@ -37,12 +37,13 @@ export default function ProgressPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  
+
   // Journal Form State
   const [newJournal, setNewJournal] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('😊');
   const [user, setUser] = useState<any>(null);
   const [isSavingJournal, setIsSavingJournal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { activeSession } = useClinicalEvents(user?.id, 'patient');
   const [isRoomOpen, setIsRoomOpen] = useState(false);
@@ -60,22 +61,22 @@ export default function ProgressPage() {
   }, []);
 
   const MOODS = [
-    { id: 'happy',     emoji: '😊', en: 'Happy',      rw: 'Ndishimye',     score: 5, color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
-    { id: 'excited',   emoji: '🤩', en: 'Excited',    rw: 'Nshonje',       score: 5, color: 'bg-orange-50 border-orange-200 text-orange-700' },
-    { id: 'grateful',  emoji: '🙏', en: 'Grateful',   rw: 'Ndashimira',    score: 5, color: 'bg-green-50 border-green-200 text-green-700' },
-    { id: 'calm',      emoji: '😌', en: 'Calm',       rw: 'Ntuze',         score: 4, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-    { id: 'hopeful',   emoji: '🌟', en: 'Hopeful',    rw: 'Nzizi',         score: 4, color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
-    { id: 'loved',     emoji: '🥰', en: 'Loved',      rw: 'Nkundwa',       score: 5, color: 'bg-pink-50 border-pink-200 text-pink-700' },
-    { id: 'neutral',   emoji: '😐', en: 'Neutral',    rw: 'Ahagaze',       score: 3, color: 'bg-gray-50 border-gray-200 text-gray-700' },
-    { id: 'tired',     emoji: '😴', en: 'Tired',      rw: 'Narushye',      score: 2, color: 'bg-slate-50 border-slate-200 text-slate-700' },
-    { id: 'lonely',    emoji: '🥺', en: 'Lonely',     rw: 'Ndi Ngenyine',  score: 2, color: 'bg-purple-50 border-purple-200 text-purple-700' },
-    { id: 'confused',  emoji: '😕', en: 'Confused',   rw: 'Sinsobanukiwe', score: 2, color: 'bg-amber-50 border-amber-200 text-amber-700' },
-    { id: 'sad',       emoji: '😢', en: 'Sad',        rw: 'Ndababaye',     score: 2, color: 'bg-blue-50 border-blue-300 text-blue-800' },
-    { id: 'anxious',   emoji: '😰', en: 'Anxious',    rw: 'Mfite ubwoba',  score: 1, color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
-    { id: 'stressed',  emoji: '😤', en: 'Stressed',   rw: 'Nagoye',        score: 1, color: 'bg-red-50 border-red-200 text-red-700' },
-    { id: 'angry',     emoji: '😠', en: 'Angry',      rw: 'Ndarakaye',     score: 1, color: 'bg-red-50 border-red-300 text-red-800' },
-    { id: 'hopeless',  emoji: '😞', en: 'Hopeless',   rw: 'Ntakizere',     score: 1, color: 'bg-neutral-50 border-neutral-300 text-neutral-700' },
-    { id: 'scared',    emoji: '😨', en: 'Scared',     rw: 'Ndigutinya',    score: 1, color: 'bg-violet-50 border-violet-200 text-violet-700' },
+    { id: 'happy', emoji: '😊', en: 'Happy', rw: 'Ndishimye', score: 5, color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
+    { id: 'excited', emoji: '🤩', en: 'Excited', rw: 'Nshonje', score: 5, color: 'bg-orange-50 border-orange-200 text-orange-700' },
+    { id: 'grateful', emoji: '🙏', en: 'Grateful', rw: 'Ndashimira', score: 5, color: 'bg-green-50 border-green-200 text-green-700' },
+    { id: 'calm', emoji: '😌', en: 'Calm', rw: 'Ntuze', score: 4, color: 'bg-blue-50 border-blue-200 text-blue-700' },
+    { id: 'hopeful', emoji: '🌟', en: 'Hopeful', rw: 'Nzizi', score: 4, color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
+    { id: 'loved', emoji: '🥰', en: 'Loved', rw: 'Nkundwa', score: 5, color: 'bg-pink-50 border-pink-200 text-pink-700' },
+    { id: 'neutral', emoji: '😐', en: 'Neutral', rw: 'Ahagaze', score: 3, color: 'bg-gray-50 border-gray-200 text-gray-700' },
+    { id: 'tired', emoji: '😴', en: 'Tired', rw: 'Narushye', score: 2, color: 'bg-slate-50 border-slate-200 text-slate-700' },
+    { id: 'lonely', emoji: '🥺', en: 'Lonely', rw: 'Ndi Ngenyine', score: 2, color: 'bg-purple-50 border-purple-200 text-purple-700' },
+    { id: 'confused', emoji: '😕', en: 'Confused', rw: 'Sinsobanukiwe', score: 2, color: 'bg-amber-50 border-amber-200 text-amber-700' },
+    { id: 'sad', emoji: '😢', en: 'Sad', rw: 'Ndababaye', score: 2, color: 'bg-blue-50 border-blue-300 text-blue-800' },
+    { id: 'anxious', emoji: '😰', en: 'Anxious', rw: 'Mfite ubwoba', score: 1, color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
+    { id: 'stressed', emoji: '😤', en: 'Stressed', rw: 'Nagoye', score: 1, color: 'bg-red-50 border-red-200 text-red-700' },
+    { id: 'angry', emoji: '😠', en: 'Angry', rw: 'Ndarakaye', score: 1, color: 'bg-red-50 border-red-300 text-red-800' },
+    { id: 'hopeless', emoji: '😞', en: 'Hopeless', rw: 'Ntakizere', score: 1, color: 'bg-neutral-50 border-neutral-300 text-neutral-700' },
+    { id: 'scared', emoji: '😨', en: 'Scared', rw: 'Ndigutinya', score: 1, color: 'bg-violet-50 border-violet-200 text-violet-700' },
   ];
 
   const moodMap: Record<string, number> = Object.fromEntries(MOODS.map(m => [m.id, m.score]));
@@ -104,8 +105,8 @@ export default function ProgressPage() {
     }
   };
 
-  const dayNames = isRw 
-    ? ['Kwe', 'Kab', 'Gat', 'Kan', 'Gat', 'Saa', 'Dim'] 
+  const dayNames = isRw
+    ? ['Kwe', 'Kab', 'Gat', 'Kan', 'Gat', 'Saa', 'Dim']
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const fetchInitialData = async () => {
@@ -118,7 +119,7 @@ export default function ProgressPage() {
         fetchMoodData(userId),
         fetchJournalData(userId)
       ]);
-      
+
       // Trigger AI analysis with combined context
       analyzeProgress(userId);
     }
@@ -152,7 +153,7 @@ export default function ProgressPage() {
       const moodObj = currentMood ? MOODS.find(m => m.id === currentMood) : null;
 
       const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
-      
+
       const response = await fetch(`${backendUrl}/api/analyze-progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -171,7 +172,6 @@ export default function ProgressPage() {
       const text = await response.text();
       if (text.trim().startsWith('{')) {
         const result = JSON.parse(text);
-        // Handle rate limit gracefully
         if (result.rateLimited) {
           setAnalysis({
             summary: isRw ? result.summaryRw : result.summary,
@@ -187,14 +187,54 @@ export default function ProgressPage() {
         throw new Error("Non-JSON response from server");
       }
     } catch (err: any) {
-      console.error("Gemini Analysis Error:", err.message);
-      const errorMsg = isRw
-        ? "Imiterere ya sisitemu ntabwo iri gukora neza ubu. Gerageza nyuma gato."
-        : "The AI system is temporarily unavailable. Please try again in a few minutes.";
-      setAnalysis({
-        summary: errorMsg,
-        recommendations: []
-      });
+      console.error("Gemini Analysis Error, trying fallback:", err.message);
+      
+      // Fallback to direct Gemini 3 Flash Preview
+      try {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error("No API Key");
+
+        const recentMoods = moods.slice(0, 7).map(m => m.mood);
+        const recentJournals = journals.slice(0, 3).map(j => j.content);
+        const moodObj = currentMood ? MOODS.find(m => m.id === currentMood) : null;
+
+        const fallbackRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are Humura AI. Analyze this Rwanda patient's progress.
+                  Moods: ${JSON.stringify(recentMoods)}
+                  Journals: ${JSON.stringify(recentJournals)}
+                  Current: ${moodObj ? moodObj.en : 'N/A'}
+                  Language: ${isRw ? 'Kinyarwanda' : 'English'}
+                  Respond with JSON: { "summary": "...", "recommendations": ["...", "..."] }`
+                }]
+              }]
+            })
+          }
+        );
+
+        if (!fallbackRes.ok) throw new Error("Fallback failed");
+        const fbData = await fallbackRes.json();
+        const fbText = fbData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const jsonMatch = fbText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          setAnalysis({
+            summary: parsed.summary,
+            recommendations: parsed.recommendations || []
+          });
+          return;
+        }
+        throw new Error("Invalid fallback JSON");
+      } catch (fe: any) {
+        console.error("Final fallback error:", fe);
+        setError(isRw ? "Ibibazo by'itumanaho. Ongera ugerageze." : "Connection issue. Please try again.");
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -265,10 +305,10 @@ export default function ProgressPage() {
       <AnimatePresence>
         {isRoomOpen && activeSession && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100]">
-            <VideoConsultationRoom 
-               session={{ profiles: { full_name: 'Dr. Kalisa' } }} 
-               role="patient"
-               onEnd={() => setIsRoomOpen(false)} 
+            <VideoConsultationRoom
+              session={{ profiles: { full_name: 'Dr. Kalisa' } }}
+              role="patient"
+              onEnd={() => setIsRoomOpen(false)}
             />
           </motion.div>
         )}
@@ -278,8 +318,8 @@ export default function ProgressPage() {
         {/* Active Session Notification */}
         <AnimatePresence>
           {activeSession?.status === 'active' && !isRoomOpen && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }} 
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               className="bg-primary text-white p-6 rounded-[2.5rem] shadow-xl shadow-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 mb-10"
             >
@@ -292,7 +332,7 @@ export default function ProgressPage() {
                   <p className="text-sm font-bold opacity-80">{isRw ? 'Umuganga wawe aragutegereje.' : 'Your doctor is waiting for you in the video room.'}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsRoomOpen(true)}
                 className="px-8 py-3 bg-white text-primary font-black rounded-2xl shadow-lg hover:scale-105 transition-all"
               >
@@ -303,7 +343,7 @@ export default function ProgressPage() {
         </AnimatePresence>
 
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <button 
+          <button
             onClick={() => setActiveTab('mood')}
             className={`p-6 rounded-[2.5rem] border-2 transition-all text-left flex flex-col justify-between h-40 ${activeTab === 'mood' ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'bg-white border-neutral-100 text-primary-900'}`}
           >
@@ -314,7 +354,7 @@ export default function ProgressPage() {
             </div>
           </button>
 
-          <button 
+          <button
             onClick={() => setActiveTab('journal')}
             className={`p-6 rounded-[2.5rem] border-2 transition-all text-left flex flex-col justify-between h-40 ${activeTab === 'journal' ? 'bg-[#8B5E3C] border-[#8B5E3C] text-white shadow-xl shadow-[#8B5E3C]/20' : 'bg-white border-neutral-100 text-primary-900'}`}
           >
@@ -331,7 +371,7 @@ export default function ProgressPage() {
           <div className="md:col-span-2 space-y-8">
             <AnimatePresence mode="wait">
               {activeTab === 'mood' ? (
-                <motion.div 
+                <motion.div
                   key="mood-view"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -351,11 +391,10 @@ export default function ProgressPage() {
                           whileTap={{ scale: 0.92 }}
                           onClick={() => logMood(mood.id)}
                           disabled={isLoggingMood}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase tracking-tight ${
-                            lastLoggedMood === mood.id
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase tracking-tight ${lastLoggedMood === mood.id
                               ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
                               : `${mood.color} hover:scale-105`
-                          } disabled:opacity-50`}
+                            } disabled:opacity-50`}
                         >
                           <span className="text-2xl">{mood.emoji}</span>
                           <span className="leading-tight text-center">{isRw ? mood.rw : mood.en}</span>
@@ -379,12 +418,11 @@ export default function ProgressPage() {
                       {weeklyData.map((day, idx) => (
                         <div key={idx} className="flex-1 flex flex-col items-center gap-4">
                           <div className="w-full relative flex flex-col justify-end h-full">
-                            <motion.div 
+                            <motion.div
                               initial={{ height: 0 }}
                               animate={{ height: `${(day.value / 5) * 100}%` }}
-                              className={`w-full rounded-t-2xl transition-all ${
-                                day.value === 0 ? 'bg-neutral-50' : 'bg-primary shadow-lg shadow-primary/10'
-                              }`}
+                              className={`w-full rounded-t-2xl transition-all ${day.value === 0 ? 'bg-neutral-50' : 'bg-primary shadow-lg shadow-primary/10'
+                                }`}
                             />
                           </div>
                           <span className="text-[10px] font-black text-neutral-400 uppercase tracking-tighter">{dayNames[idx]}</span>
@@ -394,7 +432,7 @@ export default function ProgressPage() {
                   </div>
                 </motion.div>
               ) : (
-                <motion.div 
+                <motion.div
                   key="journal-view"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -407,13 +445,13 @@ export default function ProgressPage() {
                       <Plus size={20} />
                       {isRw ? 'Andika inyandiko nshya' : 'Write a new entry'}
                     </h2>
-                    <textarea 
+                    <textarea
                       value={newJournal}
                       onChange={(e) => setNewJournal(e.target.value)}
                       placeholder={isRw ? 'Andika uko wiyumva...' : 'How was your day? Pour your heart out...'}
                       className="w-full h-32 p-4 bg-neutral-50 rounded-2xl border-none focus:ring-2 ring-[#8B5E3C]/20 outline-none font-medium text-sm"
                     />
-                    <button 
+                    <button
                       onClick={handleSaveJournal}
                       disabled={isSavingJournal || !newJournal.trim()}
                       className="w-full py-4 bg-[#8B5E3C] text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-[#8B5E3C]/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
@@ -426,8 +464,8 @@ export default function ProgressPage() {
                   {/* Journal List */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest">
-                       <History size={12} />
-                       {isRw ? 'Ibyanditswe' : 'Previous Entries'}
+                      <History size={12} />
+                      {isRw ? 'Ibyanditswe' : 'Previous Entries'}
                     </div>
                     {journals.length === 0 ? (
                       <div className="p-10 text-center text-neutral-300 font-bold italic border-2 border-dashed border-neutral-100 rounded-3xl">
@@ -436,11 +474,11 @@ export default function ProgressPage() {
                     ) : (
                       journals.map(j => (
                         <div key={j.id} className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm space-y-3">
-                           <div className="flex items-center justify-between">
-                             <span className="text-[10px] font-black text-neutral-300">{new Date(j.created_at).toLocaleDateString()}</span>
-                             <span className="text-lg">{j.mood_emoji}</span>
-                           </div>
-                           <p className="text-sm font-medium text-primary-900 leading-relaxed">{j.content}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-neutral-300">{new Date(j.created_at).toLocaleDateString()}</span>
+                            <span className="text-lg">{j.mood_emoji}</span>
+                          </div>
+                          <p className="text-sm font-medium text-primary-900 leading-relaxed">{j.content}</p>
                         </div>
                       ))
                     )}
@@ -460,21 +498,21 @@ export default function ProgressPage() {
                   </div>
                   <h2 className="text-xl font-black">{isRw ? 'Ubujyanama' : 'AI Insights'}</h2>
                 </div>
-                
+
                 {isAnalyzing ? (
                   <div className="space-y-6 py-10">
                     <div className="flex gap-2">
-                       <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
-                       <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
-                       <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.4s]" />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.4s]" />
                     </div>
                     <p className="text-xs font-bold uppercase tracking-widest opacity-60">{isRw ? 'Humura AI arasesengura...' : 'Analyzing your week...'}</p>
                   </div>
                 ) : analysis ? (
                   <div className="space-y-8">
                     <div className="space-y-2">
-                       <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{isRw ? 'Inshamake' : 'Weekly Summary'}</p>
-                       <p className="text-sm font-medium leading-relaxed italic">"{analysis.summary}"</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{isRw ? 'Inshamake' : 'Weekly Summary'}</p>
+                      <p className="text-sm font-medium leading-relaxed italic">"{analysis.summary}"</p>
                     </div>
 
                     <div className="space-y-4">
@@ -483,7 +521,7 @@ export default function ProgressPage() {
                         {analysis.recommendations.map((tip, i) => (
                           <div key={i} className="flex gap-3 text-xs bg-white/10 p-4 rounded-2xl border border-white/10 group hover:bg-white/20 transition-all cursor-default">
                             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                               <ChevronRight size={10} />
+                              <ChevronRight size={10} />
                             </div>
                             <span className="font-bold">{tip}</span>
                           </div>
@@ -497,9 +535,29 @@ export default function ProgressPage() {
                     <p className="text-xs font-bold uppercase tracking-widest">{isRw ? 'Nta makuru ahagije' : 'Not enough data for insights'}</p>
                   </div>
                 )}
+
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="mt-6 p-6 rounded-[2rem] bg-white/10 border border-white/20 flex flex-col items-center gap-4 text-center"
+                  >
+                    <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+                      <AlertCircle size={14} className="text-white" />
+                      {error}
+                    </div>
+                    <button 
+                      onClick={() => { setError(null); analyzeProgress(user?.id); }} 
+                      className="px-6 py-2 bg-white text-primary font-black text-[10px] uppercase tracking-widest rounded-full shadow-lg hover:scale-105 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <RefreshCcw size={12} className="lucide-refresh-ccw" />
+                      {isRw ? 'Ongera ugerageze' : 'Try Reconnecting'}
+                    </button>
+                  </motion.div>
+                )}
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => setShowShareModal(true)}
                 disabled={!analysis || isAnalyzing}
                 className="mt-10 w-full py-4 bg-white text-primary rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
@@ -508,18 +566,18 @@ export default function ProgressPage() {
                 {isRw ? 'Sangira Raporo' : 'Share Report'}
               </button>
             </div>
-            
+
             {/* Crisis Quick Link */}
             <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100 flex items-center gap-4">
-               <div className="w-10 h-10 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                 <AlertTriangle size={20} />
-               </div>
-               <div>
-                 <p className="text-xs font-black text-red-900">{isRw ? 'Ubufasha bwihutirwa?' : 'Need urgent help?'}</p>
-                 <button onClick={() => window.location.href = '/emergency'} className="text-[10px] font-bold text-red-600 hover:underline">
-                   {isRw ? 'Kanda hano ubu' : 'Click here now'} →
-                 </button>
-               </div>
+              <div className="w-10 h-10 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <p className="text-xs font-black text-red-900">{isRw ? 'Ubufasha bwihutirwa?' : 'Need urgent help?'}</p>
+                <button onClick={() => window.location.href = '/emergency'} className="text-[10px] font-bold text-red-600 hover:underline">
+                  {isRw ? 'Kanda hano ubu' : 'Click here now'} →
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -531,45 +589,46 @@ export default function ProgressPage() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowShareModal(false)} className="absolute inset-0 bg-primary-900/60 backdrop-blur-md" />
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative w-full max-w-sm bg-white rounded-[3rem] shadow-2xl overflow-hidden p-8 space-y-8">
-               <div className="flex items-center justify-between">
-                 <h3 className="text-xl font-black text-primary-900">{isRw ? 'Sangira Raporo' : 'Share Progress'}</h3>
-                 <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors">
-                   <X size={20} className="text-neutral-300" />
-                 </button>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { id: 'whatsapp', icon: MessageCircle, color: 'bg-green-500', label: 'WhatsApp' },
-                    { id: 'telegram', icon: Send, color: 'bg-blue-500', label: 'Telegram' },
-                    { id: 'email', icon: Mail, color: 'bg-red-500', label: 'Email' },
-                    { id: 'copy', icon: Copy, color: 'bg-primary', label: isRw ? 'Kopiye' : 'Copy' },
-                  ].map(p => (
-                    <button 
-                      key={p.id} 
-                      onClick={() => {
-                        const shareText = `Humura AI Progress Report:\n\n${analysis?.summary}\n\nMind Supported, Life Empowered.`;
-                        if (p.id === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
-                        else if (p.id === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(shareText)}`, '_blank');
-                        else if (p.id === 'email') window.location.href = `mailto:?subject=My Humura AI Progress&body=${encodeURIComponent(shareText)}`;
-                        else if (p.id === 'copy') {
-                          navigator.clipboard.writeText(shareText);
-                          alert(isRw ? 'Byakopewe!' : 'Copied to clipboard!');
-                        }
-                      }}
-                      className="flex flex-col items-center gap-3 p-6 rounded-[2rem] bg-neutral-50 hover:bg-neutral-100 transition-all group"
-                    >
-                       <div className={`w-12 h-12 ${p.color} text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                         <p.icon size={20} />
-                       </div>
-                       <span className="text-[10px] font-black uppercase tracking-widest text-primary-900">{p.label}</span>
-                    </button>
-                  ))}
-               </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black text-primary-900">{isRw ? 'Sangira Raporo' : 'Share Progress'}</h3>
+                <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors">
+                  <X size={20} className="text-neutral-300" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'whatsapp', icon: MessageCircle, color: 'bg-green-500', label: 'WhatsApp' },
+                  { id: 'telegram', icon: Send, color: 'bg-blue-500', label: 'Telegram' },
+                  { id: 'email', icon: Mail, color: 'bg-red-500', label: 'Email' },
+                  { id: 'copy', icon: Copy, color: 'bg-primary', label: isRw ? 'Kopiye' : 'Copy' },
+                ].map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      const shareText = `Humura AI Progress Report:\n\n${analysis?.summary}\n\nMind Supported, Life Empowered.`;
+                      if (p.id === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+                      else if (p.id === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(shareText)}`, '_blank');
+                      else if (p.id === 'email') window.location.href = `mailto:?subject=My Humura AI Progress&body=${encodeURIComponent(shareText)}`;
+                      else if (p.id === 'copy') {
+                        navigator.clipboard.writeText(shareText);
+                        alert(isRw ? 'Byakopewe!' : 'Copied to clipboard!');
+                      }
+                    }}
+                    className="flex flex-col items-center gap-3 p-6 rounded-[2rem] bg-neutral-50 hover:bg-neutral-100 transition-all group"
+                  >
+                    <div className={`w-12 h-12 ${p.color} text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                      <p.icon size={20} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary-900">{p.label}</span>
+                  </button>
+                ))}
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
     </div>
   );
+}
 }
