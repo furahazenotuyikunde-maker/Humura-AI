@@ -8,6 +8,8 @@ import {
   Mic, FileText, Shield, ChevronRight, Check, Info, X, LogOut, Loader2
 } from 'lucide-react';
 
+import { Moon, Sun } from 'lucide-react';
+
 type TextSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface SettingsState {
@@ -16,6 +18,7 @@ interface SettingsState {
   highContrast: boolean;
   voiceNav: boolean;
   notifications: boolean;
+  darkMode: boolean;
 }
 
 export default function SettingsPage() {
@@ -74,16 +77,21 @@ export default function SettingsPage() {
       textSize: 'md',
       highContrast: false,
       voiceNav: false,
-      notifications: true
+      notifications: true,
+      darkMode: false,
     };
   });
 
   // Sync settings with UI classes and LocalStorage
   useEffect(() => {
     localStorage.setItem('Humura_settings_v2', JSON.stringify(settings));
+    // Dispatch storage event so Shell picks up change immediately
+    window.dispatchEvent(new Event('storage'));
     
     // High Contrast
     document.documentElement.classList.toggle('high-contrast', settings.highContrast);
+    // Dark Mode
+    document.documentElement.classList.toggle('humura-dark', settings.darkMode);
     
     // Text Size
     const sizeClasses = ['text-sm', 'text-md', 'text-lg', 'text-xl'];
@@ -99,17 +107,20 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, textSize: size }));
   };
 
-  const handleSafetyExit = () => {
-    // Immediate redirect to Google for safety
-    window.location.replace('https://www.google.com');
-  };
+  const handleSafetyExit = () => window.location.replace('https://www.google.com');
+
+  const dk = settings.darkMode;
+  const cardCls = dk ? 'bg-[#131c2e] border-[#1f2d47] text-[#e2e8f0]' : 'bg-white border-black text-black';
+  const pageCls = dk ? 'bg-[#0d1117] text-[#e2e8f0]' : 'bg-white text-black';
+  const sectionBorderCls = dk ? 'border-[#1f2d47]' : 'border-black';
+  const mutedCls = dk ? 'text-[#6b7a99]' : 'text-neutral-600';
 
   return (
-    <div className="min-h-screen bg-white text-black pb-24">
+    <div className={`min-h-screen pb-24 transition-colors duration-300 ${pageCls}`}>
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-10">
         {/* Header */}
         <header className="flex items-center gap-3">
-          <div className="p-2 bg-black text-white rounded-xl">
+          <div className={`p-2 rounded-xl ${dk ? 'bg-[#1a2543] text-[#34d399]' : 'bg-black text-white'}`}>
             <Settings size={28} />
           </div>
           <h1 className="text-3xl font-black tracking-tight">
@@ -119,31 +130,26 @@ export default function SettingsPage() {
 
         {/* 1. Profile Section */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b-2 border-black pb-2">
+          <div className={`flex items-center gap-2 border-b-2 pb-2 ${sectionBorderCls}`}>
             <User size={20} />
             <h2 className="text-lg font-black uppercase">
               {isRw ? 'Umwirondoro' : 'Profile'}
             </h2>
           </div>
-          <div className="flex items-center justify-between p-5 border-2 border-black rounded-2xl bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className={`flex items-center justify-between p-5 border-2 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${cardCls}`}>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center text-xl font-black">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-black ${dk ? 'bg-gradient-to-br from-[#6366f1] to-[#34d399] text-white' : 'bg-black text-white'}`}>
                 {profile?.full_name?.charAt(0) || 'H'}
               </div>
               <div>
                 <p className="font-black text-lg">{profile?.full_name || 'Humura User'}</p>
-                <p className="text-sm font-medium">
+                <p className={`text-sm font-medium ${mutedCls}`}>
                   {profile?.role === 'doctor' ? (isRw ? 'Inzobere mu Buzima' : 'Mental Health Professional') : (isRw ? 'Umurwayi' : 'Patient User')}
                 </p>
               </div>
             </div>
-            <button 
-              onClick={() => {
-                if (!profile) navigate('/auth');
-              }}
-              className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors" 
-              aria-label="View profile"
-            >
+            <button onClick={() => { if (!profile) navigate('/auth'); }}
+              className="w-12 h-12 flex items-center justify-center rounded-full hover:opacity-70 transition" aria-label="View profile">
               <ChevronRight size={24} />
             </button>
           </div>
@@ -224,27 +230,44 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* 3. Notifications Section */}
+        {/* Appearance — Dark / Light Mode */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b-2 border-black pb-2">
+          <div className={`flex items-center gap-2 border-b-2 pb-2 ${sectionBorderCls}`}>
+            {dk ? <Moon size={20} className="text-[#818cf8]" /> : <Sun size={20} />}
+            <h2 className="text-lg font-black uppercase">{isRw ? 'Isura' : 'Appearance'}</h2>
+          </div>
+          <div className={`p-5 border-2 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.4)] flex items-center justify-between min-h-[80px] ${cardCls}`}>
+            <div>
+              <p className="font-black text-lg">{isRw ? 'Ijoro / Umurango' : 'Midnight Dark Mode'}</p>
+              <p className={`text-sm font-medium ${mutedCls}`}>
+                {dk ? (isRw ? 'Ubu uri mu isura y\'ijoro' : 'Dark theme is active — Midnight Growth') : (isRw ? 'Ubu uri mu isura y\'umurango' : 'Light theme active — switch to midnight')}
+              </p>
+            </div>
+            <button onClick={() => toggle('darkMode')}
+              className={`w-16 h-9 rounded-full transition-all relative border-2 ${sectionBorderCls} ${dk ? 'bg-[#6366f1]' : 'bg-white'}`}
+              aria-checked={dk} role="switch" aria-label="Toggle dark mode">
+              <div className={`absolute top-0.5 w-7 h-7 rounded-full shadow-sm transition-transform ${dk ? 'translate-x-7 bg-white' : 'translate-x-0.5 bg-black'}`} />
+            </button>
+          </div>
+        </section>
+
+        {/* Notifications */}
+        <section className="space-y-4">
+          <div className={`flex items-center gap-2 border-b-2 pb-2 ${sectionBorderCls}`}>
             <Bell size={20} />
             <h2 className="text-lg font-black uppercase">
               {isRw ? 'Imenyesha' : 'Notifications'}
             </h2>
           </div>
-          <div className="p-5 border-2 border-black rounded-2xl bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between min-h-[80px]">
+          <div className={`p-5 border-2 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.4)] flex items-center justify-between min-h-[80px] ${cardCls}`}>
             <div>
               <p className="font-black text-lg">{isRw ? "Imenyesha ry'izahabu" : 'Push Notifications'}</p>
-              <p className="text-sm font-medium">{isRw ? "Amakuru n'ubutumwa bushya" : 'Stay updated with new support'}</p>
+              <p className={`text-sm font-medium ${mutedCls}`}>{isRw ? "Amakuru n'ubutumwa bushya" : 'Stay updated with new support'}</p>
             </div>
-            <button
-              onClick={() => toggle('notifications')}
-              className={`w-16 h-9 rounded-full transition-all relative border-2 border-black ${settings.notifications ? 'bg-black' : 'bg-white'}`}
-              aria-checked={settings.notifications}
-              role="switch"
-              aria-label="Toggle notifications"
-            >
-              <div className={`absolute top-0.5 w-7 h-7 rounded-full shadow-sm transition-transform ${settings.notifications ? 'translate-x-7 bg-white' : 'translate-x-0.5 bg-black'}`} />
+            <button onClick={() => toggle('notifications')}
+              className={`w-16 h-9 rounded-full transition-all relative border-2 ${sectionBorderCls} ${settings.notifications ? (dk ? 'bg-[#34d399]' : 'bg-black') : 'bg-white'}`}
+              aria-checked={settings.notifications} role="switch" aria-label="Toggle notifications">
+              <div className={`absolute top-0.5 w-7 h-7 rounded-full shadow-sm transition-transform ${settings.notifications ? 'translate-x-7 bg-white' : `translate-x-0.5 ${dk ? 'bg-[#6b7a99]' : 'bg-black'}`}`} />
             </button>
           </div>
         </section>

@@ -66,7 +66,13 @@ export const Shell: React.FC<ShellProps> = () => {
 
   const [shouldShake, setShouldShake] = useState(false);
 
-  // Global Accessibility Settings Loader
+  // Dark mode
+  const [isDark, setIsDark] = useState(() => {
+    const s = localStorage.getItem('Humura_settings_v2');
+    return s ? JSON.parse(s).darkMode === true : false;
+  });
+
+  // Global Accessibility + Dark Mode Settings Loader
   useEffect(() => {
     const applySettings = () => {
       const saved = localStorage.getItem('Humura_settings_v2');
@@ -74,6 +80,8 @@ export const Shell: React.FC<ShellProps> = () => {
         try {
           const settings = JSON.parse(saved);
           document.documentElement.classList.toggle('high-contrast', !!settings.highContrast);
+          document.documentElement.classList.toggle('humura-dark', !!settings.darkMode);
+          setIsDark(!!settings.darkMode);
           const sizeClasses = ['text-sm', 'text-md', 'text-lg', 'text-xl'];
           document.documentElement.classList.remove(...sizeClasses);
           if (settings.textSize) {
@@ -84,7 +92,6 @@ export const Shell: React.FC<ShellProps> = () => {
     };
 
     applySettings();
-    // Listen for storage changes (when settings are updated in another tab or the same page)
     window.addEventListener('storage', applySettings);
     return () => window.removeEventListener('storage', applySettings);
   }, []);
@@ -150,10 +157,12 @@ export const Shell: React.FC<ShellProps> = () => {
     },
   ];
 
+  const dk = isDark;
+
   return (
-    <div className="flex flex-col min-h-screen bg-background pb-16 md:pb-0 md:pl-64">
+    <div className={`flex flex-col min-h-screen ${dk ? 'bg-[#0d1117]' : 'bg-background'} pb-16 md:pb-0 md:pl-64 transition-colors duration-300`}>
       {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-50 px-4 py-3 flex justify-between items-center">
+      <header className={`sticky top-0 z-50 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center ${dk ? 'bg-[#131c2e]/95 border-[#1f2d47]' : 'bg-white/80 border-primary-50'}`}>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/')} className="flex items-center py-1">
             <img src="/logo.png" alt="Humura AI" className="h-[2.5rem] md:h-[2.75rem] object-contain" />
@@ -163,11 +172,11 @@ export const Shell: React.FC<ShellProps> = () => {
 
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-primary-50 rounded-full p-1 border border-primary-100 shadow-sm mr-2">
+          <div className={`flex items-center rounded-full p-1 border shadow-sm mr-2 ${dk ? 'bg-[#1a2543] border-[#1f2d47]' : 'bg-primary-50 border-primary-100'}`}>
             <button 
               onClick={() => i18n.changeLanguage('en')}
               className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                !isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+                !isRw ? 'bg-primary text-white shadow-sm' : dk ? 'text-[#6b7a99] hover:bg-[#1f2d47]' : 'text-primary-600 hover:bg-primary-100'
               }`}
             >
               English
@@ -175,7 +184,7 @@ export const Shell: React.FC<ShellProps> = () => {
             <button 
               onClick={() => i18n.changeLanguage('rw')}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                isRw ? 'bg-primary text-white shadow-sm' : 'text-primary-600 hover:bg-primary-100'
+                isRw ? 'bg-primary text-white shadow-sm' : dk ? 'text-[#6b7a99] hover:bg-[#1f2d47]' : 'text-primary-600 hover:bg-primary-100'
               }`}
             >
               Kinyarwanda
@@ -184,7 +193,7 @@ export const Shell: React.FC<ShellProps> = () => {
 
           <button 
             onClick={() => navigate('/notifications')}
-            className={`p-2 rounded-full bg-primary-50 text-primary-600 border border-primary-100 shadow-sm transition-all active:scale-95 ${shouldShake ? 'animate-shake-bell ring-2 ring-primary-200' : ''}`}
+            className={`p-2 rounded-full border shadow-sm transition-all active:scale-95 ${dk ? 'bg-[#1a2543] text-[#34d399] border-[#1f2d47]' : 'bg-primary-50 text-primary-600 border-primary-100'} ${shouldShake ? 'animate-shake-bell ring-2 ring-primary-200' : ''}`}
             aria-label="Notifications"
           >
             <Bell size={20} />
@@ -217,7 +226,7 @@ export const Shell: React.FC<ShellProps> = () => {
         </div>
 
         {/* Premium Footer */}
-        <footer className="mt-32 pt-20 pb-16 border-t border-primary-50 bg-white/40 backdrop-blur-md rounded-t-[5rem] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.05)]">
+        <footer className={`mt-32 pt-20 pb-16 border-t ${dk ? 'border-[#1f2d47] bg-[#0d1117]/80' : 'border-primary-50 bg-white/40'} backdrop-blur-md rounded-t-[5rem] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.05)]`}>
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
               {/* Column 1: Our Mission */}
@@ -226,11 +235,11 @@ export const Shell: React.FC<ShellProps> = () => {
                   <div className="p-2 bg-primary/10 rounded-2xl">
                     <img src="/logo.png" alt="Humura AI" className="h-8 w-8 object-contain" />
                   </div>
-                  <span className="font-black text-primary-900 text-xl tracking-tighter">Humura AI</span>
+                  <span className={`font-black text-xl tracking-tighter ${dk ? 'text-[#e2e8f0]' : 'text-primary-900'}`}>Humura AI</span>
                 </div>
                 <p className="text-sm text-neutral-500 leading-relaxed font-medium">
                   {isRw 
-                    ? "Humura AI ni urubuga rw'ikoranabuhanga rugamije gutanga ubufasha mu buzima bwo mu mutwe. Twishimiye gufasha Abanyarwanda bose binyuze mu buryo bugezweho n'ikoranabuhanga ridakumira bwa mbere mu Rwanda."
+                    ? "Humura AI ni urubuga rw'ikoranabuhanga rugamije gutanga ubufasha mu buzima bwo mu mutwe."
                     : "Humura AI is a bilingual mental health ecosystem providing inclusive and empathetic support. We bridge the gap in mental wellness through innovative AI and accessibility tools for the entire Rwandan community."}
                 </p>
               </div>
@@ -329,8 +338,8 @@ export const Shell: React.FC<ShellProps> = () => {
           </div>
 
 
-          <div className="mt-10 pt-6 border-t border-primary-50 flex flex-col items-center gap-6 text-center">
-            <p className="text-[10px] text-neutral-400 font-medium tracking-widest uppercase">
+          <div className={`mt-10 pt-6 border-t ${dk ? 'border-[#1f2d47]' : 'border-primary-50'} flex flex-col items-center gap-6 text-center`}>
+            <p className={`text-[10px] font-medium tracking-widest uppercase ${dk ? 'text-[#3d4f6b]' : 'text-neutral-400'}`}>
               &copy; {new Date().getFullYear()} Humura AI · Mind Supported, Life Empowered.
             </p>
           </div>
@@ -340,11 +349,11 @@ export const Shell: React.FC<ShellProps> = () => {
 
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-white border-r border-primary-50 z-40 overflow-y-auto">
-        <div className="p-3 border-b border-primary-50">
+      <aside className={`hidden md:flex flex-col fixed inset-y-0 left-0 w-64 border-r z-40 overflow-y-auto ${dk ? 'bg-[#131c2e] border-[#1f2d47]' : 'bg-white border-primary-50'}`}>
+        <div className={`p-3 border-b ${dk ? 'border-[#1f2d47]' : 'border-primary-50'}`}>
           <div className="flex flex-col items-center justify-center space-y-1">
             <img src="/logo.png" alt="Humura AI" className="h-14 object-contain" />
-            <p className="text-[10px] font-bold text-primary-600 tracking-tight text-center uppercase">mind supported, life empowered.</p>
+            <p className={`text-[10px] font-bold tracking-tight text-center uppercase ${dk ? 'text-[#34d399]' : 'text-primary-600'}`}>mind supported, life empowered.</p>
           </div>
         </div>
 
@@ -352,7 +361,7 @@ export const Shell: React.FC<ShellProps> = () => {
           {sidebarSections.map((section) => (
             <div key={section.title}>
               {section.title && (
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 mb-1">
+                <p className={`text-[10px] font-bold uppercase tracking-wider px-3 mb-1 ${dk ? 'text-[#3d4f6b]' : 'text-neutral-400'}`}>
                   {section.title}
                 </p>
               )}
@@ -367,10 +376,10 @@ export const Shell: React.FC<ShellProps> = () => {
                         isActive
                           ? item.danger
                             ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
-                            : 'bg-primary text-white shadow-md shadow-primary/20'
+                            : dk ? 'bg-[#0f3528] text-[#34d399]' : 'bg-primary text-white shadow-md shadow-primary/20'
                           : item.danger
-                          ? 'text-red-500 hover:bg-red-50'
-                          : 'text-neutral-500 hover:bg-primary-50 hover:text-primary-900'
+                          ? dk ? 'text-red-400 hover:bg-red-900/20' : 'text-red-500 hover:bg-red-50'
+                          : dk ? 'text-[#6b7a99] hover:bg-[#1a2543] hover:text-[#e2e8f0]' : 'text-neutral-500 hover:bg-primary-50 hover:text-primary-900'
                       }`
                     }
                   >
@@ -383,11 +392,26 @@ export const Shell: React.FC<ShellProps> = () => {
             </div>
           ))}
         </nav>
+
+        {/* User profile card */}
+        <div className={`p-3 border-t ${dk ? 'border-[#1f2d47]' : 'border-primary-50'}`}>
+          <div className={`flex items-center gap-3 p-3 rounded-2xl ${dk ? 'bg-[#1a2543]' : 'bg-primary-50'}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 ${dk ? 'bg-gradient-to-br from-[#6366f1] to-[#34d399] text-white' : 'bg-primary text-white'}`}>
+              {user ? (user.email?.slice(0, 2).toUpperCase() || 'U') : 'U'}
+            </div>
+            <div className="overflow-hidden">
+              <p className={`text-xs font-black truncate ${dk ? 'text-[#e2e8f0]' : 'text-primary-900'}`}>{user?.email?.split('@')[0] || 'User'}</p>
+              <p className={`text-[10px] font-bold ${dk ? 'text-[#34d399]' : 'text-emerald-600'}`}>
+                {isRw ? 'Ikiganiro kiri gukomeza' : 'CBT Session Active'}
+              </p>
+            </div>
+          </div>
+        </div>
       </aside>
 
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-primary-50 pb-safe z-50">
+      <nav className={`md:hidden fixed bottom-0 inset-x-0 border-t pb-safe z-50 ${dk ? 'bg-[#131c2e] border-[#1f2d47]' : 'bg-white border-primary-50'}`}>
         <div className="flex justify-around items-center h-16">
           {mobileNavItems.map((item) => (
             <NavLink
@@ -397,8 +421,8 @@ export const Shell: React.FC<ShellProps> = () => {
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-colors ${
                   item.to === '/emergency'
-                    ? isActive ? 'text-red-600' : 'text-red-400 hover:text-red-500'
-                    : isActive ? 'text-primary' : 'text-neutral-400 hover:text-primary-500'
+                    ? isActive ? 'text-red-500' : 'text-red-400'
+                    : isActive ? dk ? 'text-[#34d399]' : 'text-primary' : dk ? 'text-[#3d4f6b]' : 'text-neutral-400'
                 }`
               }
             >
