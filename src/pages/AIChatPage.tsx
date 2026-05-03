@@ -177,15 +177,29 @@ export default function AIChatPage() {
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
             body: JSON.stringify({
-              contents: [
-                { role: 'user', parts: [{ text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda." }] },
-                ...newMessages.slice(-8).map(m => ({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.content }] }))
-              ]
+              // ✅ system_instruction is the correct Gemini field — NOT a contents entry
+              system_instruction: {
+                parts: [{ text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional. Always remember and build upon everything the user has shared in this conversation. If you detect a crisis, ALWAYS direct them to call the Rwanda National Mental Health Hotline at 114." }]
+              },
+              contents: (() => {
+                // Build valid alternating user/model turns (Gemini requirement)
+                const raw = newMessages.slice(-10).map(m => ({
+                  role: m.role === 'model' ? 'model' : 'user',
+                  parts: [{ text: m.content || '...' }]
+                }));
+                // Remove consecutive duplicate roles
+                const deduped = raw.filter((msg, i) => i === 0 || msg.role !== raw[i - 1].role);
+                // Must start with 'user' and end with 'user'
+                const startUser = deduped[0]?.role === 'user' ? deduped : deduped.slice(1);
+                return startUser.length ? startUser : [{ role: 'user', parts: [{ text: userMsg.content }] }];
+              })()
             })
           }
         );
+        if (!fallbackRes.ok) throw new Error(`Gemini error ${fallbackRes.status}`);
         const data = await fallbackRes.json();
-        addAIMessage(data.candidates?.[0]?.content?.parts?.[0]?.text || "I am here for you. Tell me more.", newMessages);
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        addAIMessage(reply || (isRw ? "Ndi hano. Komeza." : "I am here for you. Tell me more."), newMessages);
       } catch (fe: any) {
         if (fe.name !== 'AbortError') setError(isRw ? "Ibibazo by'itumanaho." : "Connection issue. Please try again.");
       }
@@ -194,6 +208,7 @@ export default function AIChatPage() {
       setAbortController(null);
     }
   };
+
 
   const handleSend = () => editingId !== null ? saveEdit() : sendMessage();
 
