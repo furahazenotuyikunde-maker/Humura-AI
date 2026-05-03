@@ -770,7 +770,7 @@ export default function DoctorDashboard() {
                   <h3 className="text-2xl font-black text-[#4A2C1A]">{isRw ? "Ubushakashatsi n'Isesengura" : 'Clinical Analytics'}</h3>
                   <p className="text-sm font-bold text-neutral-400">{isRw ? 'Isesengura rya AI ku barwayi bawe' : 'AI-powered insights across your patient caseload'}</p>
                 </div>
-                <AnalyticsOverview />
+                <AnalyticsOverview doctorProfile={doctorProfile} />
               </div>
             )}
 

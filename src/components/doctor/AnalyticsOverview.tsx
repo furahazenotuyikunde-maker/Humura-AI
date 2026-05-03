@@ -16,19 +16,23 @@ const data = [
   { name: 'Sun', mood: 7, anxiety: 3 },
 ];
 
-export default function AnalyticsOverview() {
+export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: any }) {
   const [query, setQuery] = useState('');
   const [reply, setReply] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-
+ 
   const handleQuery = async () => {
-    if (!query.trim()) return;
+    if (!query.trim() || !doctorProfile?.id) return;
     setAiLoading(true);
+    setReply('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/clinical/query-caseload`, {
+      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctor/query-caseload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, context: data })
+        body: JSON.stringify({ 
+          query, 
+          doctorId: doctorProfile.id 
+        })
       });
       const result = await res.json();
       if (result.success) {
@@ -36,6 +40,7 @@ export default function AnalyticsOverview() {
       }
     } catch (err) {
       console.error(err);
+      setReply("Failed to fetch caseload intelligence. Please try again.");
     } finally {
       setAiLoading(false);
     }
@@ -146,7 +151,7 @@ export default function AnalyticsOverview() {
              disabled={aiLoading}
              className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2.5 bg-primary text-white text-[10px] font-black uppercase rounded-xl hover:scale-105 transition-all disabled:opacity-50"
            >
-              {aiLoading ? 'Thinking...' : 'Ask AI'}
+              {aiLoading ? 'Thinking...' : 'ASK HUMURA AI'}
            </button>
         </div>
 

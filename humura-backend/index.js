@@ -538,6 +538,50 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
   }
 });
 
-// NOTE: /chat is defined above (line ~342) — this duplicate removed to avoid Express route shadowing.
+// 4h. Clinical Caseload Intelligence
+app.post('/api/doctor/query-caseload', async (req, res) => {
+  try {
+    const { doctorId, query } = req.body;
+
+    // 1. Fetch real caseload data for context
+    const { data: patients, error: patientsErr } = await supabase
+      .from('patients')
+      .select('*, profiles:patient_id(full_name)')
+      .eq('doctor_id', doctorId);
+
+    if (patientsErr) throw patientsErr;
+
+    const caseloadSummary = patients.map(p => ({
+      name: p.profiles?.full_name,
+      concern: p.primary_concern,
+      phq9: p.phq9_score,
+      gad7: p.gad7_score,
+      status: p.status
+    }));
+
+    const prompt = `You are a Senior Clinical Data Assistant for Humura AI.
+    DOCTOR ID: ${doctorId}
+    CURRENT CASELOAD CONTEXT: ${JSON.stringify(caseloadSummary)}
+    
+    DOCTOR'S QUESTION: "${query}"
+    
+    TASK: Answer the doctor's question accurately using the context above. 
+    If the question is about a specific patient not in the list, state that they aren't in the current assigned caseload.
+    Provide concise, professional, and clinical answers.
+    
+    Respond ONLY with a JSON object:
+    { "success": true, "reply": "string" }`;
+
+    const result = await geminiModel.generateContent(prompt);
+    const text = (await result.response).text();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { success: true, reply: text };
+
+    res.json(parsed);
+  } catch (error) {
+    console.error("query-caseload error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 server.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
