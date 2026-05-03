@@ -90,6 +90,18 @@ export default function SignLanguagePage() {
   const detectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isSendingRef = useRef(false);
 
+  // ── Friendly quota/error message helper ──
+  const friendlyError = (err: any): string => {
+    const msg = (err?.message || '').toLowerCase();
+    const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('too many requests');
+    if (isQuota) return isRw
+      ? "Wageze ku mupaka wa buri munsi. Gerageza nyuma y'isaha 1."
+      : "You've hit the quota limit. Please try again in 1 hour.";
+    return isRw
+      ? "Ibibazo by'itumanaho. Gerageza nanone."
+      : "Connection error. Please try again.";
+  };
+
   useEffect(() => {
     // Cleanup camera strictly when component unmounts to prevent privacy leaks
     return () => {
@@ -217,9 +229,7 @@ export default function SignLanguagePage() {
         }
       } catch (err: any) {
         console.error('[RENDER] ✖ Error:', err.message);
-        setErrorMessage(err.message || (isRw
-          ? "Habaye ikosa mu gusesengura ishusho. Nyamuneka gerageza nanone."
-          : "Failed to analyze the image. Please try again."));
+        setErrorMessage(friendlyError(err));
       } finally {
         setIsAnalyzing(false);
         isSendingRef.current = false;
@@ -235,7 +245,16 @@ export default function SignLanguagePage() {
     setErrorMessage('');
     isSendingRef.current = true;
 
-    const generateFallback = () => {
+    const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('too many requests');
+    if (isQuota) return isRw
+      ? "Wageze ku mupaka wa buri munsi. Gerageza nyuma y'isaha 1."
+      : "You've hit the quota limit. Please try again in 1 hour.";
+    return isRw
+      ? "Ibibazo by'itumanaho. Gerageza nanone."
+      : "Connection error. Please try again.";
+  };
+
+  const generateFallback = () => {
       const quotaMessage = isRw
         ? "Wageze ku mupaka wa sisitemu. Nyamuneka gerageza nyuma y'amasaha 2 cyangwa uhamagare 114."
         : "You've hit the system limit. Please try again in 2 hours or call 114 for immediate support.";
@@ -271,7 +290,7 @@ export default function SignLanguagePage() {
     } catch (err: any) {
       console.error('[RENDER] ✖ Error:', err.message);
       setAiResponse(generateFallback());
-      setErrorMessage(err.message);
+      setErrorMessage(friendlyError(err));
       addNotification({
         type: 'therapy',
         titleEn: 'Sign Language AI Error',
