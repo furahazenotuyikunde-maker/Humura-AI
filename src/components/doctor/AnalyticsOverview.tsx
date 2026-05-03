@@ -134,7 +134,7 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
            </div>
            <div>
               <h3 className="font-black text-primary-900">Clinical Data Assistant</h3>
-              <p className="text-xs font-bold text-primary-400">Ask Gemini anything about your caseload or patient history</p>
+              <p className="text-xs font-bold text-primary-400">Ask Humura AI anything about your caseload or patient history</p>
            </div>
         </div>
 
