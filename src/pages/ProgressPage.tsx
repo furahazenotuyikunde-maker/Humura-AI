@@ -545,7 +545,20 @@ export default function ProgressPage() {
                     { id: 'email', icon: Mail, color: 'bg-red-500', label: 'Email' },
                     { id: 'copy', icon: Copy, color: 'bg-primary', label: isRw ? 'Kopiye' : 'Copy' },
                   ].map(p => (
-                    <button key={p.id} className="flex flex-col items-center gap-3 p-6 rounded-[2rem] bg-neutral-50 hover:bg-neutral-100 transition-all group">
+                    <button 
+                      key={p.id} 
+                      onClick={() => {
+                        const shareText = `Humura AI Progress Report:\n\n${analysis?.summary}\n\nMind Supported, Life Empowered.`;
+                        if (p.id === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+                        else if (p.id === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(shareText)}`, '_blank');
+                        else if (p.id === 'email') window.location.href = `mailto:?subject=My Humura AI Progress&body=${encodeURIComponent(shareText)}`;
+                        else if (p.id === 'copy') {
+                          navigator.clipboard.writeText(shareText);
+                          alert(isRw ? 'Byakopewe!' : 'Copied to clipboard!');
+                        }
+                      }}
+                      className="flex flex-col items-center gap-3 p-6 rounded-[2rem] bg-neutral-50 hover:bg-neutral-100 transition-all group"
+                    >
                        <div className={`w-12 h-12 ${p.color} text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
                          <p.icon size={20} />
                        </div>
