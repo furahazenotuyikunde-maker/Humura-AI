@@ -144,7 +144,7 @@ Tekereza kureba inzobere iyo ingorane zikurengeye. Rwanda ifite abahanga mu buzi
     videoId: 'G7zAseaIyFA',
     articleEn: `Trauma is what happens in the nervous system in response to events that overwhelm our ability to cope. It is not what happened to you — it is how your body holds what happened. And your body's response to trauma is not weakness. It is an intelligent, protective response to an overwhelming experience.
 
-Rwanda carries a unique national story of collective trauma — the 1994 Genocide Against the Tutsi left deep wounds across generations. If your trauma is connected to this history, you are not alone — and community healing, including ingando and community reconciliation practices, can be profound.
+Rwanda carries a unique national story of collective trauma — the 1994 Genocide Against the Tutsi left deep wounds across generations. If your trauma is connected to this history, MIND SUPPORTED, LIFE EMPOWERED — and community healing, including ingando and community reconciliation practices, can be profound.
 
 Understanding trauma responses: Flashbacks, hypervigilance, emotional numbing, and avoidance are not signs of being "broken." They are survival strategies that once served a purpose. Healing involves gradually updating these responses so the past stays in the past.
 
@@ -153,7 +153,7 @@ The Window of Tolerance: Trauma therapy works by keeping you within a "window" o
 Healing is not linear. Good days and hard days will alternate. What matters is the general direction. Trauma-Focused CBT (TF-CBT) and EMDR are highly effective evidence-based treatments available in Rwanda.`,
     articleRw: `Trauma ni igikorwa gikurikiraho mu sisitemu y'ubwonko muri igisubizo cy'ibikorwa byemurira ubushobozi bwacu bwo guhangana. Si ibyo byakubayeho — ni uburyo umubiri wawe ubika ibyo byabaye. Kandi igisubizo cy'umubiri ku trauma si ubudahangarwa. Ni igisubizo cyiza cy'agakiza ku bikorwa byaremeje.
 
-U Rwanda gifite inkuru yihariye ya gakondo bya collectif — Jenoside yakorewe Abatutsi mu 1994 yasize intihanyi z'ibihe ku bihe. Niba trauma yawe ihuzwa n'amateka aya, nta wundi wawe urerego — kandi ugukira umuryango, harimo ingando na reconciliation z'umuryango, birabonetse cyane.
+U Rwanda gifite inkuru yihariye ya gakondo bya collectif — Jenoside yakorewe Abatutsi mu 1994 yasize intihanyi z'ibihe ku bihe. Niba trauma yawe ihuzwa n'amateka aya, GUSHYIGIKIRA IMITEKEREREZE, GUKOMEZA UBUZIMA — kandi ugukira umuryango, harimo ingando na reconciliation z'umuryango, birabonetse cyane.
 
 Gusobanukirwa igisubizo cha trauma: Ibintu bi flashback, kwitangagura, gutakaza ibyumviro, no kwirinda ntibimvikana ko "warangiranye." Ni ingamba zo kwirinda zarakoraga kera. Ugukira bikorwa buhoro buhoro gusukiranya igisubizo iyi kugira ngo ibihe bihise bikomere aho biherereye.
 
