@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Calendar, AlertCircle, TrendingUp, MessageSquare, 
   Search, Filter, ChevronRight, MoreVertical, Bell,
-  FileText, Activity, Clock, Shield, Library, BarChart2,
+  FileText, Activity, Clock, Shield, BarChart2,
   Settings, LogOut, Phone, Send, Info, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -50,6 +50,9 @@ export default function DoctorDashboard() {
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [moodLogs, setMoodLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   const { activeSession } = useClinicalEvents(doctorProfile?.id, 'doctor');
 
@@ -267,13 +270,36 @@ export default function DoctorDashboard() {
           }
         })
       });
-
+ 
       const data = await response.json();
       showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : "Clinical summary generated");
     } catch (err: any) {
       showToast(err.message, 'error');
     } finally {
       setActionLoading(null);
+    }
+  };
+ 
+  const handleAskAI = async () => {
+    if (!aiQuestion.trim()) return;
+    setIsAiThinking(true);
+    setAiResponse('');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `CLINICAL QUERY FROM DOCTOR: ${aiQuestion}\n\nContext: You are helping a mental health professional in Rwanda. Provide evidence-based clinical guidance.`,
+          history: []
+        })
+      });
+      const data = await response.json();
+      setAiResponse(data.reply);
+      setAiQuestion('');
+    } catch (err: any) {
+      showToast(isRw ? "AI ntishoboye gusubiza" : "AI failed to respond", 'error');
+    } finally {
+      setIsAiThinking(false);
     }
   };
 
@@ -348,13 +374,7 @@ export default function DoctorDashboard() {
           </div>
         </div>
 
-        <button
-          onClick={() => navigate('/')}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-neutral-500 hover:bg-neutral-50 transition-all mb-6"
-        >
-          <Library size={18} />
-          {isRw ? 'Garuka ahabanza' : 'Main App'}
-        </button>
+
 
         <nav className="flex-1 space-y-1">
           {[
@@ -796,24 +816,51 @@ export default function DoctorDashboard() {
                 )}
               </div>
 
-              {/* AI Clinical Insight */}
+              {/* Ask Humura AI */}
               <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2.5rem] space-y-4">
                 <div className="flex items-center gap-2">
-                  <Library className="text-indigo-400" size={16} />
-                  <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{isRw ? 'Ubujyanama bwa AI' : 'Clinical Insight'}</h3>
+                  <Activity className="text-indigo-400" size={16} />
+                  <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{isRw ? 'Baza Humura AI' : 'Ask Humura AI'}</h3>
                 </div>
-                <p className="text-xs font-medium text-indigo-900 leading-relaxed">
-                  Gemini is monitoring patient activity. {patients.length > 0 ? `Analyzing data for ${patients.length} active cases.` : 'Waiting for more patient data to generate trends.'}
-                </p>
-                <button 
-                  onClick={() => {
-                    if (selectedPatient) handleRequestSummary(selectedPatient);
-                    else showToast(isRw ? 'Hitamo umurwayi' : 'Please select a patient first', 'error');
-                  }}
-                  className="text-[10px] font-bold text-indigo-600 hover:underline"
-                >
-                  {isRw ? 'Saba inshamake' : 'Request clinical summary'} →
-                </button>
+                
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
+                    placeholder={isRw ? 'Andika ikibazo hano...' : 'Type clinical query...'}
+                    className="w-full bg-white border-none rounded-xl px-4 py-3 text-xs font-medium focus:ring-2 ring-indigo-200 outline-none pr-10"
+                  />
+                  <button 
+                    onClick={handleAskAI}
+                    disabled={isAiThinking || !aiQuestion.trim()}
+                    className="absolute right-2 top-1.5 p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  >
+                    {isAiThinking ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  </button>
+                </div>
+
+                <AnimatePresence>
+                  {aiResponse && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-4 bg-white/50 border border-indigo-100 rounded-2xl"
+                    >
+                      <p className="text-[10px] font-black text-indigo-400 uppercase mb-1">AI Assistant</p>
+                      <p className="text-xs font-medium text-indigo-900 leading-relaxed whitespace-pre-wrap">
+                        {aiResponse}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {!aiResponse && !isAiThinking && (
+                  <p className="text-[10px] font-bold text-indigo-400/60 text-center italic">
+                    {isRw ? 'Baza ibyerekeye ubuvuzi cyangwa amabwiriza.' : 'Ask about clinical protocols or guidelines.'}
+                  </p>
+                )}
               </div>
 
               {/* Support Resources */}
