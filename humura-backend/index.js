@@ -28,7 +28,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // 2. Initialize Clients
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview" });
 
 
 // 3. Socket.io Presence & Logic
@@ -429,7 +429,7 @@ Keep responses concise (under 200 words) and human.` }]
 
 app.get('/chat', (req, res) => res.json({ status: "Chat is live." }));
 
-app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.1 Unified Live!', engine: 'Gemini 3 Flash' }));
+app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.2 Unified Live!', engine: 'Gemini 2.5 Flash Preview' }));
 
 // Patient Dashboard: Direct Gemini Analysis (no DB lookup blocking)
 const handleAnalyzeProgress = async (req, res) => {

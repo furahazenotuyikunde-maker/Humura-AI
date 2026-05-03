@@ -54,7 +54,7 @@ serve(async (req) => {
         parts: [{ text: m.content }]
       }))
 
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${apiKey}`
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview:generateContent?key=${apiKey}`
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 40000)
