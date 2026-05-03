@@ -28,7 +28,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // 2. Initialize Clients
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 
 // 3. Socket.io Presence & Logic
@@ -338,37 +338,46 @@ app.post('/api/doctor/generate-report', async (req, res) => {
   }
 });
 
-// 4g. Main AI Chat (Gemini 3 Flash Preview)
+// 4g. Main AI Chat (Gemini 2.0 Flash)
 app.post('/chat', async (req, res) => {
   try {
     const { message, history, image, lang } = req.body;
     if (!message) return res.status(400).json({ error: "No message" });
 
+    const isRw = lang && lang.startsWith('rw');
+    const languageName = isRw ? 'Kinyarwanda' : 'English';
+
+    // Format history — support both {role,content} and {role,parts} shapes
     const chatHistory = (history || []).map(m => ({
       role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.content }]
+      parts: [{ text: m.content || (m.parts && m.parts[0]?.text) || '' }]
     }));
 
     let parts = [{ text: message }];
     if (image) {
-      parts.push({ 
-        inlineData: { 
-          data: image.split(',')[1], 
-          mimeType: "image/jpeg" 
-        } 
+      parts.push({
+        inlineData: {
+          data: image.split(',')[1],
+          mimeType: "image/jpeg"
+        }
       });
     }
 
     const response = await geminiModel.generateContent({
+      systemInstruction: {
+        parts: [{ text: `You are Humura AI, a compassionate mental health companion for people in Rwanda.
+CRITICAL: Respond EXCLUSIVELY in ${languageName}. Never mix languages.
+Lead with empathy and validation. For any crisis signs, gently provide the Rwanda 114 hotline.
+Keep responses concise (under 200 words) and human.` }]
+      },
       contents: [
         ...chatHistory,
         { role: "user", parts }
       ]
     });
-    
-    const responseText = await response.response;
-    const reply = responseText.text();
-    
+
+    const reply = (await response.response).text();
+
     // Save to Supabase for Clinical Visibility
     if (req.body.userId) {
       await supabase.from('messages').insert([
@@ -383,7 +392,14 @@ app.post('/chat', async (req, res) => {
     return res.status(200).json({ success: true, reply, isCrisis });
 
   } catch (error) {
-    console.error("Chat Error:", error);
+    console.error("Chat Error:", error.message);
+    const isRateLimit = error.message?.includes('429') || error.message?.toLowerCase().includes('quota');
+    if (isRateLimit) {
+      return res.status(200).json({
+        success: true,
+        reply: "You've reached the usage limit. Please try again in 1 hour, or call 114 for immediate support."
+      });
+    }
     return res.status(500).json({ error: error.message });
   }
 });
@@ -490,23 +506,6 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
   }
 });
 
-// ─── Sign Language: Text Chat ────────────────────────────────────────────────
-app.post('/chat', async (req, res) => {
-  try {
-    const { message, history = [], lang } = req.body;
-
-    const contents = [
-      ...(history || []),
-      { role: 'user', parts: [{ text: message }] }
-    ];
-
-    const result = await geminiModel.generateContent({ contents });
-    const reply = (await result.response).text();
-    res.json({ success: true, reply });
-  } catch (error) {
-    console.error('chat error:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
+// NOTE: /chat is defined above (line ~342) — this duplicate removed to avoid Express route shadowing.
 
 server.listen(port, () => console.log(`🚀 Humura AI Backend running on port ${port}`));
