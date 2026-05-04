@@ -10,6 +10,8 @@ import {
 
 import { supabase } from '../lib/supabaseClient';
 import { useClinicalEvents } from '../hooks/useClinicalEvents';
+import IncomingCall from '../components/clinical/IncomingCall';
+import VideoSession from '../components/clinical/VideoSession';
 
 export default function MeetProfessionalPage() {
   const { t, i18n } = useTranslation();
@@ -24,6 +26,10 @@ export default function MeetProfessionalPage() {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  // Video Session State
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [activeVideoSession, setActiveVideoSession] = useState<any>(null);
 
   const { activeSession } = useClinicalEvents(profile?.id, 'patient');
 
@@ -59,6 +65,68 @@ export default function MeetProfessionalPage() {
     }
 
     setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    // Subscribe to incoming video sessions
+    const channel = supabase
+      .channel('video-calls')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'video_sessions',
+          filter: `patient_id=eq.${profile.id}`
+        },
+        (payload) => {
+          if (payload.new.status === 'waiting') {
+            setIncomingCall(payload.new);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'video_sessions',
+          filter: `patient_id=eq.${profile.id}`
+        },
+        (payload) => {
+          if (payload.new.status === 'ended') {
+            setIncomingCall(null);
+            setActiveVideoSession(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id]);
+
+  const handleDeclineCall = async () => {
+    if (!incomingCall) return;
+    try {
+      await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/video/end-room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: incomingCall.id, roomName: incomingCall.room_name })
+      });
+      setIncomingCall(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAcceptCall = () => {
+    if (!incomingCall) return;
+    setActiveVideoSession(incomingCall);
+    setIncomingCall(null);
   };
 
   const triggerSOS = async () => {
@@ -277,6 +345,25 @@ export default function MeetProfessionalPage() {
             {toast.type === 'success' ? <Info size={18} /> : <AlertTriangle size={18} />}
             <p className="text-sm font-bold">{toast.message}</p>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Logic */}
+      <AnimatePresence>
+        {incomingCall && (
+          <IncomingCall 
+            doctorName={doctor?.full_name || (isRw ? 'Muganga' : 'Doctor')}
+            onAccept={handleAcceptCall}
+            onDecline={handleDeclineCall}
+          />
+        )}
+        {activeVideoSession && (
+          <VideoSession 
+            roomUrl={activeVideoSession.room_url}
+            role="patient"
+            sessionId={activeVideoSession.id}
+            onLeave={() => setActiveVideoSession(null)}
+          />
         )}
       </AnimatePresence>
     </div>

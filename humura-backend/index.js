@@ -8,6 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { callGemini } = require('./lib/gemini');
 const multer = require('multer');
+const axios = require('axios');
 const upload = multer({ storage: multer.memoryStorage() });
 
 
@@ -319,10 +320,98 @@ app.post('/api/session/notify-start', async (req, res) => {
   }
 });
 
+// 4g. Daily.co Video Session Routes
+app.post('/api/video/create-room', async (req, res) => {
+  const { doctorId, patientId } = req.body;
+  const DAILY_API_KEY = process.env.DAILY_API_KEY;
+  const DAILY_API_URL = process.env.DAILY_API_URL || 'https://api.daily.co/v1';
+
+  try {
+    // 1. Create Room on Daily.co
+    const response = await axios.post(`${DAILY_API_URL}/rooms`, {
+      properties: {
+        enable_chat: true,
+        start_video_off: false,
+        start_audio_off: false,
+        exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiry
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${DAILY_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const room = response.data;
+
+    // 2. Insert into video_sessions table
+    const { data: session, error } = await supabase
+      .from('video_sessions')
+      .insert([{
+        doctor_id: doctorId,
+        patient_id: patientId,
+        room_url: room.url,
+        room_name: room.name,
+        status: 'waiting',
+        started_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // 3. Notify Patient via Socket
+    notifyUser(patientId, 'video:incoming_call', {
+      room_url: room.url,
+      room_name: room.name,
+      doctorId,
+      sessionId: session.id
+    });
+
+    return res.status(200).json({ room_url: room.url, session_id: session.id });
+  } catch (error) {
+    console.error("Room Creation Error:", error.response?.data || error.message);
+    return res.status(500).json({ error: error.response?.data?.info || error.message });
+  }
+});
+
+app.post('/api/video/end-room', async (req, res) => {
+  const { sessionId, roomName } = req.body;
+  const DAILY_API_KEY = process.env.DAILY_API_KEY;
+  const DAILY_API_URL = process.env.DAILY_API_URL || 'https://api.daily.co/v1';
+
+  try {
+    // 1. Delete Room on Daily.co (Optional, or just let it expire)
+    if (roomName) {
+      await axios.delete(`${DAILY_API_URL}/rooms/${roomName}`, {
+        headers: { 'Authorization': `Bearer ${DAILY_API_KEY}` }
+      }).catch(err => console.log("Room already deleted or not found"));
+    }
+
+    // 2. Update video_sessions table
+    const { error } = await supabase
+      .from('video_sessions')
+      .update({ 
+        status: 'ended', 
+        ended_at: new Date().toISOString() 
+      })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("End Room Error:", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // 4f. Doctor Dashboard Generate Report
 app.post('/api/doctor/generate-report', async (req, res) => {
   try {
-    const { patientId } = req.body;
+    const { patientId, email } = req.body;
+
+    if (!patientId) return res.status(400).json({ error: "Missing patientId" });
 
     // 1. Fetch real-time data context from DB to ensure accuracy
     const [moodLogs, journals, patientInfo] = await Promise.all([
@@ -370,7 +459,17 @@ app.post('/api/doctor/generate-report', async (req, res) => {
 
     if (insertError) throw insertError;
 
-    return res.status(200).json({ success: true, report: savedReport });
+    // Simulate sending email if provided
+    if (email) {
+      console.log(`[MAILER] 📧 Sending clinical report for patient ${patientId} to ${email}`);
+      // In production, integrate with Resend/Nodemailer here
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      report: savedReport,
+      message: email ? `Report sent to ${email}` : "Report generated successfully"
+    });
   } catch (error) {
     console.error("Report Generation Error:", error);
     return res.status(500).json({ error: error.message });

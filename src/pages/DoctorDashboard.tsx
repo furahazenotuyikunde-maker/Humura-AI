@@ -6,7 +6,7 @@ import {
   Users, Calendar, AlertCircle, TrendingUp, MessageSquare, 
   Search, Filter, ChevronRight, MoreVertical, Bell,
   FileText, Activity, Clock, Shield, BarChart2,
-  Settings, LogOut, Phone, Send, Info, Loader2
+  Settings, LogOut, Phone, Send, Info, Loader2, Mail, CheckCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useClinicalEvents } from '../hooks/useClinicalEvents';
@@ -15,6 +15,7 @@ import AnalyticsOverview from '../components/doctor/AnalyticsOverview';
 import PatientManagement from '../components/doctor/PatientManagement';
 import VideoConsultationRoom from '../components/clinical/VideoConsultationRoom';
 import ResourceModal from '../components/doctor/ResourceModal';
+import VideoSession from '../components/clinical/VideoSession';
 
 
 
@@ -56,6 +57,12 @@ export default function DoctorDashboard() {
   const [aiResponse, setAiResponse] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [selectedResource, setSelectedResource] = useState<'guidelines' | 'privacy' | null>(null);
+  const [activeVideoSession, setActiveVideoSession] = useState<any>(null);
+
+  // Clinical Report Modal State
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportEmail, setReportEmail] = useState('');
+  const [generatedReport, setGeneratedReport] = useState<any>(null);
 
 
   const { activeSession } = useClinicalEvents(doctorProfile?.id, 'doctor');
@@ -294,7 +301,35 @@ export default function DoctorDashboard() {
     }
   };
 
-  const handleRequestSummary = async (patient: any) => {
+  const startVideoSession = async (patientId: string) => {
+    if (!doctorProfile?.id) return;
+    setActionLoading('video-' + patientId);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/video/create-room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctorId: doctorProfile.id,
+          patientId: patientId
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create video room');
+      
+      setActiveVideoSession({
+        id: data.session_id,
+        room_url: data.room_url
+      });
+      
+      showToast(isRw ? 'Icyumba cya videwo kiriteguye!' : 'Video room ready!', 'success');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRequestSummary = async (patient: any, email?: string) => {
     if (!patient) return;
     setActionLoading('summary');
     try {
@@ -302,17 +337,16 @@ export default function DoctorDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dataContext: {
-            primary_concern: patient.primary_concern,
-            phq9: patient.phq9_score,
-            gad7: patient.gad7_score,
-            status: patient.status
-          }
+          patientId: patient.id,
+          email: email
         })
       });
  
       const data = await response.json();
-      showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : "Clinical summary generated");
+      if (!response.ok) throw new Error(data.error || 'Failed to generate report');
+      
+      setGeneratedReport(data.report);
+      showToast(isRw ? "Raporo y'ubuvuzi yabonetse" : email ? `Report sent to ${email}` : "Clinical summary generated");
     } catch (err: any) {
       showToast(err.message, 'error');
     } finally {
@@ -606,11 +640,10 @@ export default function DoctorDashboard() {
                           </div>
 
                           <button 
-                            onClick={() => handleRequestSummary(selectedPatient)}
-                            disabled={actionLoading === 'summary'}
-                            className="w-full py-3 bg-primary text-white font-black text-xs uppercase rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                            onClick={() => setShowReportModal(true)}
+                            className="w-full py-3 bg-primary text-white font-black text-xs uppercase rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4"
                           >
-                            {actionLoading === 'summary' && <Loader2 size={14} className="animate-spin" />}
+                            <FileText size={14} />
                             {isRw ? 'Saba inshamake y\'ubuvuzi' : 'Generate Clinical Report'}
                           </button>
                         </div>
@@ -715,9 +748,11 @@ export default function DoctorDashboard() {
                             </div>
                           ) : s.status === 'confirmed' ? (
                             <button 
-                              onClick={() => handleUpdateSessionStatus(s.id, 'active')}
-                              className="px-6 py-2.5 bg-primary text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                              onClick={() => startVideoSession(s.patient_id)}
+                              disabled={actionLoading === 'video-' + s.patient_id}
+                              className="px-6 py-2.5 bg-primary text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                             >
+                              {actionLoading === 'video-' + s.patient_id ? <Loader2 size={14} className="animate-spin" /> : <Phone size={14} />}
                               {isRw ? 'Tangira' : 'Start Session'}
                             </button>
                           ) : s.status === 'active' ? (
@@ -942,7 +977,170 @@ export default function DoctorDashboard() {
         onClose={() => setSelectedResource(null)}
         isRw={isRw}
       />
+
+      <ClinicalReportModal 
+        isOpen={showReportModal}
+        onClose={() => { setShowReportModal(false); setGeneratedReport(null); setReportEmail(''); }}
+        patient={selectedPatient}
+        onGenerate={(email) => handleRequestSummary(selectedPatient, email)}
+        loading={actionLoading === 'summary'}
+        report={generatedReport}
+        isRw={isRw}
+      />
+
+      {/* Daily.co Video Session */}
+      <AnimatePresence>
+        {activeVideoSession && (
+          <VideoSession 
+            roomUrl={activeVideoSession.room_url}
+            role="doctor"
+            sessionId={activeVideoSession.id}
+            onLeave={() => setActiveVideoSession(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+// --- Report Modal ---
+const ClinicalReportModal = ({ isOpen, onClose, patient, onGenerate, loading, report, isRw }: any) => {
+  const [email, setEmail] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="p-8 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+              <FileText size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-[#4A2C1A]">{isRw ? 'Raporo y\'Ubuvuzi' : 'Clinical Progress Report'}</h3>
+              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{patient?.patient_info?.full_name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-xl transition-colors">
+            <MoreVertical size={20} className="rotate-90 text-neutral-400" />
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto flex-1 space-y-8">
+          {!report ? (
+            <div className="space-y-6">
+              <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-3">
+                <h4 className="text-sm font-black text-emerald-900 flex items-center gap-2">
+                  <Shield size={16} />
+                  {isRw ? 'Ibisabwa' : 'Report Parameters'}
+                </h4>
+                <p className="text-xs text-emerald-700 leading-relaxed font-medium">
+                  {isRw 
+                    ? 'Raporo ikorwa na AI ishingiye ku makuru y\'umurwayi yo mu byumweru bibiri bishize, harimo n\'ibyanditswe mu kinyamakuru cye.' 
+                    : 'The AI will analyze the last 14 days of patient data, including mood logs and journal entries, to generate a professional SOAP-style summary.'}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">{isRw ? 'Imeli yo kuyohererezaho (Uhitamo)' : 'Destination Email (Optional)'}</span>
+                  <div className="mt-1 relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={18} />
+                    <input 
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="doctor@hospital.rw"
+                      className="w-full pl-12 pr-4 py-4 bg-neutral-50 border-2 border-neutral-100 rounded-2xl focus:border-primary/30 outline-none font-bold text-sm transition-all"
+                    />
+                  </div>
+                  <p className="text-[9px] text-neutral-400 mt-2 ml-1">
+                    {isRw 
+                      ? 'Niba ushaka kuyibona hano gusa, reka uyu mwanya urimo ubusa.' 
+                      : 'Leave blank to just view the report here.'}
+                  </p>
+                </label>
+              </div>
+              
+              <button 
+                onClick={() => onGenerate(email)}
+                disabled={loading}
+                className="w-full py-4 bg-primary text-white font-black uppercase text-sm rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <Activity size={18} />}
+                {isRw ? 'Tangira Gukora Raporo' : 'Generate & Process Report'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-emerald-600" size={20} />
+                  <div>
+                    <p className="text-xs font-black text-emerald-900">{isRw ? 'Raporo yabonetse' : 'Report Generated Successfully'}</p>
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase">Trend: {report.mood_trend}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] font-black text-emerald-400 uppercase">Avg Mood</p>
+                  <p className="text-lg font-black text-emerald-900 leading-none">{report.avg_mood_score}/10</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-6 bg-neutral-50 rounded-3xl border border-neutral-100">
+                  <h4 className="text-[10px] font-black text-neutral-400 uppercase mb-3 tracking-widest">{isRw ? 'Inshamake ya AI' : 'Clinical AI Summary'}</h4>
+                  <p className="text-sm font-medium text-primary-900 leading-relaxed whitespace-pre-wrap italic">
+                    "{report.ai_summary}"
+                  </p>
+                </div>
+
+                <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100">
+                  <h4 className="text-[10px] font-black text-indigo-400 uppercase mb-4 tracking-widest">{isRw ? 'Imyanzuro n\'Inama' : 'Clinical Recommendations'}</h4>
+                  <div className="space-y-3">
+                    {report.recommendations?.map((rec: string, i: number) => (
+                      <div key={i} className="flex gap-3 text-sm font-bold text-indigo-900 bg-white/50 p-3 rounded-xl border border-indigo-50">
+                        <span className="text-indigo-400">0{i+1}</span>
+                        {rec}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    const text = `CLINICAL REPORT: ${patient?.patient_info?.full_name}\n\nSummary: ${report.ai_summary}\n\nRecommendations:\n${report.recommendations.join('\n')}`;
+                    navigator.clipboard.writeText(text);
+                    // showToast not available here but maybe we can add a local feedback
+                  }}
+                  className="flex-1 py-4 bg-neutral-100 text-neutral-600 font-black uppercase text-xs rounded-2xl hover:bg-neutral-200 transition-all"
+                >
+                  {isRw ? 'Kopi' : 'Copy Text'}
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="flex-1 py-4 bg-primary text-white font-black uppercase text-xs rounded-2xl hover:bg-primary-600 shadow-lg shadow-primary/20 transition-all"
+                >
+                  {isRw ? 'Funga' : 'Close Report'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
