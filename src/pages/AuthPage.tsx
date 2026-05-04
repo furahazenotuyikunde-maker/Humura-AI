@@ -78,13 +78,21 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans">
-      {/* Title Section */}
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-black text-[#1E293B] tracking-tight uppercase">
-          {mode === 'login' ? (isRw ? 'Injira' : 'Login') : (isRw ? 'Kwiyandikisha' : 'Register')}
+      {/* Branding Section */}
+      <div className="text-center mb-10 space-y-4">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-primary/5 mb-6"
+        >
+          <img src="/logo.png" alt="Humura AI" className="h-12 w-12 object-contain" />
+        </motion.div>
+        
+        <h1 className="text-4xl font-black text-primary-900 tracking-tight">
+          Humura AI
         </h1>
-        <p className="text-slate-500 mt-2 font-medium">
-          {isRw ? 'Injira imyirondoro yawe kugira ngo ukoreshe konti yawe' : 'Enter your credentials to access your account'}
+        <p className="text-sm font-bold text-primary-600 uppercase tracking-[0.2em]">
+          {isRw ? 'GUSHYIGIKIRA IMITEKEREREZE, GUKOMEZA UBUZIMA' : 'MIND SUPPORTED, LIFE EMPOWERED'}
         </p>
       </div>
 

@@ -19,7 +19,6 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import IntakePage from './pages/IntakePage';
 import MoodLogPage from './pages/MoodLogPage';
 import MeetProfessionalPage from './pages/MeetProfessionalPage';
-import LandingPage from './pages/LandingPage';
 import { supabase } from './lib/supabaseClient';
 import { useEffect, useState } from 'react';
 
@@ -58,7 +57,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={!session ? <LandingPage /> : <Shell />}>
+        <Route path="/" element={!session ? <AuthPage /> : <Shell />}>
           <Route index element={<Home />} />
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />
@@ -78,7 +77,7 @@ const App: React.FC = () => {
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/auth" element={<AuthPage />} />
-        <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/welcome" element={<AuthPage />} />
       </Routes>
     </BrowserRouter>
   );
