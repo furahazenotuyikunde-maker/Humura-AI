@@ -24,6 +24,15 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  
+  // Doctor-specific fields
+  const [specialisations, setSpecialisations] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>(['en']);
+  const [bio, setBio] = useState('');
+  const [yearsExperience, setYearsExperience] = useState('0');
+
+  const specialisationOptions = ['Anxiety', 'Depression', 'Trauma', 'PTSD', 'Grief', 'Bipolar', 'Youth', 'Family'];
+  const languageOptions = ['en', 'rw', 'fr'];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +59,16 @@ export default function AuthPage() {
             language_pref: isRw ? 'rw' : 'en',
             updated_at: new Date().toISOString()
           });
+
+          if (role === 'doctor') {
+            await supabase.from('doctor_profiles').insert({
+              user_id: data.user.id,
+              specialisations,
+              languages,
+              bio,
+              years_experience: parseInt(yearsExperience) || 0
+            });
+          }
         }
         navigate(role === 'patient' ? '/intake' : '/doctor');
       } else {
@@ -181,6 +200,60 @@ export default function AuthPage() {
               </div>
             )}
           </div>
+
+          {mode === 'signup' && role === 'doctor' && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-6 pt-6 border-t border-slate-50">
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Professional Details</p>
+              
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-slate-400">Specialisations</p>
+                <div className="flex flex-wrap gap-2">
+                  {specialisationOptions.map(opt => (
+                    <button
+                      key={opt} type="button"
+                      onClick={() => setSpecialisations(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${specialisations.includes(opt) ? 'bg-[#005691] text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                 <p className="text-[10px] font-bold text-slate-400">Languages</p>
+                 <div className="flex gap-2">
+                  {languageOptions.map(opt => (
+                    <button
+                      key={opt} type="button"
+                      onClick={() => setLanguages(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
+                      className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${languages.includes(opt) ? 'bg-[#005691] text-white shadow-md' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Exp (Years)</label>
+                  <input 
+                    type="number" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#005691] outline-none font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Short Bio</label>
+                  <input 
+                    type="text" placeholder="Bio (max 100 chars)" maxLength={100}
+                    value={bio} onChange={e => setBio(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#005691] outline-none font-bold text-sm"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <button 
             type="submit"

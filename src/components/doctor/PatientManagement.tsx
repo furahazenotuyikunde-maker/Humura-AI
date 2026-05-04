@@ -20,6 +20,12 @@ interface Patient {
 export default function PatientManagement({ patients = [] }: { patients?: Patient[] }) {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const filteredPatients = patients.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,11 +48,17 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
         </div>
         
         <div className="flex gap-2 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-primary-50 rounded-2xl text-sm font-bold text-primary-700 hover:bg-primary-50 transition-all">
+          <button 
+            onClick={() => showToast("Filters coming soon...")}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-primary-50 rounded-2xl text-sm font-bold text-primary-700 hover:bg-primary-50 transition-all"
+          >
             <Filter size={18} />
             Filters
           </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+          <button 
+            onClick={() => showToast("Add Patient feature coming soon...")}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+          >
             <Plus size={18} />
             Add Patient
           </button>
@@ -108,10 +120,16 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
                    {selectedPatient.disability === 'Deaf' ? '🤟' : selectedPatient.disability === 'Blind' ? '👨‍🦯' : '👤'}
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:text-primary transition-colors">
+                  <button 
+                    onClick={() => showToast("Downloading clinical record...")}
+                    className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:text-primary transition-colors"
+                  >
                     <Download size={20} />
                   </button>
-                  <button className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:text-primary transition-colors">
+                  <button 
+                    onClick={() => showToast("Options coming soon...")}
+                    className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:text-primary transition-colors"
+                  >
                     <MoreVertical size={20} />
                   </button>
                 </div>
@@ -173,6 +191,13 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
           )}
         </div>
       </div>
+
+      {/* Internal Toast */}
+      {toast && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-primary-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl animate-bounce">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
