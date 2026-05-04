@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Mail, Lock, User, UserCircle, Briefcase, 
-  ArrowRight, Loader2, AlertCircle, CheckCircle2, ChevronLeft, Phone
+  Loader2, AlertCircle, Eye, EyeOff, User, Briefcase
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,34 +12,18 @@ type UserRole = 'patient' | 'doctor';
 
 export default function AuthPage() {
   const { i18n } = useTranslation();
-  const lang = i18n.language || 'en';
-  const isRw = lang.startsWith('rw');
+  const isRw = i18n.language?.startsWith('rw');
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   
-  // URL Params for Step 1 Navigation
-  const initialMode = (searchParams.get('mode') as AuthMode) || 'login';
-  const initialRole = (searchParams.get('role') as UserRole) || 'patient';
-
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [role, setRole] = useState<UserRole>(initialRole);
+  const [mode, setMode] = useState<AuthMode>('login');
+  const [role, setRole] = useState<UserRole>('patient');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
-  
-  // Doctor-specific fields
-  const [specialisations, setSpecialisations] = useState<string[]>([]);
-  const [languages, setLanguages] = useState<string[]>(['en']);
-  const [bio, setBio] = useState('');
-  const [yearsExperience, setYearsExperience] = useState('0');
-
-  const specialisationOptions = ['Anxiety', 'Depression', 'Trauma', 'PTSD', 'Grief', 'Bipolar', 'Youth', 'Family'];
-  const languageOptions = ['en', 'rw', 'fr'];
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,9 +32,8 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signup') {
-        // Sign up logic
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: email || `${phone}@humura.ai`, // Mock email if only phone provided
+          email,
           password,
           options: {
             data: { full_name: fullName, role: role }
@@ -61,40 +43,23 @@ export default function AuthPage() {
         if (signUpError) throw signUpError;
 
         if (data.user) {
-          // 1. Create Profile
           await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
-            phone: phone,
             role: role,
             language_pref: isRw ? 'rw' : 'en',
             updated_at: new Date().toISOString()
           });
-
-          // 2. Create Doctor Profile if applicable
-          if (role === 'doctor') {
-            await supabase.from('doctor_profiles').insert({
-              user_id: data.user.id,
-              specialisations,
-              languages,
-              bio,
-              years_experience: parseInt(yearsExperience) || 0
-            });
-          }
         }
-
-        setSuccess(true);
-        setTimeout(() => navigate(role === 'patient' ? '/intake' : '/doctor'), 1500);
+        navigate(role === 'patient' ? '/intake' : '/doctor');
       } else {
-        // Login logic
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email || `${phone}@humura.ai`,
+          email,
           password
         });
 
         if (signInError) throw signInError;
 
-        // Fetch role to decide where to navigate
         const { data: prof } = await supabase
           .from('profiles')
           .select('role')
@@ -102,12 +67,7 @@ export default function AuthPage() {
           .single();
       
         const userRole = prof?.role || 'patient';
-      
-        if (userRole === 'doctor') {
-          navigate('/doctor');
-        } else {
-          navigate('/');
-        }
+        navigate(userRole === 'doctor' ? '/doctor' : '/');
       }
     } catch (err: any) {
       setError(err.message);
@@ -117,151 +77,143 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <div className="fixed top-8 right-8 flex bg-neutral-50 p-1 rounded-2xl border border-neutral-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans">
+      {/* Title Section */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-black text-[#1E293B] tracking-tight uppercase">
+          {mode === 'login' ? (isRw ? 'Injira' : 'Login') : (isRw ? 'Kwiyandikisha' : 'Register')}
+        </h1>
+        <p className="text-slate-500 mt-2 font-medium">
+          {isRw ? 'Injira imyirondoro yawe kugira ngo ukoreshe konti yawe' : 'Enter your credentials to access your account'}
+        </p>
+      </div>
+
+      {/* Main Card */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[480px] bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden"
+      >
+        {/* Role Selector Tabs */}
+        <div className="flex border-b border-slate-50">
+          <button 
+            onClick={() => setRole('patient')}
+            className={`flex-1 py-5 flex flex-col items-center gap-2 transition-all ${role === 'patient' ? 'bg-white border-b-2 border-[#005691] text-[#005691]' : 'bg-slate-50/50 text-slate-400 hover:text-slate-600'}`}
+          >
+            <User size={20} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{isRw ? 'Ushaka ubufasha' : 'Seek Support'}</span>
+          </button>
+          <button 
+            onClick={() => setRole('doctor')}
+            className={`flex-1 py-5 flex flex-col items-center gap-2 transition-all ${role === 'doctor' ? 'bg-white border-b-2 border-[#005691] text-[#005691]' : 'bg-slate-50/50 text-slate-400 hover:text-slate-600'}`}
+          >
+            <Briefcase size={20} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{isRw ? 'Inzobere' : 'Professional'}</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleAuth} className="p-10 space-y-8">
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600">
+              <AlertCircle size={18} />
+              <p className="text-xs font-bold uppercase tracking-tighter">{error}</p>
+            </div>
+          )}
+
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">{isRw ? 'Amazina' : 'Full Name'} <span className="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                placeholder={isRw ? 'Andika amazina yawe' : 'Enter your full name'}
+                value={fullName} 
+                onChange={e => setFullName(e.target.value)} 
+                required
+                className="w-full px-6 py-4 rounded-xl bg-white border border-slate-200 focus:border-[#005691] focus:ring-4 ring-[#005691]/5 outline-none font-medium text-slate-600 transition-all placeholder:text-slate-300"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">{isRw ? 'Imeli' : 'Email'} <span className="text-red-500">*</span></label>
+            <input 
+              type="email" 
+              placeholder={isRw ? 'Andika imeli yawe' : 'Enter email address'}
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              required
+              className="w-full px-6 py-4 rounded-xl bg-white border border-slate-200 focus:border-[#005691] focus:ring-4 ring-[#005691]/5 outline-none font-medium text-slate-600 transition-all placeholder:text-slate-300"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">{isRw ? 'Ijambo ry\'ibanga' : 'Password'} <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder={isRw ? 'Andika ijambo ry\'ibanga' : 'Enter password'}
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required
+                className="w-full px-6 py-4 rounded-xl bg-white border border-slate-200 focus:border-[#005691] focus:ring-4 ring-[#005691]/5 outline-none font-medium text-slate-600 transition-all placeholder:text-slate-300"
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-[#005691] transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {mode === 'login' && (
+              <div className="flex justify-end pt-1">
+                <button type="button" className="text-sm font-bold text-[#005691] hover:underline transition-all">
+                  {isRw ? 'Wibagiwe ijambo ry\'ibanga?' : 'Forgot Password?'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-[#005691] text-white font-black rounded-xl shadow-lg shadow-[#005691]/20 hover:bg-[#004a7c] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'login' ? (isRw ? 'Injira' : 'Login') : (isRw ? 'Iyandikishe' : 'Register'))}
+          </button>
+
+          <div className="text-center pt-4">
+            <p className="text-slate-400 font-bold text-sm">
+              {mode === 'login' 
+                ? (isRw ? 'Nturagira konti?' : "Don't have an account?") 
+                : (isRw ? 'Usanganywe konti?' : "Already have an account?")
+              }{' '}
+              <button 
+                type="button"
+                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                className="text-[#005691] hover:underline"
+              >
+                {mode === 'login' ? (isRw ? 'Iyandikishe' : 'Register') : (isRw ? 'Injira' : 'Login')}
+              </button>
+            </p>
+          </div>
+        </form>
+      </motion.div>
+
+      {/* Language Switcher */}
+      <div className="mt-10 flex bg-white/50 backdrop-blur-sm p-1 rounded-2xl border border-slate-200 shadow-sm">
         <button 
           onClick={() => i18n.changeLanguage('en')}
-          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${!isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+          className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${!isRw ? 'bg-[#005691] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
         >
           English
         </button>
         <button 
           onClick={() => i18n.changeLanguage('rw')}
-          className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${isRw ? 'bg-primary text-white shadow-md' : 'text-primary-400 hover:text-primary-600'}`}
+          className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${isRw ? 'bg-[#005691] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
         >
           Kinyarwanda
         </button>
-      </div>
-
-      <button 
-        onClick={() => navigate('/welcome')}
-        className="fixed top-8 left-8 p-3 rounded-2xl bg-neutral-50 text-primary-900"
-      >
-        <ChevronLeft size={20} />
-      </button>
-
-      <div className="w-full max-w-sm space-y-10">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-black text-primary-900 tracking-tight">
-            {mode === 'login' ? (isRw ? 'Injira' : 'Welcome Back') : (isRw ? 'Twagufasha' : 'Get mental health support')}
-          </h1>
-          <p className="text-primary-600 font-bold">
-            {mode === 'login' ? (isRw ? 'Komeza urugendo rwawe' : 'Continue your journey') : (isRw ? 'Andika imyirondoro yawe' : 'Tell us a little about yourself')}
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <form onSubmit={handleAuth} className="space-y-4">
-            {mode === 'signup' && (
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-300" size={18} />
-                <input 
-                  type="text" placeholder={isRw ? 'Amazina yawe' : 'Your name'}
-                  value={fullName} onChange={e => setFullName(e.target.value)} required
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm transition-all"
-                />
-              </div>
-            )}
-
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-300" size={18} />
-              <input 
-                type="tel" placeholder={isRw ? 'Nomero ya terefone' : 'Phone (+250...)'}
-                value={phone} onChange={e => setPhone(e.target.value)} required
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm transition-all"
-              />
-            </div>
-
-            {/* Email is still needed for Supabase behind the scenes, but we can hide it or make it clear */}
-            <div className="relative">
-               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-300" size={18} />
-               <input 
-                type="email" placeholder="Email Address"
-                value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm transition-all"
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-300" size={18} />
-              <input 
-                type="password" placeholder={isRw ? 'Ijambo ry\'ibanga' : 'Password'}
-                value={password} onChange={e => setPassword(e.target.value)} required
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm transition-all"
-              />
-            </div>
-
-            {mode === 'signup' && role === 'doctor' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-neutral-100">
-                <p className="text-[10px] font-black uppercase text-primary-400 tracking-widest">Professional Details</p>
-                
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-neutral-400">Specialisations</p>
-                  <div className="flex flex-wrap gap-2">
-                    {specialisationOptions.map(opt => (
-                      <button
-                        key={opt} type="button"
-                        onClick={() => setSpecialisations(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${specialisations.includes(opt) ? 'bg-primary text-white' : 'bg-neutral-50 text-primary-600 border border-neutral-100'}`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                   <p className="text-[10px] font-bold text-neutral-400">Languages</p>
-                   <div className="flex gap-2">
-                    {languageOptions.map(opt => (
-                      <button
-                        key={opt} type="button"
-                        onClick={() => setLanguages(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
-                        className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${languages.includes(opt) ? 'bg-primary text-white' : 'bg-neutral-50 text-primary-600 border border-neutral-100'}`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-neutral-400">Exp (Years)</p>
-                    <input 
-                      type="number" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-neutral-400">Short Bio</p>
-                    <input 
-                      type="text" placeholder="Bio (max 100 chars)" maxLength={100}
-                      value={bio} onChange={e => setBio(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-neutral-50 border-2 border-transparent focus:border-primary outline-none font-bold text-sm"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center">{error}</p>}
-
-            <button 
-              disabled={loading}
-              className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 mt-6"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : (isRw ? 'Komeza' : 'Continue')}
-            </button>
-          </form>
-
-          <button 
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="w-full text-center text-xs font-bold text-primary-400 hover:text-primary transition-colors"
-          >
-            {mode === 'login' ? (isRw ? 'Nturagira konti? Iyandikishe' : 'No account? Sign up') : (isRw ? 'Usanganywe konti? Injira' : 'Have an account? Login')}
-          </button>
-        </div>
       </div>
     </div>
   );
