@@ -14,6 +14,8 @@ import { io } from 'socket.io-client';
 import AnalyticsOverview from '../components/doctor/AnalyticsOverview';
 import PatientManagement from '../components/doctor/PatientManagement';
 import VideoConsultationRoom from '../components/clinical/VideoConsultationRoom';
+import ResourceModal from '../components/doctor/ResourceModal';
+
 
 
 // --- Sub-components ---
@@ -53,6 +55,8 @@ export default function DoctorDashboard() {
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<'guidelines' | 'privacy' | null>(null);
+
 
   const { activeSession } = useClinicalEvents(doctorProfile?.id, 'doctor');
 
@@ -903,26 +907,41 @@ export default function DoctorDashboard() {
               <div className="bg-white p-6 rounded-[2.5rem] border border-[#E8E1DB]">
                 <h3 className="text-[10px] font-black text-[#4A2C1A] uppercase tracking-widest mb-4">{isRw ? 'ibikoresho' : 'Resources'}</h3>
                 <div className="space-y-3">
-                  <button className="w-full flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-all">
+                  <button 
+                    onClick={() => setSelectedResource('guidelines')}
+                    className="w-full flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-all"
+                  >
                     <div className="flex items-center gap-3">
                       <FileText size={14} className="text-neutral-400" />
                       <span className="text-[10px] font-black text-[#4A2C1A] uppercase">{isRw ? 'Amabwiriza' : 'Clinical Guidelines'}</span>
                     </div>
                     <ChevronRight size={12} className="text-neutral-300" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-all">
+
+                  <button 
+                    onClick={() => setSelectedResource('privacy')}
+                    className="w-full flex items-center justify-between p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-all"
+                  >
                     <div className="flex items-center gap-3">
                       <Shield size={14} className="text-neutral-400" />
                       <span className="text-[10px] font-black text-[#4A2C1A] uppercase">{isRw ? 'Umutekano' : 'Privacy Protocol'}</span>
                     </div>
                     <ChevronRight size={12} className="text-neutral-300" />
                   </button>
+
                 </div>
               </div>
             </div>
           )}
         </div>
       </main>
+
+      <ResourceModal 
+        type={selectedResource}
+        isOpen={!!selectedResource}
+        onClose={() => setSelectedResource(null)}
+        isRw={isRw}
+      />
     </div>
   );
 }
