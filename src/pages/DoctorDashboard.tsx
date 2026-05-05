@@ -312,16 +312,27 @@ export default function DoctorDashboard() {
           doctorName: doctorProfile.full_name
         })
       });
+      
+      // Handle non-JSON responses (like 404 or 500 HTML pages)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(isRw ? "Backend ntabwo yiteguye. Hamagara muganga cyangwa ugerageze nyuma." : "Backend not ready. Please ensure you have deployed the latest backend code to Render.");
+      }
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to create video room');
       
-      setActiveVideoSession({
-        id: sessionId,
-        room_url: data.video_room_url
-      });
-      
+      // Update session locally to show the video overlay
+      const { data: updatedSession } = await supabase
+        .from('sessions')
+        .select('*, profiles:patient_id(full_name)')
+        .eq('id', sessionId)
+        .single();
+
+      setCurrentSession(updatedSession);
       showToast(isRw ? 'Icyumba cya videwo kiriteguye!' : 'Video room ready!', 'success');
     } catch (err: any) {
+      console.error("Video Session Error:", err);
       showToast(err.message, 'error');
     } finally {
       setActionLoading(null);
