@@ -147,10 +147,16 @@ export default function DoctorDashboard() {
             primary_concern, phq9_score, gad7_score, status, self_harm_flag, concern_duration, emergency_contact
           )
         `)
-        .eq('doctor_id', user.id)
-        .eq('status', 'active');
+        .eq('doctor_id', user.id);
+        // Remove .eq('status', 'active') to show all assigned patients, 
+        // we can filter them in the UI if needed, but 'active' should be default.
       
-      console.log('[DASHBOARD] Raw caseload data:', caseloadData);
+      if (caseloadErr) {
+        console.error('[DASHBOARD] Caseload fetch error:', caseloadErr);
+        throw caseloadErr;
+      }
+      
+      console.log('[DASHBOARD] Raw caseload data received:', caseloadData?.length, 'rows');
       
       const formattedPatients = (caseloadData || []).map(item => {
         // Handle both array and object responses for joined tables
@@ -166,9 +172,9 @@ export default function DoctorDashboard() {
           self_harm_flag: clinical?.self_harm_flag,
           concern_duration: clinical?.concern_duration,
           emergency_contact: clinical?.emergency_contact,
-          patient_info: patientInfo
+          patient_info: patientInfo || { full_name: 'Unknown Patient' }
         };
-      });
+      }).filter(p => p.status === 'active'); // Filter active ones here to be safe
 
       console.log('[DASHBOARD] Formatted patients:', formattedPatients);
       setPatients(formattedPatients);

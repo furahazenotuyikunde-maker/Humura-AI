@@ -140,30 +140,51 @@ app.post('/api/patients/assign-doctor', async (req, res) => {
   try {
     const { patientId, doctorId } = req.body;
 
-    // 1. Check if already assigned to prevent duplicates
+    // 1. Check if already assigned
     const { data: existing } = await supabase
       .from('patient_caseload')
       .select('*')
       .eq('patient_id', patientId)
       .eq('doctor_id', doctorId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
-      return res.status(200).json({ success: true, message: "Already assigned" });
+      if (existing.status === 'active') {
+        return res.status(200).json({ success: true, message: "Already assigned" });
+      } else {
+        // Reactivate if previously completed/pending
+        await supabase.from('patient_caseload').update({ status: 'active' }).eq('id', existing.id);
+      }
+    } else {
+      // 2. Insert into caseload table
+      const { error: caseloadErr } = await supabase
+        .from('patient_caseload')
+        .insert([{ 
+          patient_id: patientId, 
+          doctor_id: doctorId, 
+          status: 'active' 
+        }]);
+
+      if (caseloadErr) throw caseloadErr;
     }
 
-    // 2. Insert into caseload table (Triggers Real-time)
-    const { data: caseload, error: caseloadErr } = await supabase
-      .from('patient_caseload')
-      .insert([{ 
-        patient_id: patientId, 
+    // 3. Ensure a row exists in the patients table (Clinical Handshake)
+    // We use upsert to create or update the clinical record
+    const { data: patientData } = await supabase.from('patients').select('*').eq('id', patientId).maybeSingle();
+    
+    if (!patientData) {
+      await supabase.from('patients').insert([{
+        id: patientId,
+        doctor_id: doctorId,
+        status: 'active',
+        created_at: new Date().toISOString()
+      }]);
+    } else {
+      await supabase.from('patients').update({ 
         doctor_id: doctorId, 
         status: 'active' 
-      }])
-      .select()
-      .single();
-
-    if (caseloadErr) throw caseloadErr;
+      }).eq('id', patientId);
+    }
 
     // 3. Increment doctor caseload count in profiles
     const { data: profile } = await supabase.from('doctor_profiles').select('caseload_count').eq('user_id', doctorId).single();
