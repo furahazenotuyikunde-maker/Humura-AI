@@ -140,7 +140,7 @@ export default function DoctorDashboard() {
         .from('patient_caseload')
         .select(`
           *,
-          patient:patient_id(
+          patient:profiles!patient_id(
             full_name, avatar_url, phone
           ),
           clinical_info:patients!patient_id(
@@ -150,18 +150,27 @@ export default function DoctorDashboard() {
         .eq('doctor_id', user.id)
         .eq('status', 'active');
       
-      const formattedPatients = (caseloadData || []).map(item => ({
-        id: item.patient_id,
-        status: item.clinical_info?.[0]?.status || item.status,
-        primary_concern: item.clinical_info?.[0]?.primary_concern,
-        phq9_score: item.clinical_info?.[0]?.phq9_score,
-        gad7_score: item.clinical_info?.[0]?.gad7_score,
-        self_harm_flag: item.clinical_info?.[0]?.self_harm_flag,
-        concern_duration: item.clinical_info?.[0]?.concern_duration,
-        emergency_contact: item.clinical_info?.[0]?.emergency_contact,
-        patient_info: item.patient
-      }));
+      console.log('[DASHBOARD] Raw caseload data:', caseloadData);
+      
+      const formattedPatients = (caseloadData || []).map(item => {
+        // Handle both array and object responses for joined tables
+        const clinical = Array.isArray(item.clinical_info) ? item.clinical_info[0] : item.clinical_info;
+        const patientInfo = Array.isArray(item.patient) ? item.patient[0] : item.patient;
 
+        return {
+          id: item.patient_id,
+          status: clinical?.status || item.status,
+          primary_concern: clinical?.primary_concern,
+          phq9_score: clinical?.phq9_score,
+          gad7_score: clinical?.gad7_score,
+          self_harm_flag: clinical?.self_harm_flag,
+          concern_duration: clinical?.concern_duration,
+          emergency_contact: clinical?.emergency_contact,
+          patient_info: patientInfo
+        };
+      });
+
+      console.log('[DASHBOARD] Formatted patients:', formattedPatients);
       setPatients(formattedPatients);
 
       // 3. Today's Sessions

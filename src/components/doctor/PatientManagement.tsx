@@ -41,11 +41,16 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
     setTimeout(() => setToast(null), 3000);
   };
 
-  const filteredPatients = patients.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPatients = patients.filter(p => {
+    const name = p.name || '';
+    const location = p.location || '';
+    const diagnosis = p.diagnosis || '';
+    const query = searchQuery.toLowerCase();
+    
+    return name.toLowerCase().includes(query) ||
+           location.toLowerCase().includes(query) ||
+           diagnosis.toLowerCase().includes(query);
+  });
 
   const handleSearchPatients = async (query: string) => {
     setSearchQueryModal(query);
