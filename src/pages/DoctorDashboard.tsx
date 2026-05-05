@@ -673,10 +673,12 @@ export default function DoctorDashboard() {
             {activeTab === 'patients' && (
               <div className="bg-white rounded-[2.5rem] border border-[#E8E1DB] p-8 h-[calc(100vh-200px)]">
                 <PatientManagement 
+                  doctorId={doctorProfile?.id}
+                  onRefresh={fetchInitialData}
                   patients={patients.map(p => ({
                     id: p.id,
                     name: p.patient_info?.full_name || 'Anonymous',
-                    location: 'Rwanda',
+                    location: p.patient_info?.location || 'Rwanda',
                     risk: p.phq9_score > 15 ? 'high' : 'low',
                     status: p.status,
                     diagnosis: p.primary_concern

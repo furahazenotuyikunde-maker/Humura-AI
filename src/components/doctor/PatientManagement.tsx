@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { 
   Search, Filter, Plus, MoreVertical, ChevronRight, 
   MapPin, Phone, Calendar, Heart, ShieldAlert,
-  Download, FileText, Activity, Users
+  Download, FileText, Activity, Users, X, Check, Loader2
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../lib/supabaseClient';
 
 interface Patient {
   id: string;
@@ -17,10 +18,23 @@ interface Patient {
   diagnosis?: string;
 }
 
-export default function PatientManagement({ patients = [] }: { patients?: Patient[] }) {
+interface PatientManagementProps {
+  patients?: Patient[];
+  doctorId?: string;
+  onRefresh?: () => void;
+}
+
+export default function PatientManagement({ patients = [], doctorId, onRefresh }: PatientManagementProps) {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+
+  // Add Patient Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [searchQueryModal, setSearchQueryModal] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAdding, setIsAdding] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -32,6 +46,67 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
     p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleSearchPatients = async (query: string) => {
+    setSearchQueryModal(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Search for patients in profiles table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, location')
+        .eq('role', 'patient')
+        .ilike('full_name', `%${query}%`)
+        .limit(5);
+
+      if (error) throw error;
+      
+      // Filter out patients who are already in the list
+      const currentPatientIds = patients.map(p => p.id);
+      setSearchResults(data.filter(p => !currentPatientIds.includes(p.id)));
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddPatient = async (patient: any) => {
+    if (!doctorId) {
+      showToast("Error: Doctor ID not found");
+      return;
+    }
+
+    setIsAdding(patient.id);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/patients/assign-doctor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: patient.id,
+          doctorId: doctorId
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to add patient");
+
+      showToast(`Successfully added ${patient.full_name} to your caseload`);
+      setShowAddModal(false);
+      setSearchQueryModal('');
+      setSearchResults([]);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      showToast(err.message);
+    } finally {
+      setIsAdding(null);
+    }
+  };
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -56,7 +131,7 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
             Filters
           </button>
           <button 
-            onClick={() => showToast("Add Patient feature coming soon...")}
+            onClick={() => setShowAddModal(true)}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
           >
             <Plus size={18} />
@@ -192,9 +267,100 @@ export default function PatientManagement({ patients = [] }: { patients?: Patien
         </div>
       </div>
 
+      {/* Add Patient Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddModal(false)}
+              className="absolute inset-0 bg-primary-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl border border-primary-50 p-8 overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-primary-900">Add New Patient</h3>
+                  <p className="text-xs font-bold text-primary-400">Search for patients to add to your caseload</p>
+                </div>
+                <button 
+                  onClick={() => setShowAddModal(false)}
+                  className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:bg-primary-50 hover:text-primary transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-300" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by full name..."
+                    autoFocus
+                    value={searchQueryModal}
+                    onChange={(e) => handleSearchPatients(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-neutral-50 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Loader2 size={18} className="animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((result) => (
+                      <div 
+                        key={result.id}
+                        className="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl border border-transparent hover:border-primary/10 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase">
+                            {result.full_name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-primary-900">{result.full_name}</p>
+                            <p className="text-[10px] font-bold text-primary-400 uppercase tracking-tighter">Patient · {result.location || 'Rwanda'}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleAddPatient(result)}
+                          disabled={isAdding === result.id}
+                          className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase rounded-xl hover:scale-105 transition-all disabled:opacity-50"
+                        >
+                          {isAdding === result.id ? <Loader2 size={14} className="animate-spin" /> : 'Add Patient'}
+                        </button>
+                      </div>
+                    ))
+                  ) : searchQueryModal && !isSearching ? (
+                    <div className="text-center py-10 opacity-50">
+                      <Users size={32} className="mx-auto mb-2" />
+                      <p className="text-xs font-bold uppercase tracking-widest">No matching patients found</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 opacity-30">
+                      <Search size={32} className="mx-auto mb-2" />
+                      <p className="text-xs font-bold uppercase tracking-widest">Start typing to search</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Internal Toast */}
       {toast && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-primary-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl animate-bounce">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[150] px-6 py-3 bg-primary-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl animate-bounce">
           {toast}
         </div>
       )}
