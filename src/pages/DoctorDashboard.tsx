@@ -136,7 +136,7 @@ export default function DoctorDashboard() {
       setDoctorProfile(profile);
 
       // 2. Assigned Patients (via Handshake table)
-      const { data: caseloadData } = await supabase
+      const { data: caseloadData, error: caseloadErr } = await supabase
         .from('patient_caseload')
         .select(`
           *,
