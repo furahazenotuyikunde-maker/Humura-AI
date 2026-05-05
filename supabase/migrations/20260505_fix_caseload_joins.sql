@@ -42,6 +42,6 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trigger_ensure_patient_record ON public.patient_caseload;
 CREATE TRIGGER trigger_ensure_patient_record
-    AFTER INSERT ON public.patient_caseload
+    BEFORE INSERT ON public.patient_caseload
     FOR EACH ROW
     EXECUTE FUNCTION public.ensure_patient_record();
