@@ -3,12 +3,13 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, MessageCircle, Users, BarChart2, BookOpen, MapPin,
-  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut, Activity, ShieldCheck
+  HandMetal, Settings, ShieldAlert, User, AlertTriangle, RotateCcw, X, Phone, Type, Bell, Languages, LogOut, Activity, ShieldCheck, Video
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { io } from 'socket.io-client';
 
 import { useTranslation } from 'react-i18next';
+import IncomingCall from './clinical/IncomingCall';
 
 interface ShellProps {
   children?: ReactNode;
@@ -108,8 +109,8 @@ export const Shell: React.FC<ShellProps> = () => {
     return () => window.removeEventListener('humura-notification-added', triggerShake);
   }, []);
 
-  // Real-time Session Notification Listener
-  const [incomingSession, setIncomingSession] = useState<any>(null);
+  // Real-time Session Notification Listener (Socket.io)
+  const [incomingSocketSession, setIncomingSocketSession] = useState<any>(null);
 
   useEffect(() => {
     if (user && role === 'patient') {
@@ -122,10 +123,20 @@ export const Shell: React.FC<ShellProps> = () => {
       });
 
       socket.on('session:started', (data: any) => {
-        console.log('[SHELL] 🎥 Incoming live session:', data);
-        setIncomingSession(data);
+        console.log('[SHELL] 🎥 Incoming live session (socket):', data);
+        setIncomingSocketSession(data);
         setShouldShake(true);
         setTimeout(() => setShouldShake(false), 3000);
+      });
+
+      socket.on('session:video_started', (data: any) => {
+        console.log('[SHELL] 🎥 Incoming video session (socket):', data);
+        // We prefer Supabase Realtime for the full modal, but we can update state here if needed
+        setIncomingCall({
+          id: data.session_id,
+          room_url: data.video_room_url,
+          doctor_name: data.doctor_name || 'Your Doctor'
+        });
       });
 
       return () => {
@@ -133,6 +144,69 @@ export const Shell: React.FC<ShellProps> = () => {
       };
     }
   }, [user, role]);
+
+  // Real-time Session Notification Listener (Supabase - Primary for Video)
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user?.id || role !== 'patient') return;
+
+    // Subscribe to incoming video sessions via the main sessions table
+    const channel = supabase
+      .channel('global-video-calls')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sessions',
+          filter: `patient_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('[SHELL] Sessions update detected:', payload.new);
+          if (payload.new.video_room_url) {
+            // Fetch doctor name for better UX
+            const { data: doc } = await supabase.from('profiles').select('full_name').eq('id', payload.new.doctor_id).single();
+            
+            setIncomingCall({
+              id: payload.new.id,
+              room_url: payload.new.video_room_url,
+              doctor_name: doc?.full_name || 'Your Doctor'
+            });
+          } else {
+            setIncomingCall(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, role]);
+
+  const handleAcceptCall = () => {
+    if (!incomingCall) return;
+    // Store in session storage or state to be picked up by MeetProfessionalPage
+    sessionStorage.setItem('active_video_session', JSON.stringify(incomingCall));
+    setIncomingCall(null);
+    navigate('/meet-professional');
+  };
+
+  const handleDeclineCall = async () => {
+    if (!incomingCall) return;
+    try {
+      await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/video/end-room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: incomingCall.id })
+      });
+      setIncomingCall(null);
+    } catch (err) {
+      console.error(err);
+      setIncomingCall(null);
+    }
+  };
 
   const handleSafetyExit = () => {
     window.location.replace('https://www.google.com');
@@ -188,6 +262,18 @@ export const Shell: React.FC<ShellProps> = () => {
 
   return (
     <div className={`flex flex-col min-h-screen ${dk ? 'bg-[#0d1117]' : 'bg-background'} pb-16 md:pb-0 md:pl-64 transition-colors duration-300`}>
+      
+      {/* Global Incoming Call Modal */}
+      <AnimatePresence>
+        {incomingCall && (
+          <IncomingCall 
+            doctorName={incomingCall.doctor_name}
+            onAccept={handleAcceptCall}
+            onDecline={handleDeclineCall}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Top Header */}
       <header className={`sticky top-0 z-50 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center ${dk ? 'bg-[#131c2e]/95 border-[#1f2d47]' : 'bg-white/80 border-primary-50'}`}>
         <div className="flex items-center gap-2">
@@ -248,7 +334,7 @@ export const Shell: React.FC<ShellProps> = () => {
 
       {/* Real-time Session Join Notification */}
       <AnimatePresence>
-        {incomingSession && (
+        {incomingSocketSession && (
           <motion.div
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -269,20 +355,20 @@ export const Shell: React.FC<ShellProps> = () => {
                     {isRw ? 'Ikiganiro kiratangiye' : 'Live Session Started'}
                   </p>
                   <p className={`text-sm font-bold truncate ${dk ? 'text-white' : 'text-primary-900'}`}>
-                    {isRw ? `Muganga ${incomingSession.doctorName} aragutegereje` : `Dr. ${incomingSession.doctorName} is waiting for you`}
+                    {isRw ? `Muganga ${incomingSocketSession.doctorName} aragutegereje` : `Dr. ${incomingSocketSession.doctorName} is waiting for you`}
                   </p>
                 </div>
 
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => setIncomingSession(null)}
+                    onClick={() => setIncomingSocketSession(null)}
                     className={`p-2 rounded-xl transition-colors ${dk ? 'hover:bg-white/5 text-neutral-500' : 'hover:bg-neutral-50 text-neutral-400'}`}
                   >
                     <X size={18} />
                   </button>
                   <button 
                     onClick={() => {
-                      setIncomingSession(null);
+                      setIncomingSocketSession(null);
                       navigate('/meet-professional');
                     }}
                     className="px-5 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"

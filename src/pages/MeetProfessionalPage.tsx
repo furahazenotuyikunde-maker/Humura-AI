@@ -64,42 +64,36 @@ export default function MeetProfessionalPage() {
       setDoctor(doc);
     }
 
+    // 4. Check for active video session
+    const { data: activeVideo } = await supabase
+      .from('sessions')
+      .select('*, profiles:doctor_id(full_name)')
+      .eq('patient_id', session.user.id)
+      .not('video_room_url', 'is', null)
+      .order('video_started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activeVideo && !activeVideoSession) {
+      setActiveVideoSession({
+        id: activeVideo.id,
+        room_url: activeVideo.video_room_url,
+        doctor_name: activeVideo.profiles?.full_name || 'Your Doctor'
+      });
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    if (!profile?.id) return;
-
-    // Subscribe to incoming video sessions via the main sessions table
-    const channel = supabase
-      .channel('video-calls')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sessions',
-          filter: `patient_id=eq.${profile.id}`
-        },
-        (payload) => {
-          if (payload.new.video_room_url && !activeVideoSession) {
-            setIncomingCall({
-              id: payload.new.id,
-              room_url: payload.new.video_room_url,
-              doctor_name: doctor?.full_name || 'Your Doctor'
-            });
-          } else if (!payload.new.video_room_url) {
-            setIncomingCall(null);
-            setActiveVideoSession(null);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.id]);
+    // Check for session-based active video (from Shell navigation)
+    const stored = sessionStorage.getItem('active_video_session');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setActiveVideoSession(parsed);
+      sessionStorage.removeItem('active_video_session');
+    }
+  }, []);
 
   const handleDeclineCall = async () => {
     if (!incomingCall) return;
