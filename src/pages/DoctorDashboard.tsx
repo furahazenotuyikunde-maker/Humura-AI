@@ -136,7 +136,7 @@ export default function DoctorDashboard() {
       setDoctorProfile(profile);
 
       // 2. Assigned Patients (via Handshake table)
-      const { data: caseloadData, error: caseloadErr } = await supabase
+      let { data: caseloadData, error: caseloadErr } = await supabase
         .from('patient_caseload')
         .select(`
           *,
@@ -148,12 +148,25 @@ export default function DoctorDashboard() {
           )
         `)
         .eq('doctor_id', user.id);
-        // Remove .eq('status', 'active') to show all assigned patients, 
-        // we can filter them in the UI if needed, but 'active' should be default.
-      
+
+      // Fallback: If the complex join fails (due to schema/foreign key issues), 
+      // try a simpler fetch to at least show the names.
       if (caseloadErr) {
-        console.error('[DASHBOARD] Caseload fetch error:', caseloadErr);
-        throw caseloadErr;
+        console.warn('[DASHBOARD] Complex caseload join failed, trying fallback...', caseloadErr);
+        const { data: fallbackData, error: fallbackErr } = await supabase
+          .from('patient_caseload')
+          .select(`
+            *,
+            patient:profiles!patient_id(full_name, avatar_url, phone)
+          `)
+          .eq('doctor_id', user.id);
+        
+        if (fallbackErr) {
+          console.error('[DASHBOARD] Fallback caseload fetch also failed:', fallbackErr);
+          throw fallbackErr;
+        }
+        caseloadData = fallbackData;
+        caseloadErr = null;
       }
       
       console.log('[DASHBOARD] Raw caseload data received:', caseloadData?.length, 'rows');
