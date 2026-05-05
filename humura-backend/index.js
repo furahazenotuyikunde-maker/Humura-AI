@@ -320,88 +320,63 @@ app.post('/api/session/notify-start', async (req, res) => {
   }
 });
 
-// 4g. Daily.co Video Session Routes
-app.post('/api/video/create-room', async (req, res) => {
-  const { doctorId, patientId } = req.body;
-  const DAILY_API_KEY = process.env.DAILY_API_KEY;
-  const DAILY_API_URL = process.env.DAILY_API_URL || 'https://api.daily.co/v1';
+// 4g. Jitsi Video Session Routes (Zero-Cost, No API Key)
+app.post('/api/sessions/:session_id/start-video', async (req, res) => {
+  const { session_id } = req.params;
+  const { doctorName } = req.body;
 
   try {
-    // 1. Create Room on Daily.co
-    const response = await axios.post(`${DAILY_API_URL}/rooms`, {
-      properties: {
-        enable_chat: true,
-        start_video_off: false,
-        start_audio_off: false,
-        exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiry
-      }
-    }, {
-      headers: {
-        'Authorization': `Bearer ${DAILY_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const room = response.data;
-
-    // 2. Insert into video_sessions table
-    const { data: session, error } = await supabase
-      .from('video_sessions')
-      .insert([{
-        doctor_id: doctorId,
-        patient_id: patientId,
-        room_url: room.url,
-        room_name: room.name,
-        status: 'waiting',
-        started_at: new Date().toISOString()
-      }])
-      .select()
+    // 1. Fetch session and patient info
+    const { data: session, error: sessErr } = await supabase
+      .from('sessions')
+      .select('*, profiles:patient_id(full_name)')
+      .eq('id', session_id)
       .single();
 
-    if (error) throw error;
+    if (sessErr || !session) throw new Error("Session not found");
 
-    // 3. Notify Patient via Socket
-    notifyUser(patientId, 'video:incoming_call', {
-      room_url: room.url,
-      room_name: room.name,
-      doctorId,
-      sessionId: session.id
+    // 2. Generate unique room name
+    const roomName = `humura-${session.id}-${Date.now()}`.replace(/[^a-zA-Z0-9-]/g, "");
+    const roomUrl = `https://meet.jit.si/${roomName}`;
+
+    // 3. Update sessions table
+    await supabase.from('sessions')
+      .update({ 
+        video_room_url: roomUrl, 
+        video_started_at: new Date().toISOString() 
+      })
+      .eq('id', session_id);
+
+    // 4. Notify Patient via Socket
+    notifyUser(session.patient_id, 'session:video_started', {
+      session_id: session.id,
+      video_room_url: roomUrl,
+      room_name: roomName,
+      doctor_name: doctorName || "Your Doctor"
     });
 
-    return res.status(200).json({ room_url: room.url, session_id: session.id });
+    console.log(`[VIDEO] 🎥 Jitsi Room Started: ${roomName} for Patient ${session.patient_id}`);
+
+    return res.status(200).json({ 
+      success: true, 
+      video_room_url: roomUrl, 
+      room_name: roomName 
+    });
   } catch (error) {
-    console.error("Room Creation Error:", error.response?.data || error.message);
-    return res.status(500).json({ error: error.response?.data?.info || error.message });
+    console.error("Jitsi Start Error:", error.message);
+    return res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/video/end-room', async (req, res) => {
-  const { sessionId, roomName } = req.body;
-  const DAILY_API_KEY = process.env.DAILY_API_KEY;
-  const DAILY_API_URL = process.env.DAILY_API_URL || 'https://api.daily.co/v1';
-
+  const { sessionId } = req.body;
   try {
-    // 1. Delete Room on Daily.co (Optional, or just let it expire)
-    if (roomName) {
-      await axios.delete(`${DAILY_API_URL}/rooms/${roomName}`, {
-        headers: { 'Authorization': `Bearer ${DAILY_API_KEY}` }
-      }).catch(err => console.log("Room already deleted or not found"));
-    }
-
-    // 2. Update video_sessions table
-    const { error } = await supabase
-      .from('video_sessions')
-      .update({ 
-        status: 'ended', 
-        ended_at: new Date().toISOString() 
-      })
+    await supabase.from('sessions')
+      .update({ video_room_url: null })
       .eq('id', sessionId);
-
-    if (error) throw error;
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("End Room Error:", error.message);
     return res.status(500).json({ error: error.message });
   }
 });

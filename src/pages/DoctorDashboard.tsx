@@ -301,24 +301,23 @@ export default function DoctorDashboard() {
     }
   };
 
-  const startVideoSession = async (patientId: string) => {
+  const startVideoSession = async (sessionId: string) => {
     if (!doctorProfile?.id) return;
-    setActionLoading('video-' + patientId);
+    setActionLoading('video-' + sessionId);
     try {
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/video/create-room`, {
+      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/sessions/${sessionId}/start-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          doctorId: doctorProfile.id,
-          patientId: patientId
+          doctorName: doctorProfile.full_name
         })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to create video room');
       
       setActiveVideoSession({
-        id: data.session_id,
-        room_url: data.room_url
+        id: sessionId,
+        room_url: data.video_room_url
       });
       
       showToast(isRw ? 'Icyumba cya videwo kiriteguye!' : 'Video room ready!', 'success');
@@ -748,11 +747,11 @@ export default function DoctorDashboard() {
                             </div>
                           ) : s.status === 'confirmed' ? (
                             <button 
-                              onClick={() => startVideoSession(s.patient_id)}
-                              disabled={actionLoading === 'video-' + s.patient_id}
+                              onClick={() => startVideoSession(s.id)}
+                              disabled={actionLoading === 'video-' + s.id}
                               className="px-6 py-2.5 bg-primary text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                             >
-                              {actionLoading === 'video-' + s.patient_id ? <Loader2 size={14} className="animate-spin" /> : <Phone size={14} />}
+                              {actionLoading === 'video-' + s.id ? <Loader2 size={14} className="animate-spin" /> : <Phone size={14} />}
                               {isRw ? 'Tangira' : 'Start Session'}
                             </button>
                           ) : s.status === 'active' ? (

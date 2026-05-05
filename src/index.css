@@ -165,3 +165,14 @@ html.humura-dark .bg-background {
 html.humura-dark ::-webkit-scrollbar { width: 6px; }
 html.humura-dark ::-webkit-scrollbar-track { background: #131c2e; }
 html.humura-dark ::-webkit-scrollbar-thumb { background: #1f2d47; border-radius: 8px; }
+
+/* ── UI Cleanup: Remove Hosting Watermarks ── */
+#tiiny-host-badge, 
+.tiiny-badge, 
+[id*="tiiny"], 
+[class*="tiiny"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

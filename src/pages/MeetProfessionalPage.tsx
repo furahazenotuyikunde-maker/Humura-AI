@@ -70,33 +70,25 @@ export default function MeetProfessionalPage() {
   useEffect(() => {
     if (!profile?.id) return;
 
-    // Subscribe to incoming video sessions
+    // Subscribe to incoming video sessions via the main sessions table
     const channel = supabase
       .channel('video-calls')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'video_sessions',
-          filter: `patient_id=eq.${profile.id}`
-        },
-        (payload) => {
-          if (payload.new.status === 'waiting') {
-            setIncomingCall(payload.new);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
           event: 'UPDATE',
           schema: 'public',
-          table: 'video_sessions',
+          table: 'sessions',
           filter: `patient_id=eq.${profile.id}`
         },
         (payload) => {
-          if (payload.new.status === 'ended') {
+          if (payload.new.video_room_url && !activeVideoSession) {
+            setIncomingCall({
+              id: payload.new.id,
+              room_url: payload.new.video_room_url,
+              doctor_name: doctor?.full_name || 'Your Doctor'
+            });
+          } else if (!payload.new.video_room_url) {
             setIncomingCall(null);
             setActiveVideoSession(null);
           }
@@ -115,7 +107,7 @@ export default function MeetProfessionalPage() {
       await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/video/end-room`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: incomingCall.id, roomName: incomingCall.room_name })
+        body: JSON.stringify({ sessionId: incomingCall.id })
       });
       setIncomingCall(null);
     } catch (err) {
