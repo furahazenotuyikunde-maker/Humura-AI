@@ -29,7 +29,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // 2. Initialize Clients
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 
 // 3. Socket.io Presence & Logic
@@ -503,10 +503,11 @@ CRITICAL: Respond EXCLUSIVELY in ${languageName}. Never mix languages.
 Lead with empathy and validation. For any crisis signs, gently provide the Rwanda 114 hotline.
 Keep responses concise (under 200 words) and human.` }]
       },
-      contents: [
-        ...chatHistory,
-        { role: "user", parts }
-      ]
+      contents: (() => {
+        const raw = [...chatHistory, { role: "user", parts }];
+        const deduped = raw.filter((msg, i) => i === 0 || msg.role !== raw[i - 1].role);
+        return deduped[0]?.role === 'user' ? deduped : deduped.slice(1);
+      })()
     });
 
     const reply = (await response.response).text();

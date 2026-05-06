@@ -17,7 +17,7 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // High-Performance AI Bridge
 async function callAI(prompt) {

@@ -21,8 +21,14 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
   const [reply, setReply] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
  
-  const handleQuery = async () => {
-    if (!query.trim() || !doctorProfile?.id) return;
+  const handleQuery = async (customQuery?: string | React.MouseEvent) => {
+    const q = typeof customQuery === 'string' ? customQuery : query;
+    if (!q.trim() || !doctorProfile?.id) return;
+    
+    if (typeof customQuery === 'string') {
+      setQuery(customQuery);
+    }
+
     setAiLoading(true);
     setReply('');
     try {
@@ -30,7 +36,7 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          query, 
+          query: q, 
           doctorId: doctorProfile.id 
         })
       });
@@ -96,8 +102,12 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
                  <p className="text-sm font-medium leading-relaxed opacity-90">
                     Your caseload shows a 12% improvement in emotional resilience scores this week. Behavioral activation techniques are yielding the highest engagement among patients with Depression.
                  </p>
-                 <button className="flex items-center gap-2 py-2.5 px-6 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-[10px] font-black uppercase transition-all">
-                    View Full Analysis
+                 <button 
+                   onClick={() => handleQuery("Provide a full clinical analysis of my current caseload including emotional resilience scores, behavioral activation engagement, and key risk factors.")}
+                   disabled={aiLoading}
+                   className="flex items-center gap-2 py-2.5 px-6 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-[10px] font-black uppercase transition-all disabled:opacity-50"
+                 >
+                    {aiLoading ? 'Generating...' : 'View Full Analysis'}
                  </button>
               </div>
               <Sparkles className="absolute -bottom-6 -right-6 w-32 h-32 opacity-10" />

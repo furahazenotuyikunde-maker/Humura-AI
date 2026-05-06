@@ -157,7 +157,7 @@ export default function AIChatPage() {
         body: JSON.stringify({
           message: userMsg.content,
           image: userMsg.image,
-          history: newMessages.slice(-6).map(m => ({ role: m.role, content: m.content })),
+          history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
           lang: i18n.language,
           userId: (await supabase.auth.getSession()).data.session?.user?.id
         })
@@ -171,7 +171,7 @@ export default function AIChatPage() {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error('No API Key');
         const fallbackRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
