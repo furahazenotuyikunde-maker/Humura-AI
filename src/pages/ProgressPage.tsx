@@ -188,7 +188,7 @@ export default function ProgressPage() {
       }
     } catch (err: any) {
       console.error("Gemini Analysis Error, trying fallback:", err.message);
-      
+
       // Fallback to direct Gemini 3 Flash Preview
       try {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -392,8 +392,8 @@ export default function ProgressPage() {
                           onClick={() => logMood(mood.id)}
                           disabled={isLoggingMood}
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase tracking-tight ${lastLoggedMood === mood.id
-                              ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
-                              : `${mood.color} hover:scale-105`
+                            ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                            : `${mood.color} hover:scale-105`
                             } disabled:opacity-50`}
                         >
                           <span className="text-2xl">{mood.emoji}</span>
@@ -537,17 +537,17 @@ export default function ProgressPage() {
                 )}
 
                 {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     className="mt-6 p-6 rounded-[2rem] bg-white/10 border border-white/20 flex flex-col items-center gap-4 text-center"
                   >
                     <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
                       <AlertCircle size={14} className="text-white" />
                       {error}
                     </div>
-                    <button 
-                      onClick={() => { setError(null); analyzeProgress(user?.id); }} 
+                    <button
+                      onClick={() => { setError(null); analyzeProgress(user?.id); }}
                       className="px-6 py-2 bg-white text-primary font-black text-[10px] uppercase tracking-widest rounded-full shadow-lg hover:scale-105 transition-all active:scale-95 flex items-center gap-2"
                     >
                       <RefreshCcw size={12} className="lucide-refresh-ccw" />

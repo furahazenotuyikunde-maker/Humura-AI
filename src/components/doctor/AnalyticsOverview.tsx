@@ -32,7 +32,8 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
     setAiLoading(true);
     setReply('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctor/query-caseload`, {
+      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || '').replace(/\/$/, '');
+      const res = await fetch(`${baseUrl}/api/doctor/query-caseload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -43,6 +44,8 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
       const result = await res.json();
       if (result.success) {
         setReply(result.reply);
+      } else {
+        setReply(`Error: ${result.error || 'Failed to fetch caseload intelligence'}`);
       }
     } catch (err) {
       console.error(err);
@@ -172,7 +175,7 @@ export default function AnalyticsOverview({ doctorProfile }: { doctorProfile?: a
             className="p-6 bg-primary-50/50 border border-primary-100 rounded-3xl text-sm text-primary-900 leading-relaxed flex gap-3"
           >
             <Sparkles size={16} className="text-primary mt-1 flex-shrink-0" />
-            <p>{reply}</p>
+            <div className="whitespace-pre-wrap">{reply}</div>
           </motion.div>
         )}
       </div>

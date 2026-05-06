@@ -655,20 +655,30 @@ app.post('/api/doctor/query-caseload', async (req, res) => {
     const { doctorId, query } = req.body;
 
     // 1. Fetch real caseload data for context
-    const { data: patients, error: patientsErr } = await supabase
-      .from('patients')
-      .select('*, profiles:patient_id(full_name)')
+    const { data: caseload, error: patientsErr } = await supabase
+      .from('patient_caseload')
+      .select(`
+        *,
+        patient:profiles!patient_id(full_name),
+        clinical_info:patients!patient_id(
+          primary_concern, phq9_score, gad7_score, status
+        )
+      `)
       .eq('doctor_id', doctorId);
 
     if (patientsErr) throw patientsErr;
 
-    const caseloadSummary = patients.map(p => ({
-      name: p.profiles?.full_name,
-      concern: p.primary_concern,
-      phq9: p.phq9_score,
-      gad7: p.gad7_score,
-      status: p.status
-    }));
+    const caseloadSummary = caseload.map(p => {
+      const patientInfo = Array.isArray(p.patient) ? p.patient[0] : p.patient;
+      const clinical = Array.isArray(p.clinical_info) ? p.clinical_info[0] : p.clinical_info;
+      return {
+        name: patientInfo?.full_name,
+        concern: clinical?.primary_concern,
+        phq9: clinical?.phq9_score,
+        gad7: clinical?.gad7_score,
+        status: clinical?.status
+      };
+    });
 
     const prompt = `You are a Senior Clinical Data Assistant for Humura AI.
     DOCTOR ID: ${doctorId}

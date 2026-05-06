@@ -254,8 +254,8 @@ export default function SignLanguagePage() {
             }
             throw new Error("Invalid fallback JSON");
           } catch (fe: any) {
-             console.error('[FALLBACK] ✖ Error:', fe.message);
-             setErrorMessage(friendlyError(fe));
+            console.error('[FALLBACK] ✖ Error:', fe.message);
+            setErrorMessage(friendlyError(fe));
           }
         }
       } catch (err: any) {
@@ -292,8 +292,8 @@ export default function SignLanguagePage() {
           }
           throw new Error("Invalid fallback JSON");
         } catch (fe: any) {
-           console.error('[FALLBACK] ✖ Error:', fe.message);
-           setErrorMessage(friendlyError(fe));
+          console.error('[FALLBACK] ✖ Error:', fe.message);
+          setErrorMessage(friendlyError(fe));
         }
       } finally {
         setIsAnalyzing(false);
@@ -344,7 +344,7 @@ export default function SignLanguagePage() {
       setAiResponse(dataResult.reply);
     } catch (err: any) {
       console.error('[RENDER] ✖ Error, trying direct fallback:', err.message);
-      
+
       // Fallback to direct Gemini 3 Flash Preview
       try {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -775,16 +775,16 @@ export default function SignLanguagePage() {
 
         {/* Error Message */}
         {errorMessage && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-4 py-6 bg-red-50/50 rounded-3xl border border-red-100 shadow-sm"
           >
             <div className="flex items-center gap-2 text-red-700 font-black text-[11px] uppercase tracking-widest px-4 text-center">
               <AlertCircle size={14} />
               {errorMessage}
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => { setErrorMessage(''); handleSend(); }}
