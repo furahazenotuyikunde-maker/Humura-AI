@@ -1213,7 +1213,7 @@ const ClinicalReportModal = ({ isOpen, onClose, patient, onGenerate, onDownload,
                   </div>
                 </div>
               </div>
-
+              <div className="flex gap-4">
                 <button 
                   onClick={() => onDownload(report)}
                   className="flex-1 py-4 bg-emerald-600 text-white font-black uppercase text-xs rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"
