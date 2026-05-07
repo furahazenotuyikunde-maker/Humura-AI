@@ -55,11 +55,11 @@ export default function ProfessionalVideoHub() {
       setUser(user);
       const { data: profile } = await supabase
         .from('profiles')
-        .select('plan_type')
+        .select('plan_type, role')
         .eq('id', user.id)
         .single();
       
-      if (profile?.plan_type === 'professional') {
+      if (profile?.plan_type === 'professional' || profile?.role === 'doctor') {
         setIsProf(true);
       }
     }

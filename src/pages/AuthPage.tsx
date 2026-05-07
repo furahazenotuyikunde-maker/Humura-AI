@@ -56,6 +56,7 @@ export default function AuthPage() {
             id: data.user.id,
             full_name: fullName,
             role: role,
+            plan_type: role === 'doctor' ? 'professional' : 'free',
             language_pref: isRw ? 'rw' : 'en',
             updated_at: new Date().toISOString()
           });
