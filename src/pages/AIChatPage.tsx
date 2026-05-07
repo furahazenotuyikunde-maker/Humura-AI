@@ -427,6 +427,12 @@ export default function AIChatPage() {
               </button>
             )}
           </div>
+          
+          <div className={`mt-3 text-center text-[10px] md:text-xs font-semibold opacity-70 ${textMut}`}>
+            {isRw 
+              ? 'Humura AI ntisimbura abaganga b\'ubuzima bwo mu mutwe. Niba ukeneye ubufasha bwihutirwa, hamagara 114.' 
+              : 'Humura AI does not replace mental health professionals. For emergencies, please call 114.'}
+          </div>
         </div>
       </div>
     </div>
