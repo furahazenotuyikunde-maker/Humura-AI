@@ -230,7 +230,7 @@ export default function SignLanguagePage() {
 
             const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
             const fallbackRes = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -425,7 +425,7 @@ export default function SignLanguagePage() {
 
   useEffect(() => {
     if (autoDetectActive && cameraActive) {
-      detectIntervalRef.current = setInterval(captureAndAnalyze, 6000);
+      detectIntervalRef.current = setInterval(captureAndAnalyze, 15000);
     } else {
       if (detectIntervalRef.current) clearInterval(detectIntervalRef.current);
     }
