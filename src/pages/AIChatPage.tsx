@@ -199,12 +199,23 @@ export default function AIChatPage() {
             })
           }
         );
-        if (!fallbackRes.ok) throw new Error(`Gemini error ${fallbackRes.status}`);
+        if (!fallbackRes.ok) {
+          const errorData = await fallbackRes.json().catch(() => ({}));
+          throw new Error(`Gemini error ${fallbackRes.status}: ${errorData.error?.message || 'Unknown error'}`);
+        }
         const data = await fallbackRes.json();
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
         addAIMessage(reply || (isRw ? "Ndi hano. Komeza." : "I am here for you. Tell me more."), newMessages);
       } catch (fe: any) {
-        if (fe.name !== 'AbortError') setError(isRw ? "Ibibazo by'itumanaho." : "Connection issue. Please try again.");
+        if (fe.name !== 'AbortError') {
+          const isQuota = fe.message?.includes('429') || fe.message?.includes('rate limited');
+          if (isQuota) {
+            setError(isRw ? "Wageze ku mupaka wa buri munsi (Quota). Gerageza nyuma y'isaha 1." : "You've reached the usage limit (Quota). Please try again in 1 hour.");
+          } else {
+            // Show the exact error message for debugging instead of generic "Connection issue"
+            setError(isRw ? `Ibibazo by'itumanaho: ${fe.message}` : `Connection error: ${fe.message}`);
+          }
+        }
       }
     } finally {
       setIsLoading(false);
