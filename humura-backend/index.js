@@ -31,7 +31,13 @@ const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABA
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-
+const handleApiError = (res, error) => {
+  const isRateLimit = error.message?.includes('429') || error.message?.toLowerCase().includes('quota') || error.message?.includes('Too Many Requests');
+  if (isRateLimit) {
+    return res.status(500).json({ error: "You hit daily usage, try again in 1 hr." });
+  }
+  return res.status(500).json({ error: error.message });
+};
 // 3. Socket.io Presence & Logic
 const onlineDoctors = new Set();
 
@@ -100,7 +106,7 @@ app.post('/api/ai/intake-ack', async (req, res) => {
     const text = await callGemini(prompt);
     return res.status(200).json({ ack: text });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -131,7 +137,7 @@ app.get('/api/doctors/available', async (req, res) => {
     
     return res.status(200).json(data);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -202,7 +208,7 @@ app.post('/api/patients/assign-doctor', async (req, res) => {
     return res.status(200).json({ success: true, data: caseload });
   } catch (error) {
     console.error("Assignment Error:", error);
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -238,7 +244,7 @@ app.get('/api/doctor/patients', async (req, res) => {
 
     return res.status(200).json(formatted);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -286,7 +292,7 @@ app.post('/api/crisis/trigger', async (req, res) => {
 
     return res.status(200).json({ success: true, eventId: event.data?.id });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -300,7 +306,7 @@ app.post('/api/ai/homework-observation', async (req, res) => {
     const text = await callGemini(prompt);
     return res.status(200).json({ observation: text });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -313,7 +319,7 @@ app.post('/api/ai/translate', async (req, res) => {
     const text = await callGemini(prompt);
     return res.status(200).json({ translated: text });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -336,7 +342,7 @@ app.post('/api/session/notify-start', async (req, res) => {
     return res.status(200).json({ success: true, message: "Patient notified" });
   } catch (error) {
     console.error("Session Notify Error:", error);
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -384,7 +390,7 @@ app.post('/api/sessions/:session_id/start-video', async (req, res) => {
     });
   } catch (error) {
     console.error("Jitsi Start Error:", error.message);
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -397,7 +403,7 @@ app.post('/api/video/end-room', async (req, res) => {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -467,7 +473,7 @@ app.post('/api/doctor/generate-report', async (req, res) => {
     });
   } catch (error) {
     console.error("Report Generation Error:", error);
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -535,7 +541,7 @@ Keep responses concise (under 200 words) and human.` }]
         reply: "You've reached the usage limit. Please try again in 1 hour, or call 114 for immediate support."
       });
     }
-    return res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -616,7 +622,7 @@ Respond ONLY with this exact JSON (no markdown, no extra text):
       });
     }
 
-    res.status(500).json({ success: false, error: error.message });
+    return handleApiError(res, error);
   }
 };
 
@@ -645,8 +651,7 @@ app.post('/analyze-sign', upload.single('image'), async (req, res) => {
 
     res.json({ success: true, reply });
   } catch (error) {
-    console.error('analyze-sign error:', error.message);
-    res.status(500).json({ error: error.message });
+    return handleApiError(res, error);
   }
 });
 
@@ -701,8 +706,7 @@ app.post('/api/doctor/query-caseload', async (req, res) => {
 
     res.json(parsed);
   } catch (error) {
-    console.error("query-caseload error:", error.message);
-    res.status(500).json({ success: false, error: error.message });
+    return handleApiError(res, error);
   }
 });
 

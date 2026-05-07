@@ -25,39 +25,100 @@ export default function BrailleGenerator() {
   const brailleText = translateToBraille(inputText);
 
   const downloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFont("Helvetica");
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert(isRw ? 'Nyamuneka emerera "pop-ups" kugira ngo umanure iyi PDF.' : 'Please allow pop-ups to download this PDF.');
+      return;
+    }
     
-    doc.setFontSize(20);
-    doc.text("Humura AI - Braille Translation", 20, 20);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Humura AI - Braille Translation</title>
+          <style>
+            @page { margin: 20mm; }
+            body { 
+              font-family: 'Inter', system-ui, sans-serif; 
+              color: #1f2937; 
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px solid #047857;
+              padding-bottom: 20px;
+              margin-bottom: 40px;
+            }
+            h1 { 
+              color: #047857; 
+              margin: 0;
+              font-size: 24px;
+            }
+            .section { margin-bottom: 40px; }
+            .label { 
+              font-size: 12px; 
+              font-weight: bold; 
+              color: #6b7280; 
+              text-transform: uppercase; 
+              letter-spacing: 1px;
+              margin-bottom: 10px; 
+            }
+            .content { 
+              font-size: 16px; 
+              padding: 24px; 
+              background-color: #f8fafc; 
+              border-radius: 16px; 
+              border: 1px solid #e2e8f0; 
+              white-space: pre-wrap; 
+            }
+            .braille { 
+              font-size: 36px; 
+              letter-spacing: 8px; 
+              line-height: 1.8; 
+              color: #000;
+            }
+            .footer {
+              margin-top: 60px;
+              text-align: center;
+              font-size: 10px;
+              color: #9ca3af;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Humura AI</h1>
+            <p>Clinical Braille Translation Record</p>
+          </div>
+          
+          <div class="section">
+            <div class="label">Original Text</div>
+            <div class="content">${inputText}</div>
+          </div>
+          
+          <div class="section">
+            <div class="label">Braille Output</div>
+            <div class="content braille">${brailleText}</div>
+          </div>
+
+          <div class="footer">
+            Generated on ${new Date().toLocaleString()}
+          </div>
+          
+          <script>
+            window.onload = () => {
+              document.title = "braille_translation_${new Date().getTime()}";
+              window.print();
+              // Do not auto close so they can see the print dialog or content if print fails
+            };
+          </script>
+        </body>
+      </html>
+    `;
     
-    doc.setFontSize(12);
-    doc.text("Original Text:", 20, 35);
-    
-    doc.setFontSize(10);
-    const splitOriginalText = doc.splitTextToSize(inputText, 170);
-    doc.text(splitOriginalText, 20, 45);
-    
-    const yOffset = 45 + (splitOriginalText.length * 5) + 10;
-    
-    doc.setFontSize(12);
-    doc.text("Braille Output:", 20, yOffset);
-    
-    // jsPDF standard fonts do not support braille unicode characters well,
-    // so we need to add a font that supports Braille or use standard text mapping.
-    // For this context, jsPDF might fallback to default representation or boxes. 
-    // To ensure braille displays correctly in PDF with standard jspdf, we could embed a font,
-    // but without an embedded font file, it might not render the unicode dots correctly in standard Helvetica.
-    // Assuming standard unicode fallback for now.
-    // However, jspdf html method or adding a custom font is the most robust.
-    // We will use standard text for now.
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(16);
-    const splitBrailleText = doc.splitTextToSize(brailleText, 170);
-    doc.text(splitBrailleText, 20, yOffset + 10);
-    
-    doc.save("braille_translation.pdf");
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   return (
