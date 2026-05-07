@@ -179,7 +179,7 @@ export default function AIChatPage() {
             body: JSON.stringify({
               // ✅ system_instruction is the correct Gemini field — NOT a contents entry
               system_instruction: {
-                parts: [{ text: "You are Humura AI, a compassionate CBT therapy companion in Rwanda. Be empathetic and professional. Always remember and build upon everything the user has shared in this conversation. If you detect a crisis, ALWAYS direct them to call the Rwanda National Mental Health Hotline at 114." }]
+                parts: [{ text: `You are Humura AI, a compassionate CBT therapy companion in Rwanda. CRITICAL: Respond EXCLUSIVELY in ${isRw ? 'Kinyarwanda' : 'English'}. Never mix languages. Be empathetic and professional. Always remember and build upon everything the user has shared in this conversation. If you detect a crisis, ALWAYS direct them to call the Rwanda National Mental Health Hotline at 114.` }]
               },
               contents: (() => {
                 // Build valid alternating user/model turns (Gemini requirement)

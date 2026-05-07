@@ -479,6 +479,7 @@ app.post('/chat', async (req, res) => {
 
     const isRw = lang && lang.startsWith('rw');
     const languageName = isRw ? 'Kinyarwanda' : 'English';
+    const languageInstruction = `CRITICAL: Respond EXCLUSIVELY in ${languageName}. Never mix languages.`;
 
     // Format history — support both {role,content} and {role,parts} shapes
     const chatHistory = (history || []).map(m => ({
@@ -499,7 +500,7 @@ app.post('/chat', async (req, res) => {
     const response = await geminiModel.generateContent({
       systemInstruction: {
         parts: [{ text: `You are Humura AI, a compassionate mental health companion for people in Rwanda.
-CRITICAL: Respond EXCLUSIVELY in ${languageName}. Never mix languages.
+${languageInstruction}
 Lead with empathy and validation. For any crisis signs, gently provide the Rwanda 114 hotline.
 Keep responses concise (under 200 words) and human.` }]
       },
