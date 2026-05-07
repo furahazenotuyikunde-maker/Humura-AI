@@ -9,7 +9,7 @@ const resources = {
       "nav.chat": "AI Chat",
       "nav.community": "Community",
       "nav.progress": "Progress",
-      "nav.education": "Education",
+      "nav.education": "Educational Hub",
       "nav.centers": "Directory",
       "nav.sign": "Sign Language",
       "nav.professionals": "Mental Health Professionals",

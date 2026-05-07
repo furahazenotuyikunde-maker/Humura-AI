@@ -47,7 +47,7 @@ export default function Home() {
       icon: BarChart2, color: 'bg-amber-500', path: '/progress' 
     },
     { 
-      title: isRw ? 'Inyigisho' : 'Education Hub', 
+      title: isRw ? 'Inyigisho' : 'Educational Hub', 
       desc: isRw ? 'Andika ubumenyi ku buzima bwo mu mutwe' : 'Learn about mental health and wellness',
       icon: BookOpen, color: 'bg-blue-500', path: '/education' 
     },

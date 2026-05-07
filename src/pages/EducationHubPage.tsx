@@ -485,7 +485,7 @@ export default function EducationHubPage() {
               <div className="flex items-center gap-2 mb-1">
                 <BookOpen className="text-primary" size={28} />
                 <h1 className="text-2xl font-extrabold text-primary-900 tracking-tight">
-                  {isRw ? 'Igicumbi cy\'ubumenyi' : 'Education Hub'}
+                  {isRw ? 'Igicumbi cy\'ubumenyi' : 'Educational Hub'}
                 </h1>
               </div>
               <p className="text-primary-600 text-sm">
