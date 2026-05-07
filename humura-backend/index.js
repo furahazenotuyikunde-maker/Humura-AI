@@ -436,7 +436,7 @@ app.post('/api/doctor/generate-report', async (req, res) => {
     {
       "mood_trend": "improving" | "stable" | "declining",
       "avg_mood_score": number,
-      "ai_summary": "A 2-3 sentence clinical overview of the patient's current state.",
+      "ai_summary": "A 3-4 sentence clinical progress summary of the patient's current state.",
       "recommendations": ["specific clinical step 1", "specific clinical step 2"]
     }`;
 
