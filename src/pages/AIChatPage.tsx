@@ -164,6 +164,9 @@ export default function AIChatPage() {
       });
       if (!response.ok) throw new Error('Backend offline');
       const data = await response.json();
+      if (data.reply && data.reply.includes('usage limit')) {
+        throw new Error('Backend rate limited');
+      }
       addAIMessage(data.reply, newMessages);
     } catch (err: any) {
       if (err.name === 'AbortError') return;

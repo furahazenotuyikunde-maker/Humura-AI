@@ -173,11 +173,7 @@ export default function ProgressPage() {
       if (text.trim().startsWith('{')) {
         const result = JSON.parse(text);
         if (result.rateLimited) {
-          setAnalysis({
-            summary: isRw ? result.summaryRw : result.summary,
-            recommendations: []
-          });
-          return;
+          throw new Error('Backend rate limited');
         }
         setAnalysis({
           summary: result.summary,

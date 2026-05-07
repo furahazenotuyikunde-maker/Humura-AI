@@ -343,6 +343,9 @@ export default function SignLanguagePage() {
       }
 
       const dataResult = await response.json();
+      if (dataResult.reply && dataResult.reply.includes('usage limit')) {
+        throw new Error('Backend rate limited');
+      }
       setAiResponse(dataResult.reply);
     } catch (err: any) {
       console.error('[RENDER] ✖ Error, trying direct fallback:', err.message);
