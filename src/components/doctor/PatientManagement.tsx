@@ -40,6 +40,11 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
   // Options Dropdown State
   const [showOptions, setShowOptions] = useState(false);
 
+  // Edit Profile State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Partial<Patient>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -114,6 +119,43 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
       showToast(err.message);
     } finally {
       setIsAdding(null);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editingPatient.id) return;
+    setIsSaving(true);
+    try {
+      if (editingPatient.location !== undefined) {
+        await supabase
+          .from('profiles')
+          .update({ location: editingPatient.location })
+          .eq('id', editingPatient.id);
+      }
+      
+      const patientUpdates: any = {};
+      if (editingPatient.diagnosis !== undefined) patientUpdates.primary_concern = editingPatient.diagnosis;
+      if (editingPatient.status !== undefined) patientUpdates.status = editingPatient.status;
+
+      if (Object.keys(patientUpdates).length > 0) {
+        await supabase
+          .from('patients')
+          .update(patientUpdates)
+          .eq('id', editingPatient.id);
+      }
+
+      showToast("Profile updated successfully!");
+      setShowEditModal(false);
+      
+      if (selectedPatient && selectedPatient.id === editingPatient.id) {
+        setSelectedPatient({ ...selectedPatient, ...editingPatient as Patient });
+      }
+
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      showToast(err.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -257,7 +299,7 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
                     </button>
                     {showOptions && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-primary-50 overflow-hidden z-10 py-2">
-                        <button onClick={() => { showToast("Edit Profile clicked"); setShowOptions(false); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-primary-900 hover:bg-primary-50 transition-colors">Edit Profile</button>
+                        <button onClick={() => { setEditingPatient(selectedPatient || {}); setShowEditModal(true); setShowOptions(false); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-primary-900 hover:bg-primary-50 transition-colors">Edit Profile</button>
                         <button onClick={() => { showToast("Discharge clicked"); setShowOptions(false); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-primary-900 hover:bg-primary-50 transition-colors">Discharge Patient</button>
                         <div className="h-px bg-primary-50 my-1"></div>
                         <button onClick={() => { showToast("Removed from caseload"); setShowOptions(false); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors">Remove from Caseload</button>
@@ -409,6 +451,90 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
                     </div>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Patient Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowEditModal(false)}
+              className="absolute inset-0 bg-primary-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl border border-primary-50 p-8 overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-primary-900">Edit Profile</h3>
+                  <p className="text-xs font-bold text-primary-400">Update clinical information for {editingPatient.name}</p>
+                </div>
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  className="p-3 bg-neutral-50 text-primary-400 rounded-2xl hover:bg-primary-50 hover:text-primary transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-primary-300 uppercase mb-1">Diagnosis</label>
+                  <input 
+                    type="text" 
+                    value={editingPatient.diagnosis || ''} 
+                    onChange={e => setEditingPatient({...editingPatient, diagnosis: e.target.value})}
+                    className="w-full px-4 py-3 bg-neutral-50 border-2 border-transparent focus:border-primary/20 rounded-xl outline-none font-bold text-primary-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-primary-300 uppercase mb-1">Location</label>
+                  <input 
+                    type="text" 
+                    value={editingPatient.location || ''} 
+                    onChange={e => setEditingPatient({...editingPatient, location: e.target.value})}
+                    className="w-full px-4 py-3 bg-neutral-50 border-2 border-transparent focus:border-primary/20 rounded-xl outline-none font-bold text-primary-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-primary-300 uppercase mb-1">Risk Level</label>
+                  <select 
+                    value={editingPatient.risk || 'low'} 
+                    onChange={e => setEditingPatient({...editingPatient, risk: e.target.value as any})}
+                    className="w-full px-4 py-3 bg-neutral-50 border-2 border-transparent focus:border-primary/20 rounded-xl outline-none font-bold text-primary-900"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-primary-300 uppercase mb-1">Status</label>
+                  <select 
+                    value={editingPatient.status || 'active'} 
+                    onChange={e => setEditingPatient({...editingPatient, status: e.target.value})}
+                    className="w-full px-4 py-3 bg-neutral-50 border-2 border-transparent focus:border-primary/20 rounded-xl outline-none font-bold text-primary-900"
+                  >
+                    <option value="active">Active</option>
+                    <option value="discharged">Discharged</option>
+                  </select>
+                </div>
+
+                <button 
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="w-full mt-6 px-6 py-4 bg-primary text-white text-sm font-black uppercase rounded-2xl hover:scale-[1.02] transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={20} /> : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </div>
