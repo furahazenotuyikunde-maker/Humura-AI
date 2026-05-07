@@ -149,7 +149,7 @@ export default function AIChatPage() {
     setAbortController(controller);
 
     try {
-      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || '').replace(/\/$/, '');
+      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -177,8 +177,8 @@ export default function AIChatPage() {
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
             body: JSON.stringify({
-              // ✅ system_instruction is the correct Gemini field — NOT a contents entry
-              system_instruction: {
+              // ✅ systemInstruction is the correct Gemini field — NOT a contents entry
+              systemInstruction: {
                 parts: [{ text: `You are Humura AI, a compassionate CBT therapy companion in Rwanda. CRITICAL: Respond EXCLUSIVELY in ${isRw ? 'Kinyarwanda' : 'English'}. Never mix languages. Be empathetic and professional. Always remember and build upon everything the user has shared in this conversation. If you detect a crisis, ALWAYS direct them to call the Rwanda National Mental Health Hotline at 114.` }]
               },
               contents: (() => {

@@ -199,8 +199,9 @@ export default function SignLanguagePage() {
       formData.append("lang", lang);
 
       try {
+        const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
         // 4. Send via fetch (Do NOT set Content-Type header manually)
-        const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-sign`, {
+        const response = await fetch(`${backendUrl}/analyze-sign`, {
           method: 'POST',
           body: formData
         });
@@ -325,7 +326,8 @@ export default function SignLanguagePage() {
     try {
       console.log('[GEMINI] ▶ Request fired (Sign) | timestamp=' + Date.now());
 
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+      const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+      const response = await fetch(`${backendUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -463,7 +465,8 @@ export default function SignLanguagePage() {
         formData.append("prompt", `Pick ONE exact keyword from this list that best matches the user's gesture: [${signs.map(s => s.id).join(', ')}]. If none, output "none". Respond ONLY with the keyword.`);
 
         try {
-          const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/analyze-sign`, {
+          const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+          const response = await fetch(`${backendUrl}/analyze-sign`, {
             method: 'POST',
             body: formData
           });
