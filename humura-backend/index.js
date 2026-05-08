@@ -283,7 +283,8 @@ app.post('/api/crisis/trigger', async (req, res) => {
         const prompt = `Patient in Rwanda triggered SOS. Last message: "${lastMsg}". 
         Return JSON only: { "risk_level": "low"|"medium"|"high", "reason": "string" }`;
         const result = await callGemini(prompt);
-        const assessment = JSON.parse(result.replace(/```json|```/g, '').trim());
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        const assessment = jsonMatch ? JSON.parse(jsonMatch[0]) : { risk_level: 'medium', reason: 'Failed to parse AI response' };
         
         await supabase.from('crisis_events').update({ risk_level: assessment.risk_level }).eq('id', event.data.id);
         io.to(`doctor:${doctorId}`).emit('patient:risk_updated', { patient_id: patientId, risk_level: assessment.risk_level });
@@ -448,7 +449,9 @@ app.post('/api/doctor/generate-report', async (req, res) => {
     }`;
 
     const text = await callGemini(prompt);
-    const reportData = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Gemini returned no JSON");
+    const reportData = JSON.parse(jsonMatch[0]);
     
     // Save the generated report
     const { data: savedReport, error: insertError } = await supabase.from('progress_reports').insert([{
