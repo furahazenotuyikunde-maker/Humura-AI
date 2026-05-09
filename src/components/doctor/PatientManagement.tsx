@@ -23,9 +23,11 @@ interface PatientManagementProps {
   patients?: Patient[];
   doctorId?: string;
   onRefresh?: () => void;
+  onStartSession?: (patientId: string) => void;
+  onViewHistory?: (patientId: string) => void;
 }
 
-export default function PatientManagement({ patients = [], doctorId, onRefresh }: PatientManagementProps) {
+export default function PatientManagement({ patients = [], doctorId, onRefresh, onStartSession, onViewHistory }: PatientManagementProps) {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<string | null>(null);
@@ -351,8 +353,8 @@ export default function PatientManagement({ patients = [], doctorId, onRefresh }
                 <div className="pt-6 border-t border-primary-50">
                    <h3 className="text-xs font-black text-primary-900 uppercase tracking-widest mb-3">Quick Actions</h3>
                    <div className="grid grid-cols-2 gap-3">
-                     <button className="py-3 bg-primary text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-primary/20">Start Session</button>
-                     <button className="py-3 bg-white border border-primary-200 text-primary text-[10px] font-black uppercase rounded-xl">View History</button>
+                     <button onClick={() => onStartSession && onStartSession(selectedPatient.id)} className="py-3 bg-primary text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95">Start Session</button>
+                     <button onClick={() => onViewHistory && onViewHistory(selectedPatient.id)} className="py-3 bg-white border border-primary-200 text-primary text-[10px] font-black uppercase rounded-xl hover:bg-primary-50 transition-colors">View History</button>
                    </div>
                 </div>
               </div>
