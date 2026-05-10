@@ -285,8 +285,8 @@ export default function AuthPage() {
 
         {/* Tightened Language Selector */}
         <div className="flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 rounded-xl p-0.5">
-          <button onClick={() => i18n.changeLanguage('en')} className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${!isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>EN</button>
-          <button onClick={() => i18n.changeLanguage('rw')} className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>RW</button>
+          <button onClick={() => i18n.changeLanguage('en')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${!isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>English</button>
+          <button onClick={() => i18n.changeLanguage('rw')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>Kinyarwanda</button>
         </div>
       </div>
 
