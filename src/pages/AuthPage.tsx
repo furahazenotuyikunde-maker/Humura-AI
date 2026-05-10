@@ -298,8 +298,8 @@ export default function AuthPage() {
             {/* 1. Brand Column */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#16372E] flex items-center justify-center shadow-lg border border-[#1F4B3F]">
-                  <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain brightness-200 opacity-80" />
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md border border-white p-1.5">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-lg font-bold tracking-tight">Humura AI</h3>
               </div>
