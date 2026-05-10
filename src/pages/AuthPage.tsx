@@ -290,56 +290,126 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* CONDENSED BOTTOM SECTION: Concise Footer */}
-      <footer className="bg-[#0C2620] text-white pt-12 pb-6 px-6 border-t border-[#16372E]">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      {/* BOTTOM LANDSCAPE SECTION: Detailed Footer - Fully Restored Content */}
+      <footer className="bg-[#0C2620] text-white pt-12 pb-8 px-6 border-t border-[#16372E]">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             
             {/* 1. Brand Column */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#16372E] flex items-center justify-center shadow-md border border-[#1F4B3F]">
-                  <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain brightness-200 opacity-70" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#16372E] flex items-center justify-center shadow-lg border border-[#1F4B3F]">
+                  <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain brightness-200 opacity-80" />
                 </div>
-                <h3 className="text-lg font-bold">Humura AI</h3>
+                <h3 className="text-lg font-bold tracking-tight">Humura AI</h3>
               </div>
-              <p className="text-[#83A098] text-xs leading-relaxed">
-                Inclusive mental health support bridging the wellness gap for Rwanda.
+              <p className="text-[#83A098] text-xs leading-relaxed font-medium">
+                A bilingual mental health ecosystem providing inclusive and empathetic support — bridging the wellness gap for the entire Rwandan community.
               </p>
             </div>
 
-            {/* 2. Core Services */}
+            {/* 2. Core Services Column */}
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-wider">Core Services</h4>
-              <ul className="space-y-2 text-[11px] text-[#E2EEEC]">
-                <li className="flex items-center gap-2 opacity-80"><MessageCircle size={12} className="text-[#21B48D]"/> CBT Therapy</li>
-                <li className="flex items-center gap-2 opacity-80"><Globe size={12} className="text-[#21B48D]"/> Sign Language</li>
-                <li className="flex items-center gap-2 opacity-80"><Shield size={12} className="text-[#21B48D]"/> Braille Generator</li>
+              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Core Services</h4>
+              <ul className="space-y-2.5 text-[11px] font-medium text-[#E2EEEC]">
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <MessageCircle size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Empathetic CBT therapy
+                </li>
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <Globe size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Sign language support
+                </li>
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <Shield size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Braille document tool
+                </li>
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <Globe size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Language translator
+                </li>
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <CheckCircle2 size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  AI progress insights
+                </li>
+                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
+                  <Zap size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Emergency help (114)
+                </li>
               </ul>
             </div>
 
-            {/* 3. Innovations */}
+            {/* 3. Innovations Column */}
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-wider">Innovations</h4>
-              <ul className="space-y-2 text-[11px] text-[#E2EEEC]">
-                <li className="flex items-center gap-2 opacity-80"><Cpu size={12} className="text-[#21B48D]"/> Gemini 2.5 Flash</li>
-                <li className="flex items-center gap-2 opacity-80"><Server size={12} className="text-[#21B48D]"/> Supabase Backend</li>
+              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Innovations</h4>
+              <ul className="space-y-2.5 text-[11px] font-medium text-[#E2EEEC]">
+                <li className="flex items-start gap-2.5">
+                  <Server size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Next.js & Supabase stack
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CloudLightning size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Render cloud backend
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Cpu size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Gemini 2.5 Flash
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Server size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Supabase Edge
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Eye size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Sign language vision AI
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <MessageCircle size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
+                  Multi-turn AI memory
+                </li>
               </ul>
             </div>
 
-            {/* 4. Quick Voices */}
-            <div className="bg-[#12322A] border border-[#1C453A] rounded-xl p-3.5">
-               <p className="italic text-[11px] text-[#E2EEEC]">"Inclusive tech has made a real difference for our family."</p>
-               <p className="text-[9px] font-black uppercase text-[#21B48D] tracking-wider mt-2">— FAMILY SUPPORT</p>
+            {/* 4. Community Voices Column */}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Community Voices</h4>
+              <div className="space-y-3">
+                <div className="bg-[#12322A] border border-[#1C453A] rounded-xl p-3">
+                  <p className="italic text-[11px] text-[#E2EEEC]">"This platform gave me a new perspective on life."</p>
+                  <p className="text-[9px] font-black uppercase text-[#21B48D] tracking-wider mt-1.5">— COMMUNITY</p>
+                </div>
+                <div className="bg-[#12322A] border border-[#1C453A] rounded-xl p-3">
+                  <p className="italic text-[11px] text-[#E2EEEC]">"The technology has made a difference for our family."</p>
+                  <p className="text-[9px] font-black uppercase text-[#21B48D] tracking-wider mt-1.5">— FAMILY</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Compact Bottom Bar */}
+          {/* Divider & Middle Bar */}
+          <div className="py-6 border-t border-[#16372E] flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="space-y-0.5 text-center md:text-left">
+              <h5 className="font-bold text-xs text-[#E2EEEC]">Stay connected with Humura AI</h5>
+              <p className="text-[#83A098] text-[10px]">Updates on features and community news.</p>
+            </div>
+            <div className="w-full md:w-auto flex gap-2 bg-white rounded-xl overflow-hidden p-1 pr-1.5 max-w-sm">
+              <input 
+                type="email" 
+                placeholder="Email address" 
+                className="flex-1 px-3 py-1.5 bg-transparent outline-none text-slate-800 text-xs font-medium placeholder:text-slate-400 w-full md:w-48"
+              />
+              <button className="bg-[#0C2620] hover:bg-[#12322A] text-[#21B48D] px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors">
+                Subscribe
+              </button>
+            </div>
+          </div>
+
+          {/* Final Bottom Bar */}
           <div className="border-t border-[#16372E] pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-[9px] font-bold uppercase tracking-wide text-[#5F7C74]">
-              © {new Date().getFullYear()} HUMURA AI
+            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[#5F7C74]">
+              © {new Date().getFullYear()} HUMURA AI · MIND SUPPORTED, LIFE EMPOWERED
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <SocialIcon Icon={Facebook} />
               <SocialIcon Icon={Twitter} />
               <SocialIcon Icon={Instagram} />
@@ -352,8 +422,16 @@ export default function AuthPage() {
   );
 }
 
+// Utility for icons used in the innovations block that don't come by default in standard Lucide under same name
+const CloudLightning = ({ size, className }: { size: number, className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973" />
+    <path d="m13 12-3 5h4l-3 5" />
+  </svg>
+);
+
 const SocialIcon = ({ Icon }: { Icon: any }) => (
-  <a href="#" className="w-7 h-7 rounded-lg bg-[#16372E] border border-[#1F4B3F] flex items-center justify-center text-[#83A098] hover:text-[#21B48D] transition-all cursor-pointer">
+  <a href="#" className="w-7 h-7 rounded-lg bg-[#16372E] border border-[#1F4B3F] flex items-center justify-center text-[#83A098] hover:text-[#21B48D] hover:border-[#21B48D] transition-all cursor-pointer">
     <Icon size={12} />
   </a>
 );
