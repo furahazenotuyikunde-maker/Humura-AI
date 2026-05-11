@@ -13,8 +13,8 @@ type UserRole = 'patient' | 'doctor';
 
 const SLIDES = [
   { url: '/welcome.jpg', caption: 'Taking the first step is an act of courage.', rw: '"Gufata intambwe ya mbere ni igikorwa cy\'ubwari."' },
-  { url: 'https://images.unsplash.com/photo-1651522003310-8b0d4a946b53?auto=format&fit=crop&q=80&w=1200', caption: 'Safe, inclusive spaces for open conversations.', rw: 'Ahantu hatekanye, hasanzuye ho kuganira.' },
-  { url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1200', caption: 'You are not alone. We support you together.', rw: 'Nturi wenyine. Turagushyigikiye hamwe.' }
+  { url: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=1200', caption: 'Safe, inclusive spaces for open conversations.', rw: 'Ahantu hatekanye, hasanzuye ho kuganira.' },
+  { url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200', caption: 'You are not alone. We support you together.', rw: 'Nturi wenyine. Turagushyigikiye hamwe.' }
 ];
 
 export default function AuthPage() {
@@ -37,7 +37,7 @@ export default function AuthPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveSlide(curr => (curr + 1) % SLIDES.length);
-    }, 5000);
+    }, 3000); // Increased speed to 3 seconds
     return () => clearInterval(timer);
   }, []);
 
@@ -331,7 +331,7 @@ export default function AuthPage() {
                   onError={(e) => {
                     if (activeSlide === 0) {
                       // If welcome.jpg isn't synced yet, show high-res representation immediately
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1516533075015-a3838414c3eb?auto=format&fit=crop&q=80&w=1200';
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1607990281513-2c110a25bb8c?auto=format&fit=crop&q=80&w=1200';
                     }
                   }}
                 />
