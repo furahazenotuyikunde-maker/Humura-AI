@@ -26,3 +26,8 @@ dist-ssr
 .env.local
 .env.*.local
 scratch/
+
+# Local development utilities
+import_welcome_image.bat
+push_changes.bat
+do_push.js
