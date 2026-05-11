@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,12 @@ import { useTranslation } from 'react-i18next';
 
 type AuthMode = 'login' | 'signup';
 type UserRole = 'patient' | 'doctor';
+
+const SLIDES = [
+  { url: '/welcome.jpg', caption: 'Taking the first step is an act of courage.', rw: '"Gufata intambwe ya mbere ni igikorwa cy\'ubwari."' },
+  { url: 'https://images.unsplash.com/photo-1651522003310-8b0d4a946b53?auto=format&fit=crop&q=80&w=1200', caption: 'Safe, inclusive spaces for open conversations.', rw: 'Ahantu hatekanye, hasanzuye ho kuganira.' },
+  { url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1200', caption: 'You are not alone. We support you together.', rw: 'Nturi wenyine. Turagushyigikiye hamwe.' }
+];
 
 export default function AuthPage() {
   const { i18n } = useTranslation();
@@ -26,6 +32,15 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide(curr => (curr + 1) % SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Doctor-specific fields
   const [specialisations, setSpecialisations] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>(['en']);
@@ -283,7 +298,7 @@ export default function AuthPage() {
           </div>
         </motion.div>
 
-        {/* Mental Health Support Landscape Image */}
+        {/* Mental Health Support Dynamic Carousel */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -293,35 +308,67 @@ export default function AuthPage() {
           {/* Decorative Soft Glow */}
           <div className="absolute -inset-4 bg-gradient-to-br from-[#21B48D]/15 to-transparent blur-3xl opacity-60 rounded-[3rem] pointer-events-none" />
           
-          <div className="relative rounded-[2rem] overflow-hidden shadow-[0_25px_50px_-15px_rgba(27,54,49,0.12)] border-4 border-white aspect-[16/10] sm:aspect-[16/9]">
-            {/* Top Blending Fade Overlay */}
-            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[#F1F7F5]/80 to-transparent z-10 pointer-events-none" />
-            
-            {/* Subtle Warm Tint Filter to respect brand colors */}
-            <div className="absolute inset-0 bg-[#21B48D]/5 mix-blend-color-burn pointer-events-none z-10" />
+          <div className="relative rounded-[2rem] overflow-hidden shadow-[0_25px_50px_-15px_rgba(27,54,49,0.12)] border-4 border-white aspect-[16/10] sm:aspect-[16/9] bg-[#1B3631]">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={activeSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+                className="absolute inset-0"
+              >
+                {/* Top Blending Fade Overlay */}
+                <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[#F1F7F5]/80 to-transparent z-10 pointer-events-none" />
+                
+                {/* Subtle Warm Tint Filter */}
+                <div className="absolute inset-0 bg-[#21B48D]/5 mix-blend-color-burn pointer-events-none z-10" />
 
-            <img 
-              src="/welcome.jpg" 
-              alt="A person receiving compassionate mental health support during a one-on-one session"
-              className="w-full h-full object-cover object-center transform transition-transform duration-[2s] group-hover:scale-105 ease-out"
-              onError={(e) => {
-                // Fallback placeholder if image loading takes a few seconds to init via config copy
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=1000';
-              }}
-            />
-            
-            {/* Bottom Information Scrim Overlay */}
-            <div className="absolute inset-x-0 bottom-0 p-6 pt-16 bg-gradient-to-t from-[#0C2620] via-[#0C2620]/80 to-transparent z-20 flex flex-col justify-end">
-              <div className="flex items-center gap-2 mb-1.5 opacity-90">
-                <div className="w-1.5 h-1.5 bg-[#21B48D] rounded-full animate-pulse" />
-                <span className="text-[#21B48D] text-[9px] font-black uppercase tracking-[0.2em]">Humura Connection</span>
-              </div>
-              <h3 className="text-white font-black text-base sm:text-lg leading-tight tracking-tight drop-shadow-sm">
-                {isRw ? '"Gufata intambwe ya mbere ni igikorwa cy\'ubwari."' : '"Taking the first step is an act of courage."'}
-              </h3>
-              <p className="text-[#83A098] text-[10px] font-bold mt-1 tracking-wide">
-                {isRw ? 'Ubufasha buhoraho, ikiganiro ku kindi.' : 'Compassionate care, one conversation at a time.'}
-              </p>
+                <img 
+                  src={SLIDES[activeSlide].url} 
+                  alt={SLIDES[activeSlide].caption}
+                  className="w-full h-full object-cover object-center"
+                  onError={(e) => {
+                    if (activeSlide === 0) {
+                      // If welcome.jpg isn't synced yet, show high-res representation immediately
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1516533075015-a3838414c3eb?auto=format&fit=crop&q=80&w=1200';
+                    }
+                  }}
+                />
+                
+                {/* Bottom Information Scrim Overlay */}
+                <div className="absolute inset-x-0 bottom-0 p-6 pt-16 bg-gradient-to-t from-[#0C2620] via-[#0C2620]/85 to-transparent z-20 flex flex-col justify-end">
+                  <motion.div 
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center gap-2 mb-1.5 opacity-90"
+                  >
+                    <div className="w-1.5 h-1.5 bg-[#21B48D] rounded-full animate-pulse" />
+                    <span className="text-[#21B48D] text-[9px] font-black uppercase tracking-[0.2em]">Humura Support</span>
+                  </motion.div>
+                  
+                  <motion.h3 
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-white font-black text-base sm:text-lg leading-tight tracking-tight drop-shadow-sm max-w-[90%]"
+                  >
+                    {isRw ? SLIDES[activeSlide].rw : `"${SLIDES[activeSlide].caption}"`}
+                  </motion.h3>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Carousel Pagination Dots */}
+            <div className="absolute bottom-6 right-6 z-30 flex gap-1.5">
+              {SLIDES.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveSlide(idx)}
+                  className={`h-1 rounded-full transition-all duration-300 ${idx === activeSlide ? 'w-5 bg-[#21B48D]' : 'w-1.5 bg-white/40 hover:bg-white/60'}`}
+                />
+              ))}
             </div>
           </div>
         </motion.div>
