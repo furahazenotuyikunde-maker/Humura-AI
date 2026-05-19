@@ -228,6 +228,7 @@ export const Shell: React.FC<ShellProps> = () => {
         { index: true, to: '/', icon: Home, label: t('nav.home') },
         { to: '/meet-professional', icon: ShieldCheck, label: isRw ? 'Inzobere mu buzima' : 'Meet Mental Health Professional' },
         { to: '/chat', icon: MessageCircle, label: t('nav.chat') },
+        { to: '/community', icon: Users, label: t('nav.community') },
         { to: '/progress', icon: BarChart2, label: t('nav.progress') },
         { to: '/notifications', icon: Bell, label: isRw ? 'Imenyesha' : 'Notifications' },
         ...(role === 'doctor' ? [{ to: '/doctor', icon: Activity, label: isRw ? 'Ibiro bya Muganga' : 'Doctor Dashboard' }] : []),

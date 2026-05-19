@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, MessageCircle, ShieldCheck, BarChart2, BookOpen, 
   MapPin, HandMetal, Type, Languages, AlertTriangle, 
-  ChevronRight, Heart, Star, Compass
+  ChevronRight, Heart, Star, Compass, Users
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -40,6 +40,11 @@ export default function Home() {
       title: isRw ? 'Ikiganiro na Humura' : 'Chat with Humura', 
       desc: isRw ? 'Ubufasha bwa AI bugufasha buri gihe' : '24/7 empathetic AI companion',
       icon: MessageCircle, color: 'bg-primary', path: '/chat' 
+    },
+    { 
+      title: isRw ? 'urubuga rwo kugirana inama' : 'WhatsApp Community', 
+      desc: isRw ? 'Fatanya n’abandi mu matsinda y’ubujyanama' : 'Join our supportive, anonymous peer groups',
+      icon: Users, color: 'bg-green-600', path: '/community' 
     },
     { 
       title: isRw ? 'Iterambere Rwanjye' : 'My Progress', 
