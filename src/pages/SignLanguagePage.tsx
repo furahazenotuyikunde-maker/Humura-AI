@@ -58,6 +58,23 @@ const CATEGORY_CONFIG = {
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
+// Helper function to check if the captured frame is entirely black/blank
+const isImageBlank = (context: CanvasRenderingContext2D, width: number, height: number): boolean => {
+  try {
+    const buffer = context.getImageData(0, 0, width, height).data;
+    // Check a sample of pixels to see if they are all black or close to black
+    // Checking every 40th pixel for performance
+    for (let i = 0; i < buffer.length; i += 40) {
+      if (buffer[i] > 15 || buffer[i + 1] > 15 || buffer[i + 2] > 15) {
+        return false; // Found a pixel that is not black
+      }
+    }
+    return true; // All sampled pixels are black
+  } catch (e) {
+    return false; // If getImageData fails, don't block
+  }
+};
+
 // ──────────────────────────────────────────────────────────────
 // COMPONENT
 // ──────────────────────────────────────────────────────────────
@@ -155,6 +172,13 @@ export default function SignLanguagePage() {
     // 1. Capture Frame from Video with Guards
     const video = videoRef.current;
 
+    // Wait up to 2 seconds for video metadata and readyState to be ready
+    let waitAttempts = 0;
+    while ((video.videoWidth === 0 || video.readyState < 3) && waitAttempts < 20) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      waitAttempts++;
+    }
+
     // GUARD: Video stream not ready
     if (!video || video.readyState < 2 || video.videoWidth === 0) {
       setErrorMessage(isRw ? "Kamera ntiyiteguye, tegereza akanya" : "Camera not ready, please wait");
@@ -171,7 +195,20 @@ export default function SignLanguagePage() {
       isSendingRef.current = false;
       return;
     }
-    ctx.drawImage(video, 0, 0);
+
+    // Capture with retry if image is black/blank
+    let captureAttempts = 0;
+    const maxAttempts = 10;
+    const captureFrame = async () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (isImageBlank(ctx, canvas.width, canvas.height) && captureAttempts < maxAttempts) {
+        captureAttempts++;
+        console.log(`Captured frame is black, retrying in 150ms... (Attempt ${captureAttempts}/${maxAttempts})`);
+        await new Promise(resolve => setTimeout(resolve, 150));
+        await captureFrame();
+      }
+    };
+    await captureFrame();
 
     // 2. Use canvas.toBlob() (NOT toDataURL)
     canvas.toBlob(async (blob) => {
@@ -440,6 +477,20 @@ export default function SignLanguagePage() {
     try {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+
+      // Wait up to 2 seconds for video metadata and readyState to be ready
+      let waitAttempts = 0;
+      while ((video.videoWidth === 0 || video.readyState < 3) && waitAttempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        waitAttempts++;
+      }
+
+      if (video.videoWidth === 0 || video.readyState < 2) {
+        setIsDetecting(false);
+        isSendingRef.current = false;
+        return;
+      }
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
@@ -448,13 +499,21 @@ export default function SignLanguagePage() {
         return;
       }
 
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      // Capture with retry if image is black/blank
+      let captureAttempts = 0;
+      const maxAttempts = 10;
+      const captureFrame = async () => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (isImageBlank(ctx, canvas.width, canvas.height) && captureAttempts < maxAttempts) {
+          captureAttempts++;
+          console.log(`Auto-detect: Captured frame is black, retrying in 150ms... (Attempt ${captureAttempts}/${maxAttempts})`);
+          await new Promise(resolve => setTimeout(resolve, 150));
+          await captureFrame();
+        }
+      };
+      await captureFrame();
 
       console.log('[GEMINI] ▶ Request fired (Auto-Detect) | timestamp=' + Date.now());
-
-      // Capture Frame to Blob
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob(async (blob) => {
         if (!blob || blob.size === 0) {
@@ -494,7 +553,6 @@ export default function SignLanguagePage() {
       }, 'image/jpeg', 0.5);
     } catch (e: any) {
       console.error('[GEMINI] ✖ Error:', e.message);
-    } finally {
       setIsDetecting(false);
       isSendingRef.current = false;
     }
