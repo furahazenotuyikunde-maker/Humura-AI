@@ -6,23 +6,45 @@ const axios = require('axios');
  */
 async function callGemini(prompt) {
   try {
-    const res = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
+    let res;
+    try {
+      res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          }
         }
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
+      );
+    } catch (e) {
+      console.warn("Primary REST model gemini-2.5-flash failed, trying fallback gemini-1.5-flash:", e.message);
+      res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          }
         }
-      }
-    );
+      );
+    }
 
     return res.data.candidates[0].content.parts[0].text;
   } catch (error) {

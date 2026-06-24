@@ -30,7 +30,20 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // 2. Initialize Clients
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+const primaryModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const geminiModel = {
+  generateContent: async (options) => {
+    try {
+      return await primaryModel.generateContent(options);
+    } catch (e) {
+      console.warn("Primary SDK model gemini-3-flash-preview failed, trying fallback gemini-1.5-flash:", e.message);
+      return await fallbackModel.generateContent(options);
+    }
+  }
+};
 
 const handleApiError = (res, error) => {
   const isRateLimit = error.message?.includes('429') || error.message?.toLowerCase().includes('quota') || error.message?.includes('Too Many Requests');

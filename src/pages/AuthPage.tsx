@@ -84,7 +84,7 @@ export default function AuthPage() {
           .from('profiles')
           .select('role')
           .eq('id', signInData.user?.id)
-          .single();
+          .maybeSingle();
       
         const userRole = prof?.role || 'patient';
         navigate(userRole === 'doctor' ? '/doctor' : '/');

@@ -399,7 +399,8 @@ export default function DoctorDashboard() {
     setIsAiThinking(true);
     setAiResponse('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/chat`, {
+      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -407,15 +408,109 @@ export default function DoctorDashboard() {
           history: []
         })
       });
+      if (!response.ok) throw new Error('Backend error or offline');
       const data = await response.json();
+      if (!data || data.success === false || !data.reply) {
+        throw new Error(data?.error || 'Empty response');
+      }
       setAiResponse(data.reply);
       setAiQuestion('');
     } catch (err: any) {
-      showToast(isRw ? "AI ntishoboye gusubiza" : "AI failed to respond", 'error');
+      console.warn("Backend chat failed, trying direct Gemini API fallback:", err.message);
+      try {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error('No Gemini API Key found in environment');
+
+        let fallbackRes;
+        try {
+          fallbackRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  role: 'user',
+                  parts: [{
+                    text: `CLINICAL QUERY FROM DOCTOR: ${aiQuestion}\n\nContext: You are helping a mental health professional in Rwanda. Provide evidence-based clinical guidance.`
+                  }]
+                }],
+                systemInstruction: {
+                  parts: [{
+                    text: "You are Humura AI, a senior clinical advisor helping mental health professionals in Rwanda. Provide evidence-based, concise, professional clinical guidance."
+                  }]
+                }
+              })
+            }
+          );
+        } catch (e) {
+          // If the preview model endpoint throws, catch and retry with standard 1.5 flash
+          fallbackRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  role: 'user',
+                  parts: [{
+                    text: `CLINICAL QUERY FROM DOCTOR: ${aiQuestion}\n\nContext: You are helping a mental health professional in Rwanda. Provide evidence-based clinical guidance.`
+                  }]
+                }],
+                systemInstruction: {
+                  parts: [{
+                    text: "You are Humura AI, a senior clinical advisor helping mental health professionals in Rwanda. Provide evidence-based, concise, professional clinical guidance."
+                  }]
+                }
+              })
+            }
+          );
+        }
+
+        if (!fallbackRes.ok) {
+          // Retry directly with standard gemini-1.5-flash
+          const fallbackRes2 = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  role: 'user',
+                  parts: [{
+                    text: `CLINICAL QUERY FROM DOCTOR: ${aiQuestion}\n\nContext: You are helping a mental health professional in Rwanda. Provide evidence-based clinical guidance.`
+                  }]
+                }],
+                systemInstruction: {
+                  parts: [{
+                    text: "You are Humura AI, a senior clinical advisor helping mental health professionals in Rwanda. Provide evidence-based, concise, professional clinical guidance."
+                  }]
+                }
+              })
+            }
+          );
+          if (!fallbackRes2.ok) {
+            const errorData = await fallbackRes2.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `API error ${fallbackRes2.status}`);
+          }
+          fallbackRes = fallbackRes2;
+        }
+
+        const fbData = await fallbackRes.json();
+        const reply = fbData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!reply) throw new Error('No reply from Gemini fallback');
+        
+        setAiResponse(reply);
+        setAiQuestion('');
+      } catch (fallbackErr: any) {
+        console.error("All fallback attempts failed:", fallbackErr);
+        showToast(isRw ? `AI ntishoboye gusubiza: ${fallbackErr.message}` : `AI failed to respond: ${fallbackErr.message}`, 'error');
+      }
     } finally {
       setIsAiThinking(false);
     }
   };
+
 
   const toggleLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
