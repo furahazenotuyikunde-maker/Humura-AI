@@ -16,7 +16,7 @@ const SLIDES = [
     title_en: "Finally, all your care in one place.",
     title_rw: "Hanyuma, ubufasha bwawe bwose ahantu hamwe.",
     subtitle_en: "Compassionate therapy & clinical support in Rwanda.",
-    subtitle_rw: "Ubufasha bw'ubuzima bwo mu mutwe bufite impuhwe mu Rwanda."
+    subtitle_rw: "Ubufasha bw'ubuzima bwo mu mutwe mu Rwanda."
   },
   {
     image: '/login-health.jpg',
