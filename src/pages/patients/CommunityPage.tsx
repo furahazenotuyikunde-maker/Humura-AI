@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 
 const CommunityPage: React.FC = () => {
   useEffect(() => {
@@ -513,16 +512,7 @@ const CommunityPage: React.FC = () => {
         }
       `}</style>
 
-      {/* NAV */}
-      <nav className="comm-nav">
-        <div className="nav-logo">Humura<span>.</span>AI</div>
-        <ul className="nav-links">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/community" className="active">Community</Link></li>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Contact</a></li>
-        </ul>
-      </nav>
+
 
       {/* HERO */}
       <section className="hero">

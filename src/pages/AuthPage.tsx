@@ -1,26 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  Loader2, AlertCircle, Eye, EyeOff, User, Briefcase, Mail, Lock,
-  CheckCircle2, Globe, Shield, Server, Cpu, MessageCircle, Facebook, Twitter, Instagram, Linkedin, ArrowRight, Zap
+  Loader2, AlertCircle, Eye, EyeOff, User, Briefcase, ArrowLeft, ChevronLeft, ChevronRight, Heart
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type AuthMode = 'login' | 'signup';
 type UserRole = 'patient' | 'doctor';
 
+const SLIDES = [
+  {
+    image: '/login-healthcare.jpg',
+    title_en: "Finally, all your care in one place.",
+    title_rw: "Hanyuma, ubufasha bwawe bwose ahantu hamwe.",
+    subtitle_en: "Compassionate therapy & clinical support in Rwanda.",
+    subtitle_rw: "Ubufasha bw'ubuzima bwo mu mutwe bufite impuhwe mu Rwanda."
+  },
+  {
+    image: '/login-health.jpg',
+    title_en: "Mind supported, life empowered.",
+    title_rw: "Gushyigikira imitekerereze, gukomeza ubuzima.",
+    subtitle_en: "Cultivate inner peace and mental wellness daily.",
+    subtitle_rw: "Gukira, kwitekerezaho, no kugarura ituze mu mutima."
+  }
+];
+
 export default function AuthPage() {
   const { i18n } = useTranslation();
   const isRw = i18n.language?.startsWith('rw');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const queryMode = searchParams.get('mode') as AuthMode;
+  const queryRole = searchParams.get('role') as UserRole;
   
-  const [mode, setMode] = useState<AuthMode>('login');
-  const [role, setRole] = useState<UserRole>('patient');
+  const [mode, setMode] = useState<AuthMode>(queryMode === 'signup' ? 'signup' : 'login');
+  const [role, setRole] = useState<UserRole>(queryRole === 'doctor' ? 'doctor' : 'patient');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,6 +54,15 @@ export default function AuthPage() {
   const [yearsExperience, setYearsExperience] = useState('0');
 
   const specialisationOptions = ['Anxiety', 'Depression', 'Trauma', 'PTSD', 'Grief', 'Bipolar', 'Youth', 'Family'];
+
+  useEffect(() => {
+    if (queryRole === 'doctor' || queryRole === 'patient') {
+      setRole(queryRole);
+    }
+    if (queryMode === 'signup' || queryMode === 'login') {
+      setMode(queryMode);
+    }
+  }, [queryRole, queryMode]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +101,7 @@ export default function AuthPage() {
             });
           }
         }
-        navigate(role === 'patient' ? '/intake' : '/doctor');
+        window.location.href = role === 'patient' ? '/patient/intake' : '/professional/dashboard';
       } else {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -87,7 +117,7 @@ export default function AuthPage() {
           .maybeSingle();
       
         const userRole = prof?.role || 'patient';
-        navigate(userRole === 'doctor' ? '/doctor' : '/');
+        window.location.href = userRole === 'doctor' ? '/professional/dashboard' : '/patient/dashboard';
       }
     } catch (err: any) {
       setError(err.message);
@@ -96,342 +126,370 @@ export default function AuthPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col font-sans selection:bg-[#21B48D] selection:text-white">
-      
-      {/* TOP SECTION: Content and Form */}
-      <div className="flex-1 bg-[#F1F7F5] flex flex-col items-center py-8 px-6">
-        
-        {/* Main Header Logo Structure - Shrunk dimensions */}
-        <div className="text-center mb-6 space-y-2">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-[0_10px_30px_-12px_rgba(0,0,0,0.08)] p-2.5 mb-2"
-          >
-             <img src="/logo.png" alt="Humura AI Logo" className="w-full h-full object-contain" />
-          </motion.div>
-          
-          <h1 className="text-2xl font-black text-[#1B3631] tracking-tight font-display">
-            Humura AI
-          </h1>
-          <p className="text-[10px] font-black text-[#21B48D] tracking-[0.2em] uppercase">
-            {isRw ? 'GUSHYIGIKIRA IMITEKEREREZE, GUKOMEZA UBUZIMA' : 'MIND SUPPORTED, LIFE EMPOWERED'}
-          </p>
-        </div>
+  const handleSocialAuth = async (provider: 'google' | 'apple' | 'facebook') => {
+    try {
+      setError(null);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider as any,
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || `Failed to sign in with ${provider}`);
+    }
+  };
 
-        {/* AUTH CARD - Constricted Width */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-[380px] bg-white rounded-[2rem] shadow-[0_15px_50px_-12px_rgba(0,0,0,0.05)] border border-white overflow-hidden mb-8"
-        >
-          {/* Role Tabs Selection */}
-          <div className="flex border-b border-slate-100 relative">
-            <button 
-              onClick={() => setRole('patient')}
-              className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all duration-300 relative z-10`}
+  return (
+    <div className="min-h-screen sm:h-screen bg-[#F4F9F6] flex items-center justify-center p-2 sm:p-4 lg:p-6 font-poppins selection:bg-[#21B48D] selection:text-white overflow-y-auto sm:overflow-hidden">
+      
+      {/* ── MAIN SPLIT CONTAINER CARD (COMPACT HEIGHT - NO SCROLL) ── */}
+      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(21,60,50,0.08)] border border-[#E3EFE9] overflow-hidden grid grid-cols-1 lg:grid-cols-12 max-h-[96vh] my-auto">
+        
+        {/* ── LEFT COLUMN: AUTH FORM ── */}
+        <div className="lg:col-span-6 xl:col-span-6 p-5 sm:p-7 lg:p-8 flex flex-col justify-between overflow-y-auto scrollbar-none">
+          
+          {/* Top Bar: Back to Home & Language Switcher */}
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <a 
+              href="/" 
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#153C32]/70 hover:text-[#21B48D] transition-colors cursor-pointer group"
             >
-              <User size={16} className={role === 'patient' ? "text-[#21B48D]" : "text-slate-300"} />
-              <span className={`text-[10px] font-black uppercase tracking-wider ${role === 'patient' ? 'text-[#21B48D]' : 'text-slate-300'}`}>
-                {isRw ? 'Ushaka ubufasha' : 'SEEK SUPPORT'}
-              </span>
-              {role === 'patient' && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#21B48D] rounded-full" />}
-            </button>
-            <button 
-              onClick={() => setRole('doctor')}
-              className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all duration-300 relative z-10`}
-            >
-              <Briefcase size={16} className={role === 'doctor' ? "text-[#21B48D]" : "text-slate-300"} />
-              <span className={`text-[10px] font-black uppercase tracking-wider ${role === 'doctor' ? 'text-[#21B48D]' : 'text-slate-300'}`}>
-                {isRw ? 'Inzobere' : 'PROFESSIONAL'}
-              </span>
-              {role === 'doctor' && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#21B48D] rounded-full" />}
-            </button>
+              <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform text-[#21B48D]" />
+              <span>{isRw ? 'Ahabanza' : 'Home'}</span>
+            </a>
+
+            {/* Language Switcher Pill */}
+            <div className="flex items-center bg-[#E8F3EE] p-0.5 rounded-full border border-[#D5E6DE]">
+              <button 
+                type="button"
+                onClick={() => i18n.changeLanguage('en')} 
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${!isRw ? 'bg-[#153C32] text-white shadow-xs' : 'text-[#2D4E45] hover:text-[#153C32]'}`}
+              >
+                English
+              </button>
+              <button 
+                type="button"
+                onClick={() => i18n.changeLanguage('rw')} 
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${isRw ? 'bg-[#153C32] text-white shadow-xs' : 'text-[#2D4E45] hover:text-[#153C32]'}`}
+              >
+                Kinyarwanda
+              </button>
+            </div>
           </div>
 
-          {/* Form Container */}
-          <div className="p-6 sm:p-8 pt-6">
+          {/* Form Content Wrapper */}
+          <div className="my-auto max-w-sm mx-auto w-full py-1">
+            
+            {/* Main Heading */}
+            <div className="text-center mb-3 sm:mb-4">
+              <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#153C32] tracking-tight leading-tight">
+                {mode === 'login' ? (isRw ? 'Murakaza neza!' : 'Hello Again!') : (isRw ? 'Tangira ubu!' : 'Create Account')}
+              </h1>
+              <p className="text-[11px] sm:text-xs text-[#52786D] font-medium mt-1 leading-snug">
+                {mode === 'login'
+                  ? (isRw ? "Injira ukomeze urugendo rwawe rw'ubuzima bwo mu mutwe" : "Welcome back to your mental wellness space")
+                  : (isRw ? "Iyandikishe ubone ubufasha bwawe bwihariye" : "Let's get started with your healing journey")}
+              </p>
+            </div>
+
+            {/* Role Tabs Selection (Seek Support / Professional) */}
+            <div className="flex bg-[#F0F7F4] p-1 rounded-xl mb-3 sm:mb-4 border border-[#DCEBE3]">
+              <button 
+                type="button"
+                onClick={() => setRole('patient')}
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                  role === 'patient' 
+                    ? 'bg-white text-[#153C32] shadow-xs' 
+                    : 'text-[#5C8276] hover:text-[#153C32]'
+                }`}
+              >
+                <User size={13} className={role === 'patient' ? "text-[#21B48D]" : "text-[#5C8276]"} />
+                <span>{isRw ? 'Ushaka ubufasha' : 'Seek Support'}</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => setRole('doctor')}
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                  role === 'doctor' 
+                    ? 'bg-white text-[#153C32] shadow-xs' 
+                    : 'text-[#5C8276] hover:text-[#153C32]'
+                }`}
+              >
+                <Briefcase size={13} className={role === 'doctor' ? "text-[#21B48D]" : "text-[#5C8276]"} />
+                <span>{isRw ? 'Inzobere' : 'Professional'}</span>
+              </button>
+            </div>
+
+            {/* Error Notification */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 animate-shake">
-                <AlertCircle size={16} className="flex-shrink-0" />
-                <p className="text-[11px] font-bold tracking-tight leading-tight">{error}</p>
+              <div className="mb-2.5 p-2.5 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-[11px] font-semibold animate-shake">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                <p>{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleAuth} className="space-y-4">
+            {/* Form */}
+            <form onSubmit={handleAuth} className="space-y-2.5">
+              
               {mode === 'signup' && (
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-600 ml-1">
-                    {isRw ? 'Amazina' : 'Full Name'} <span className="text-[#21B48D]">*</span>
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={fullName} 
-                      onChange={e => setFullName(e.target.value)} 
-                      required
-                      placeholder={isRw ? "Andika amazina yawe" : "Enter your name"}
-                      className="w-full pl-4 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 focus:border-[#21B48D] outline-none font-medium text-slate-700 text-sm transition-shadow focus:shadow-[0_0_0_3px_rgba(33,180,141,0.08)] placeholder:text-slate-300"
-                    />
-                  </div>
+                <div>
+                  <input 
+                    type="text" 
+                    value={fullName} 
+                    onChange={e => setFullName(e.target.value)} 
+                    required
+                    placeholder={isRw ? "Amazina yawe yose" : "Full Name"}
+                    className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white border border-[#D2E4DC] focus:border-[#21B48D] outline-none font-medium text-slate-800 text-xs sm:text-sm transition-all focus:ring-2 focus:ring-[#21B48D]/15 placeholder:text-slate-400 shadow-2xs"
+                  />
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-600 ml-1">
-                  {isRw ? 'Imeli' : 'Email'} <span className="text-[#21B48D]">*</span>
-                </label>
-                <div className="relative group">
-                  <input 
-                    type="email" 
-                    value={email} 
-                    onChange={e => setEmail(e.target.value)} 
-                    required
-                    placeholder="you@example.com"
-                    className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-200 focus:border-[#21B48D] outline-none font-medium text-slate-700 text-sm transition-shadow focus:shadow-[0_0_0_3px_rgba(33,180,141,0.08)] placeholder:text-slate-300"
-                  />
-                  <Mail size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-[#21B48D] transition-colors" />
-                </div>
+              <div>
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  required
+                  placeholder={isRw ? "Imeli yawe" : "Email"}
+                  className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-white border border-[#D2E4DC] focus:border-[#21B48D] outline-none font-medium text-slate-800 text-xs sm:text-sm transition-all focus:ring-2 focus:ring-[#21B48D]/15 placeholder:text-slate-400 shadow-2xs"
+                />
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-end">
-                  <label className="text-[11px] font-bold text-slate-600 ml-1">
-                    {isRw ? 'Ijambo ry\'ibanga' : 'Password'} <span className="text-[#21B48D]">*</span>
-                  </label>
-                </div>
-                <div className="relative group">
+              <div>
+                <div className="relative">
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
                     required
-                    placeholder="••••••••"
-                    className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-200 focus:border-[#21B48D] outline-none font-medium text-slate-700 text-sm transition-shadow focus:shadow-[0_0_0_3px_rgba(33,180,141,0.08)] placeholder:text-slate-300"
+                    placeholder={isRw ? "Ijambo ry'ibanga" : "Password"}
+                    className="w-full pl-4 pr-11 py-2.5 sm:py-3 rounded-xl bg-white border border-[#D2E4DC] focus:border-[#21B48D] outline-none font-medium text-slate-800 text-xs sm:text-sm transition-all focus:ring-2 focus:ring-[#21B48D]/15 placeholder:text-slate-400 shadow-2xs"
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-200 hover:text-[#21B48D] transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#21B48D] transition-colors cursor-pointer"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+
                 {mode === 'login' && (
                   <div className="flex justify-end pt-1">
-                    <button type="button" className="text-[10px] font-black text-[#21B48D] hover:underline">
-                      {isRw ? 'Wibagiwe ijambo ry\'ibanga?' : 'Forgot password?'}
+                    <button 
+                      type="button" 
+                      onClick={() => setError(isRw ? "Itegurwa ryo kugarura ijambo ry'ibanga riri kwitegurwa." : "Password reset instruction sent to your email if registered.")}
+                      className="text-[10px] sm:text-[11px] font-semibold text-[#52786D] hover:text-[#21B48D] transition-colors cursor-pointer"
+                    >
+                      {isRw ? "Wibagiwe ijambo ry'ibanga?" : "Recovery Password"}
                     </button>
                   </div>
                 )}
               </div>
 
+              {/* Doctor Specialisation Fields for Signup */}
               {mode === 'signup' && role === 'doctor' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-slate-100 mt-1">
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Specialisations</p>
-                    <div className="flex flex-wrap gap-1">
-                      {specialisationOptions.map(opt => (
-                        <button
-                          key={opt} type="button"
-                          onClick={() => setSpecialisations(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
-                          className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all border ${specialisations.includes(opt) ? 'bg-[#21B48D] border-[#21B48D] text-white' : 'bg-white text-slate-500 border-slate-200'}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
+                <div className="space-y-2 pt-1">
+                  <p className="text-[9px] font-bold text-[#52786D] uppercase tracking-wider">Specialisations</p>
+                  <div className="flex flex-wrap gap-1">
+                    {specialisationOptions.map(opt => (
+                      <button
+                        key={opt} type="button"
+                        onClick={() => setSpecialisations(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
+                        className={`px-2 py-0.5 rounded-lg text-[9px] font-bold transition-all border cursor-pointer ${
+                          specialisations.includes(opt) 
+                            ? 'bg-[#21B48D] border-[#21B48D] text-white' 
+                            : 'bg-white text-slate-600 border-[#D2E4DC]'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <input 
                       type="number" placeholder="Yrs Exp" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-[#21B48D] outline-none text-xs text-slate-700"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D2E4DC] focus:border-[#21B48D] outline-none text-[11px] text-slate-700"
                     />
                     <input 
                       type="text" placeholder="Short bio" maxLength={80} value={bio} onChange={e => setBio(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-[#21B48D] outline-none text-xs text-slate-700"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D2E4DC] focus:border-[#21B48D] outline-none text-[11px] text-slate-700"
                     />
                   </div>
-                </motion.div>
+                </div>
               )}
 
-              <div className="pt-2">
+              {/* Main Submit Button (Humura AI Forest Green) */}
+              <div className="pt-1">
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-[#1B3631] hover:bg-[#254A43] text-white font-black rounded-xl shadow-lg shadow-[#1B3631]/10 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-2.5 sm:py-3 bg-[#153C32] hover:bg-[#1C4E41] text-white font-bold rounded-xl shadow-md shadow-[#153C32]/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer disabled:opacity-60 border border-[#153C32]"
                 >
-                  {loading ? <Loader2 className="animate-spin text-white" size={16} /> : (mode === 'login' ? (isRw ? 'Injira' : 'Sign in') : (isRw ? 'Kora Konti' : 'Create account'))}
+                  {loading ? (
+                    <Loader2 className="animate-spin text-white" size={16} />
+                  ) : (
+                    mode === 'login' 
+                      ? (isRw ? 'Injira' : 'Sign In') 
+                      : (isRw ? 'Kora Konti' : 'Create Account')
+                  )}
                 </button>
               </div>
 
-              <div className="text-center pt-1">
-                <p className="text-slate-400 text-[11px] font-bold">
-                  {mode === 'login' ? 'New here?' : 'Already a member?'}{' '}
-                  <button 
-                    type="button"
-                    onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                    className="text-[#21B48D] hover:underline font-black"
-                  >
-                    {mode === 'login' ? 'Create account' : 'Sign in'}
-                  </button>
-                </p>
-              </div>
             </form>
-          </div>
-        </motion.div>
 
-        {/* Tightened Language Selector */}
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 rounded-xl p-0.5">
-          <button onClick={() => i18n.changeLanguage('en')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${!isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>English</button>
-          <button onClick={() => i18n.changeLanguage('rw')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${isRw ? 'bg-[#21B48D] text-white shadow-sm' : 'text-slate-400'}`}>Kinyarwanda</button>
-        </div>
-      </div>
-
-      {/* BOTTOM LANDSCAPE SECTION: Detailed Footer - Fully Restored Content */}
-      <footer className="bg-[#0C2620] text-white pt-12 pb-8 px-6 border-t border-[#16372E]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            
-            {/* 1. Brand Column */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md border border-white p-1.5">
-                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-                </div>
-                <h3 className="text-lg font-bold tracking-tight">Humura AI</h3>
+            {/* Divider: Or continue with */}
+            <div className="relative my-3 sm:my-4 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#E3EFE9]" />
               </div>
-              <p className="text-[#83A098] text-xs leading-relaxed font-medium">
-                A bilingual mental health ecosystem providing inclusive and empathetic support — bridging the wellness gap for the entire Rwandan community.
+              <span className="relative bg-white px-2.5 text-[10px] font-medium text-[#64887D]">
+                {isRw ? 'Cyangwa ukoreshe' : 'Or continue with'}
+              </span>
+            </div>
+
+            {/* Social Logins */}
+            <div className="flex items-center justify-center gap-2.5">
+              {/* Google Button */}
+              <button 
+                type="button"
+                onClick={() => handleSocialAuth('google')}
+                className="w-14 h-10 sm:h-11 rounded-xl bg-white border border-[#D2E4DC] hover:border-[#21B48D] shadow-2xs hover:shadow-sm flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+                title="Google"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+              </button>
+
+              {/* Apple Button */}
+              <button 
+                type="button"
+                onClick={() => handleSocialAuth('apple')}
+                className="w-14 h-10 sm:h-11 rounded-xl bg-white border border-[#D2E4DC] hover:border-[#21B48D] shadow-2xs hover:shadow-sm flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+                title="Apple"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 fill-slate-900 group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.93-2.85-.9.04-1.99.6-2.63 1.35-.57.65-1.06 1.71-.93 2.73 1.01.08 2.02-.48 2.63-1.23z"/>
+                </svg>
+              </button>
+
+              {/* Facebook Button */}
+              <button 
+                type="button"
+                onClick={() => handleSocialAuth('facebook')}
+                className="w-14 h-10 sm:h-11 rounded-xl bg-white border border-[#D2E4DC] hover:border-[#21B48D] shadow-2xs hover:shadow-sm flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+                title="Facebook"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 fill-[#1877F2] group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Bottom Mode Toggle (Login vs Signup) */}
+            <div className="text-center mt-3 sm:mt-4">
+              <p className="text-[#52786D] text-[11px] font-medium">
+                {mode === 'login' ? (isRw ? "Ntabwo uragira konti?" : "Don't have an account?") : (isRw ? "Ubusanzwe ufite konti?" : "Already have an account?")}{' '}
+                <button 
+                  type="button"
+                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                  className="text-[#21B48D] hover:text-[#178567] hover:underline font-bold transition-colors cursor-pointer"
+                >
+                  {mode === 'login' ? (isRw ? "Iyandikishe" : "Create Account") : (isRw ? "Injira" : "Sign In")}
+                </button>
               </p>
             </div>
 
-            {/* 2. Core Services Column */}
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Core Services</h4>
-              <ul className="space-y-2.5 text-[11px] font-medium text-[#E2EEEC]">
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <MessageCircle size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Empathetic CBT therapy
-                </li>
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <Globe size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Sign language support
-                </li>
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <Shield size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Braille document tool
-                </li>
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <Globe size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Language translator
-                </li>
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <CheckCircle2 size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  AI progress insights
-                </li>
-                <li className="flex items-start gap-2.5 hover:text-[#21B48D] cursor-pointer transition-colors">
-                  <Zap size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Emergency help (114)
-                </li>
-              </ul>
-            </div>
-
-            {/* 3. Innovations Column */}
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Innovations</h4>
-              <ul className="space-y-2.5 text-[11px] font-medium text-[#E2EEEC]">
-                <li className="flex items-start gap-2.5">
-                  <Server size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Next.js & Supabase stack
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CloudLightning size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Render cloud backend
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Cpu size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Gemini 2.5 Flash
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Server size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Supabase Edge
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Eye size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Sign language vision AI
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <MessageCircle size={14} className="text-[#21B48D] mt-0.5 flex-shrink-0 opacity-70" />
-                  Multi-turn AI memory
-                </li>
-              </ul>
-            </div>
-
-            {/* 4. Community Voices Column */}
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-[#21B48D] tracking-[0.2em]">Community Voices</h4>
-              <div className="space-y-3">
-                <div className="bg-[#12322A] border border-[#1C453A] rounded-xl p-3">
-                  <p className="italic text-[11px] text-[#E2EEEC]">"This platform gave me a new perspective on life."</p>
-                  <p className="text-[9px] font-black uppercase text-[#21B48D] tracking-wider mt-1.5">— COMMUNITY</p>
-                </div>
-                <div className="bg-[#12322A] border border-[#1C453A] rounded-xl p-3">
-                  <p className="italic text-[11px] text-[#E2EEEC]">"The technology has made a difference for our family."</p>
-                  <p className="text-[9px] font-black uppercase text-[#21B48D] tracking-wider mt-1.5">— FAMILY</p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Divider & Middle Bar */}
-          <div className="py-6 border-t border-[#16372E] flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="space-y-0.5 text-center md:text-left">
-              <h5 className="font-bold text-xs text-[#E2EEEC]">Stay connected with Humura AI</h5>
-              <p className="text-[#83A098] text-[10px]">Updates on features and community news.</p>
-            </div>
-            <div className="w-full md:w-auto flex gap-2 bg-white rounded-xl overflow-hidden p-1 pr-1.5 max-w-sm">
-              <input 
-                type="email" 
-                placeholder="Email address" 
-                className="flex-1 px-3 py-1.5 bg-transparent outline-none text-slate-800 text-xs font-medium placeholder:text-slate-400 w-full md:w-48"
-              />
-              <button className="bg-[#0C2620] hover:bg-[#12322A] text-[#21B48D] px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors">
-                Subscribe
-              </button>
-            </div>
-          </div>
-
-          {/* Final Bottom Bar */}
-          <div className="border-t border-[#16372E] pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[#5F7C74]">
-              © {new Date().getFullYear()} HUMURA AI · MIND SUPPORTED, LIFE EMPOWERED
+          {/* Footer Copyright Note */}
+          <div className="text-center pt-1">
+            <p className="text-[9px] font-semibold text-[#52786D]/60">
+              © {new Date().getFullYear()} Humura AI · Mind Supported, Life Empowered
             </p>
-            <div className="flex items-center gap-3">
-              <SocialIcon Icon={Facebook} />
-              <SocialIcon Icon={Twitter} />
-              <SocialIcon Icon={Instagram} />
-              <SocialIcon Icon={Linkedin} />
+          </div>
+
+        </div>
+
+        {/* ── RIGHT COLUMN: HEALTH & WELLNESS SCENE ── */}
+        <div className="hidden lg:block lg:col-span-6 xl:col-span-6 p-2.5">
+          <div className="w-full h-full min-h-[460px] max-h-[580px] rounded-[1.75rem] overflow-hidden relative shadow-sm bg-[#153C32]">
+            
+            {/* Background Health & Wellness Image */}
+            <AnimatePresence mode="wait">
+              <motion.img 
+                key={slideIdx}
+                src={SLIDES[slideIdx].image} 
+                alt="Mental health and healing" 
+                initial={{ opacity: 0, scale: 1.04 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full h-full object-cover object-center"
+              />
+            </AnimatePresence>
+
+            {/* Gradient Overlay for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0C2620]/90 via-[#0C2620]/25 to-transparent pointer-events-none" />
+
+            {/* Bottom Overlay Text & Glass Navigation Arrows */}
+            <div className="absolute bottom-6 left-6 right-6 text-white z-10 flex flex-col gap-3">
+              
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={slideIdx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#21B48D]/20 backdrop-blur-md border border-[#21B48D]/30 text-[#85E4CA] text-[9px] font-bold uppercase tracking-wider mb-1.5">
+                    <Heart size={10} className="fill-current text-[#21B48D]" />
+                    <span>Mental Health & Wellness</span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-md leading-snug">
+                    {isRw ? SLIDES[slideIdx].title_rw : SLIDES[slideIdx].title_en}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-[#D3E8E0] font-medium mt-0.5 drop-shadow-sm">
+                    {isRw ? SLIDES[slideIdx].subtitle_rw : SLIDES[slideIdx].subtitle_en}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Glass Arrow Controls */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSlideIdx((slideIdx - 1 + SLIDES.length) % SLIDES.length)}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-[#21B48D] backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSlideIdx((slideIdx + 1) % SLIDES.length)}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-[#21B48D] backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+
             </div>
+
           </div>
         </div>
-      </footer>
+
+      </div>
+
     </div>
   );
 }
-
-// Utility for icons used in the innovations block that don't come by default in standard Lucide under same name
-const CloudLightning = ({ size, className }: { size: number, className: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973" />
-    <path d="m13 12-3 5h4l-3 5" />
-  </svg>
-);
-
-const SocialIcon = ({ Icon }: { Icon: any }) => (
-  <a href="#" className="w-7 h-7 rounded-lg bg-[#16372E] border border-[#1F4B3F] flex items-center justify-center text-[#83A098] hover:text-[#21B48D] hover:border-[#21B48D] transition-all cursor-pointer">
-    <Icon size={12} />
-  </a>
-);

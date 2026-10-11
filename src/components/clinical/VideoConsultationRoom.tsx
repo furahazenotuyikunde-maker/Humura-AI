@@ -36,7 +36,7 @@ export default function VideoConsultationRoom({ session, onEnd, role }: Props) {
   const [interpretation, setInterpretation] = useState<string | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const analysisIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // SOAP Notes State (Doctor only)
   const [soapNotes, setSoapNotes] = useState({

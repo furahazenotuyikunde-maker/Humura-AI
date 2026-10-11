@@ -30,7 +30,7 @@ const notifications: NotificationItem[] = [
     timeRw: 'amasaha 2 ashize',
     icon: Heart,
     color: 'text-blue-500 bg-blue-50',
-    link: '/'
+    link: '/patient/dashboard'
   },
   {
     id: '2',
@@ -43,7 +43,7 @@ const notifications: NotificationItem[] = [
     timeRw: 'amasaha 5 ashize',
     icon: AlertTriangle,
     color: 'text-red-500 bg-red-50',
-    link: '/emergency'
+    link: '/patient/emergency'
   },
   {
     id: '3',
@@ -56,7 +56,7 @@ const notifications: NotificationItem[] = [
     timeRw: 'Ejo hashize',
     icon: TrendingUp,
     color: 'text-green-500 bg-green-50',
-    link: '/progress'
+    link: '/patient/progress'
   },
   {
     id: '4',
@@ -69,7 +69,7 @@ const notifications: NotificationItem[] = [
     timeRw: 'iminsi 2 ishize',
     icon: Headphones,
     color: 'text-purple-500 bg-purple-50',
-    link: '/chat'
+    link: '/patient/chat'
   }
 ];
 

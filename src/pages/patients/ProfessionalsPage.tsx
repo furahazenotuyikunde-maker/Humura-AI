@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 import { io } from 'socket.io-client';
 
@@ -22,9 +22,9 @@ interface Professional {
 
 // Professionals are fetched dynamically from the database.
 const modeLabels = {
-  'in-person': { emoji: '🏥', label: 'In-Person', labelRw: 'Ahantu' },
-  'online': { emoji: '💻', label: 'Online', labelRw: 'Kuri Internet' },
-  'phone': { emoji: '📱', label: 'Phone', labelRw: 'Telefoni' },
+  'in-person': { label: 'In-Person', labelRw: 'Ahantu' },
+  'online': { label: 'Online Video', labelRw: 'Kuri Internet' },
+  'phone': { label: 'Phone', labelRw: 'Telefoni' },
 };
 
 const specialties = ['all', 'Anxiety', 'Depression', 'Trauma', 'PTSD', 'Bipolar', 'Youth'];
@@ -105,7 +105,7 @@ export default function ProfessionalsPage() {
       const data = await res.json();
       if (data.success) {
         setBooked(doctor.id);
-        setTimeout(() => window.location.href = '/meet-professional', 1500);
+        setTimeout(() => window.location.href = '/patient/meet-professional', 1500);
       }
     } catch (err: any) {
       alert(err.message);

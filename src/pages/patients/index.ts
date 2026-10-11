@@ -1,0 +1,16 @@
+export { default as PatientDashboard } from './PatientDashboard';
+export { default as AIChatPage } from './AIChatPage';
+export { default as BrailleGeneratorPage } from './BrailleGeneratorPage';
+export { default as CommunityPage } from './CommunityPage';
+export { default as EducationHubPage } from './EducationHubPage';
+export { default as EmergencyPage } from './EmergencyPage';
+export { default as IntakePage } from './IntakePage';
+export { default as MeetProfessionalPage } from './MeetProfessionalPage';
+export { default as MoodLogPage } from './MoodLogPage';
+export { default as NotificationsPage } from './NotificationsPage';
+export { default as ProfessionalsPage } from './ProfessionalsPage';
+export { default as ProgressPage } from './ProgressPage';
+export { default as SettingsPage } from './SettingsPage';
+export { default as SignLanguagePage } from './SignLanguagePage';
+export { default as SupportCentersPage } from './SupportCentersPage';
+export { default as TranslatorPage } from './TranslatorPage';

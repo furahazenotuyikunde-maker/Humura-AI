@@ -6,7 +6,7 @@ import {
   ChevronLeft, MessageCircle, AlertTriangle, 
   History, UserCheck, ShieldCheck, Users, Star, ArrowRight
 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 const MOODS = [
   { id: 'very_low', emoji: '😔', label: { en: 'Very low', rw: 'Nabi cyane' }, score: 1 },
@@ -92,7 +92,7 @@ export default function IntakePage() {
       // 3. If they already have a doctor, go straight to progress
       const { data: patient } = await supabase.from('patients').select('doctor_id').eq('id', user.id).maybeSingle();
       if (patient?.doctor_id) {
-        navigate('/progress');
+        navigate('/patient/progress');
       } else {
         // Otherwise continue the intake flow
         setSubStep('3b');
@@ -143,7 +143,7 @@ export default function IntakePage() {
         }]);
       }
 
-      navigate('/');
+      navigate('/patient/dashboard');
     } catch (err) {
       console.error("Selection Error:", err);
     } finally {
@@ -277,7 +277,7 @@ export default function IntakePage() {
                     key={c.id}
                     onClick={() => {
                       setConcern(c);
-                      if (c.id === 'crisis') navigate('/emergency');
+                      if (c.id === 'crisis') navigate('/patient/emergency');
                     }}
                     className={`p-5 rounded-[2rem] border-2 flex items-center gap-4 transition-all ${concern?.id === c.id ? 'border-primary bg-primary/5' : 'border-neutral-50 hover:border-primary-100'}`}
                   >

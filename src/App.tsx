@@ -1,26 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Shell } from './components/Shell';
-import Home from './pages/Home';
-import AIChatPage from './pages/AIChatPage';
-import SignLanguagePage from './pages/SignLanguagePage';
-import EducationHubPage from './pages/EducationHubPage';
-import SupportCentersPage from './pages/SupportCentersPage';
-import CommunityPage from './pages/CommunityPage';
-import ProgressPage from './pages/ProgressPage';
-import EmergencyPage from './pages/EmergencyPage';
-import ProfessionalsPage from './pages/ProfessionalsPage';
-import SettingsPage from './pages/SettingsPage';
-import BrailleGeneratorPage from './pages/BrailleGeneratorPage';
-import NotificationsPage from './pages/NotificationsPage';
-import TranslatorPage from './pages/TranslatorPage';
+import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DoctorDashboard from './pages/DoctorDashboard';
-import IntakePage from './pages/IntakePage';
-import MoodLogPage from './pages/MoodLogPage';
-import MeetProfessionalPage from './pages/MeetProfessionalPage';
+import {
+  PatientDashboard,
+  AIChatPage,
+  BrailleGeneratorPage,
+  CommunityPage,
+  EducationHubPage,
+  EmergencyPage,
+  IntakePage,
+  MeetProfessionalPage,
+  MoodLogPage,
+  NotificationsPage,
+  ProfessionalsPage,
+  ProgressPage,
+  SettingsPage,
+  SignLanguagePage,
+  SupportCentersPage,
+  TranslatorPage
+} from './pages/patients';
+import { ProfessionalShell } from './components/professional/ProfessionalShell';
+import {
+  DashboardPage as ProfessionalDashboardPage,
+  PatientsPage as ProfessionalPatientsPage,
+  SessionsPage as ProfessionalSessionsPage,
+  AlertsPage as ProfessionalAlertsPage,
+  AnalyticsPage as ProfessionalAnalyticsPage,
+  VideosPage as ProfessionalVideosPage,
+  BraillePage as ProfessionalBraillePage,
+  SettingsPage as ProfessionalSettingsPage
+} from './pages/professionals';
 import { supabase } from './lib/supabaseClient';
-import { useEffect, useState } from 'react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -52,13 +65,34 @@ const App: React.FC = () => {
     setLoading(false);
   };
 
-  if (loading) return null; // Or a splash screen
+  if (loading) return null;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={!session ? <AuthPage /> : <Shell />}>
-          <Route index element={<Home />} />
+        {/* Public Landing Pages */}
+        <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/landing" element={<LandingPage />} />
+
+        {/* Public Auth Pages */}
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage />} />
+
+        {/* Root Route: If no session, show Public Landing Page directly. If logged in, redirect to respective dashboard */}
+        <Route 
+          path="/" 
+          element={
+            !session 
+              ? <LandingPage /> 
+              : (role === 'doctor' ? <Navigate to="/professional/dashboard" replace /> : <Navigate to="/patient/dashboard" replace />)
+          } 
+        />
+
+        {/* ── PATIENT SECTION (domain/patient/...) ── */}
+        <Route path="/patient" element={!session ? <Navigate to="/auth" replace /> : <Shell />}>
+          <Route index element={<Navigate to="/patient/dashboard" replace />} />
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="dashboards" element={<PatientDashboard />} />
           <Route path="chat" element={<AIChatPage />} />
           <Route path="education" element={<EducationHubPage />} />
           <Route path="centers" element={<SupportCentersPage />} />
@@ -73,16 +107,48 @@ const App: React.FC = () => {
           <Route path="intake" element={<IntakePage />} />
           <Route path="mood" element={<MoodLogPage />} />
           <Route path="meet-professional" element={<MeetProfessionalPage />} />
+          <Route path="community" element={<CommunityPage />} />
         </Route>
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/doctor" element={<DoctorDashboard />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/welcome" element={<AuthPage />} />
+
+        {/* ── PROFESSIONAL SECTION (domain/professional/...) ── */}
+        <Route path="/professional" element={!session ? <Navigate to="/auth" replace /> : <ProfessionalShell />}>
+          <Route index element={<Navigate to="/professional/dashboard" replace />} />
+          <Route path="dashboard" element={<ProfessionalDashboardPage />} />
+          <Route path="dashboards" element={<ProfessionalDashboardPage />} />
+          <Route path="patients" element={<ProfessionalPatientsPage />} />
+          <Route path="sessions" element={<ProfessionalSessionsPage />} />
+          <Route path="alerts" element={<ProfessionalAlertsPage />} />
+          <Route path="analytics" element={<ProfessionalAnalyticsPage />} />
+          <Route path="videos" element={<ProfessionalVideosPage />} />
+          <Route path="braille" element={<ProfessionalBraillePage />} />
+          <Route path="settings" element={<ProfessionalSettingsPage />} />
+        </Route>
+
+        {/* Legacy flat route redirects to /patient/... */}
+        <Route path="/chat" element={<Navigate to="/patient/chat" replace />} />
+        <Route path="/education" element={<Navigate to="/patient/education" replace />} />
+        <Route path="/centers" element={<Navigate to="/patient/centers" replace />} />
+        <Route path="/professionals" element={<Navigate to="/patient/professionals" replace />} />
+        <Route path="/progress" element={<Navigate to="/patient/progress" replace />} />
+        <Route path="/notifications" element={<Navigate to="/patient/notifications" replace />} />
+        <Route path="/sign-language" element={<Navigate to="/patient/sign-language" replace />} />
+        <Route path="/emergency" element={<Navigate to="/patient/emergency" replace />} />
+        <Route path="/braille" element={<Navigate to="/patient/braille" replace />} />
+        <Route path="/translator" element={<Navigate to="/patient/translator" replace />} />
+        <Route path="/settings" element={<Navigate to="/patient/settings" replace />} />
+        <Route path="/intake" element={<Navigate to="/patient/intake" replace />} />
+        <Route path="/mood" element={<Navigate to="/patient/mood" replace />} />
+        <Route path="/meet-professional" element={<Navigate to="/patient/meet-professional" replace />} />
+        <Route path="/community" element={<Navigate to="/patient/community" replace />} />
+
+        {/* Legacy Doctor route redirect */}
+        <Route path="/doctor" element={<Navigate to="/professional/dashboard" replace />} />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
 
 export default App;
-
-

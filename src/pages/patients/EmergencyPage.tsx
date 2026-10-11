@@ -229,7 +229,7 @@ export default function EmergencyPage() {
               : 'Humura AI is always here to listen, support and guide you — no judgment, any time.'}
           </p>
           <Link
-            to="/chat"
+            to="/patient/chat"
             className="inline-flex items-center gap-1.5 mt-2 text-primary font-bold text-xs hover:underline"
           >
             <MessageCircle size={13} />
@@ -269,7 +269,7 @@ export default function EmergencyPage() {
           </p>
           
           <Link
-            to="/centers"
+            to="/patient/centers"
             className="flex items-center justify-center gap-2 w-full py-4 bg-white text-primary-900 rounded-2xl font-black text-sm hover:bg-primary-50 transition-colors shadow-lg active:scale-95"
           >
             <Phone size={16} />

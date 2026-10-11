@@ -8,7 +8,7 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "logo.png",
+      "src": "fixedLogo.png",
       "type": "image/png",
       "sizes": "512x512"
     }

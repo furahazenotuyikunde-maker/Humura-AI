@@ -27,7 +27,7 @@ const VideoSession: React.FC<VideoSessionProps> = ({ roomUrl, role, sessionId, o
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const analysisIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadJitsiScript().then(() => {

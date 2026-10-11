@@ -6,7 +6,7 @@ import {
   ChevronLeft, Send, MessageCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 const MOODS = [
   { id: 'very_low', emoji: '😔', label: { en: 'Very low', rw: 'Nabi cyane' }, score: 1, key: 'angry' },
@@ -42,7 +42,7 @@ export default function MoodLogPage() {
       if (error) throw error;
       
       // Navigate to progress for analysis immediately
-      navigate('/progress');
+      navigate('/patient/progress');
     } catch (err) {
       console.error(err);
     } finally {
@@ -55,7 +55,7 @@ export default function MoodLogPage() {
       <div className="w-full max-w-sm space-y-12">
         <header className="space-y-4">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/patient/dashboard')}
             className="w-10 h-10 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-400 hover:text-primary transition-all"
           >
             <ChevronLeft size={20} />
