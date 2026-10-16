@@ -31,15 +31,15 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const primaryModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const primaryModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const fallbackModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 const geminiModel = {
   generateContent: async (options) => {
     try {
       return await primaryModel.generateContent(options);
     } catch (e) {
-      console.warn("Primary SDK model gemini-3-flash-preview failed, trying fallback gemini-1.5-flash:", e.message);
+      console.warn("Primary SDK model gemini-2.5-flash failed, trying fallback gemini-3-flash-preview:", e.message);
       return await fallbackModel.generateContent(options);
     }
   }

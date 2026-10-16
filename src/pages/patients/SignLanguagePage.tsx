@@ -290,16 +290,30 @@ export default function SignLanguagePage() {
       return;
     }
 
+    // Optimize resolution for fast, high-accuracy vision analysis (max 640px)
+    const maxDim = 640;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    if (width > maxDim || height > maxDim) {
+      if (width > height) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       isSendingRef.current = false;
       return;
     }
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, width, height);
 
     canvas.toBlob(async (blob) => {
       if (!blob || blob.size === 0) {
@@ -309,132 +323,154 @@ export default function SignLanguagePage() {
         return;
       }
 
-      // Safety timer for scan
+      // Safety timer for scan (15s)
       const scanSafetyTimer = setTimeout(() => {
         setIsAnalyzing(false);
         isSendingRef.current = false;
-      }, 5000);
-
-      const formData = new FormData();
-      formData.append('image', blob, 'capture.jpg');
-      formData.append(
-        'prompt',
-        `You are Humura AI, an expert in sign language and empathetic mental health communication in Rwanda.
-Analyze this image:
-1. Identify the sign language gesture or emotion communicated.
-2. Provide a warm, validating explanation.
-Format response as JSON:
-{
-  "detectedSign": "the emotion or sign name",
-  "explanation": "2 compassionate sentences interpreting the gesture and providing supportive guidance."
-}`
-      );
-      formData.append('lang', lang);
+      }, 15000);
 
       let scanSucceeded = false;
+      const base64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-      // 1. Try Render with strict 2.5s abort timeout
-      try {
-        const controller = new AbortController();
-        const fetchTimer = setTimeout(() => controller.abort(), 2500);
-        const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
-        const response = await fetch(`${backendUrl}/analyze-sign`, {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal
-        });
-        clearTimeout(fetchTimer);
+      const visionPrompt = `You are Humura AI, an expert visual sign language and mental wellness gesture analyst in Rwanda.
+Carefully inspect the user's hands, fingers, and body posture in this image:
+1. Identify the specific gesture shown. Look for distinct hand shapes such as:
+   - Thumbs up (Feeling Good / Hopeful / Doing Okay)
+   - Open Palm / Raised Hand (Asking for Help / Stop / Welcoming)
+   - Peace / V sign (Peace / Calm / Optimism)
+   - Hand on Heart / Chest (Gratitude / Love / Deep Feeling / Comfort)
+   - Clenched Fist (Frustration / Determination / Emotional Tension)
+   - Hands folded / together (Pleading / Prayer / Seeking Support)
+   - Hand touching forehead / temples / head (Overwhelmed / Stress / Headache)
+   - Waving Hand (Reaching Out / Hello)
+   - Pointing (Attention / Self-Expression)
+   - Hand near throat / chest tightness (Anxiety / Needing to Breathe)
+   - Any standard Rwandan or international sign language sign.
+2. If no hand is visible or hands are resting down, identify as "No Clear Hand Gesture Detected" and advise them to lift their hand clearly in front of the camera.
+3. Provide a compassionate 2-sentence interpretation of what you see and a validating response tailored specifically to THAT gesture.
+CRITICAL: Respond in ${isRw ? 'authentic Kinyarwanda' : 'English'}.
+Format response strictly as JSON:
+{
+  "detectedSign": "Name of the specific gesture detected",
+  "explanation": "2 compassionate sentences interpreting this exact gesture and offering support."
+}`;
 
-        if (response.ok) {
-          const data = await response.json();
-          const cleanReply = typeof data.reply === 'string'
-            ? data.reply.replace(/```json|```/g, '').trim()
-            : data.reply;
-
-          const parsed = typeof cleanReply === 'string' ? JSON.parse(cleanReply) : cleanReply;
-          setScanResult(parsed);
-          scanSucceeded = true;
-
-          // Record detected gesture to database if logged in
+      // 1. Direct High-Speed Gemini Vision (gemini-2.5-flash & gemini-3-flash-preview)
+      if (apiKey) {
+        const activeVisionModels = ['gemini-2.5-flash', 'gemini-3-flash-preview'];
+        for (const modelName of activeVisionModels) {
           try {
-            const { data: authData } = await supabase.auth.getUser();
-            if (authData?.user) {
-              await supabase.from('mood_logs').insert({
-                user_id: authData.user.id,
-                mood: `Gesture Scan: ${parsed.detectedSign || 'Sign Detected'}`,
-                score: 3,
-                emoji: '🤟',
-                created_at: new Date().toISOString()
-              });
-            }
-          } catch {}
-        }
-      } catch (err) {
-        // Fast failover to direct vision
-      }
+            const controller = new AbortController();
+            const vTimer = setTimeout(() => controller.abort(), 8500);
 
-      // 2. Direct fallback to working models: gemini-3-flash-preview & gemini-flash-latest
-      if (!scanSucceeded) {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (apiKey) {
-          const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-          const visionModels = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-3.5-flash'];
+            const directRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
+                body: JSON.stringify({
+                  contents: [
+                    {
+                      parts: [
+                        { text: visionPrompt },
+                        { inlineData: { mimeType: 'image/jpeg', data: base64 } }
+                      ]
+                    }
+                  ],
+                  generationConfig: {
+                    temperature: 0.3,
+                    responseMimeType: 'application/json'
+                  }
+                })
+              }
+            );
+            clearTimeout(vTimer);
 
-          for (const modelName of visionModels) {
-            try {
-              const controller = new AbortController();
-              const vTimer = setTimeout(() => controller.abort(), 2500);
-              const fallbackRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  signal: controller.signal,
-                  body: JSON.stringify({
-                    contents: [
-                      {
-                        parts: [
-                          { text: 'Analyze this sign language gesture and return strictly JSON: {"detectedSign": "the emotion or sign", "explanation": "2 compassionate sentences in ' + (isRw ? 'Kinyarwanda' : 'English') + '"}' },
-                          { inlineData: { mimeType: 'image/jpeg', data: base64 } }
-                        ]
-                      }
-                    ]
-                  })
-                }
-              );
-              clearTimeout(vTimer);
-
-              if (fallbackRes.ok) {
-                const fbData = await fallbackRes.json();
-                const fbText = fbData.candidates?.[0]?.content?.parts?.[0]?.text;
-                const jsonMatch = fbText?.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                  setScanResult(JSON.parse(jsonMatch[0]));
+            if (directRes.ok) {
+              const fbData = await directRes.json();
+              const fbText = fbData.candidates?.[0]?.content?.parts?.[0]?.text;
+              const jsonMatch = fbText?.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.detectedSign && parsed.explanation) {
+                  setScanResult(parsed);
                   scanSucceeded = true;
+
+                  // Record detected gesture to database if logged in
+                  try {
+                    const { data: authData } = await supabase.auth.getUser();
+                    if (authData?.user) {
+                      await supabase.from('mood_logs').insert({
+                        user_id: authData.user.id,
+                        mood: `Gesture Scan: ${parsed.detectedSign}`,
+                        score: 3,
+                        emoji: '🤟',
+                        created_at: new Date().toISOString()
+                      });
+                    }
+                  } catch {}
                   break;
                 }
               }
-            } catch (fe) {
-              // Try next model
             }
+          } catch (modelErr) {
+            console.warn(`Vision model ${modelName} failed or timed out:`, modelErr);
           }
         }
       }
 
-      // 3. Fallback result if offline
+      // 2. Secondary fallback via Render backend /analyze-sign
+      if (!scanSucceeded) {
+        try {
+          const controller = new AbortController();
+          const fetchTimer = setTimeout(() => controller.abort(), 6000);
+          const backendUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+          
+          const formData = new FormData();
+          formData.append('image', blob, 'capture.jpg');
+          formData.append('prompt', visionPrompt);
+          formData.append('lang', lang);
+
+          const response = await fetch(`${backendUrl}/analyze-sign`, {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+          });
+          clearTimeout(fetchTimer);
+
+          if (response.ok) {
+            const data = await response.json();
+            const cleanReply = typeof data.reply === 'string'
+              ? data.reply.replace(/```json|```/g, '').trim()
+              : data.reply;
+
+            const parsed = typeof cleanReply === 'string' ? JSON.parse(cleanReply) : cleanReply;
+            if (parsed?.detectedSign) {
+              setScanResult(parsed);
+              scanSucceeded = true;
+            }
+          }
+        } catch (backendErr) {
+          console.warn('Backend /analyze-sign fallback also failed:', backendErr);
+        }
+      }
+
+      // 3. Truthful response if scan completely failed (offline/network failure)
       if (!scanSucceeded) {
         setScanResult({
-          detectedSign: isRw ? 'Amarenga y’Ituze n’Ubufasha' : 'Grounding & Care Gesture',
+          detectedSign: isRw ? 'Ntibyashobotse Gusoma Amarenga' : 'Gesture Not Detected',
           explanation: isRw
-            ? 'Amarenga yawe agaragaza gushaka ituze no guhumeka. Humura, ubufasha bw’inzobere burahari igihe cyose.'
-            : 'Your gesture reflects seeking calm and balance. Take gentle deep breaths — clinical support is always here.'
+            ? 'Ntabwo twabashije kubona neza ikimenyetso cy’amarenga. Nyamuneka zamura ikiganza cyawe neza imbere ya kamera ahari urumuri ruhagije maze wongere ugerageze.'
+            : 'Could not clearly recognize the gesture. Please raise your hand clearly into the camera frame with good lighting and tap Scan again.'
         });
       }
 
       clearTimeout(scanSafetyTimer);
       setIsAnalyzing(false);
       isSendingRef.current = false;
-    }, 'image/jpeg', 0.8);
+    }, 'image/jpeg', 0.75);
   };
 
   const generateFallbackResponse = () => {
@@ -545,15 +581,15 @@ Format response as JSON:
         // Render was slow or sleeping, seamlessly proceed to direct models
       }
 
-      // B. If Render did not reply, immediately use direct active models (gemini-3-flash-preview, gemini-flash-latest)
+      // B. If Render did not reply, immediately use direct active models (gemini-2.5-flash, gemini-3-flash-preview)
       if (!resolvedReply) {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (apiKey) {
-          const workingModels = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-3.5-flash'];
+          const workingModels = ['gemini-2.5-flash', 'gemini-3-flash-preview'];
           for (const modelName of workingModels) {
             try {
               const controller = new AbortController();
-              const mTimer = setTimeout(() => controller.abort(), 2000);
+              const mTimer = setTimeout(() => controller.abort(), 7500);
               const fallbackRes = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
                 {
