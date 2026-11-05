@@ -63,16 +63,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const primaryNavItems = [
     {
-      to: '/patient/dashboard',
-      altTo: '/patient/progress',
+      to: '/patient/progress',
       icon: Calendar,
       label_en: 'Progress',
       label_rw: 'Iterambere',
-      isActive: (pathname: string) =>
-        pathname === '/patient/dashboard' ||
-        pathname === '/patient/dashboards' ||
-        pathname === '/patient/progress' ||
-        pathname === '/patient'
+      isActive: (pathname: string) => pathname === '/patient/progress'
     },
     {
       to: '/patient/chat',
