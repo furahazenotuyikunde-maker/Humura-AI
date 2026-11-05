@@ -808,45 +808,34 @@ app.get('/', (req, res) => res.json({ message: 'Humura AI Backend v1.1.2 Unified
 // Patient Dashboard: Direct Gemini Analysis (no DB lookup blocking)
 const handleAnalyzeProgress = async (req, res) => {
   try {
-    const { moods, journals, isSignLanguage, currentMood, currentMoodEmoji, currentMoodLabel, lang } = req.body;
+    const { moods, lang } = req.body;
     const languageName = lang === 'rw' ? 'Kinyarwanda' : 'English';
+    const allowedMoods = new Set([
+      'happy', 'excited', 'grateful', 'loved', 'calm', 'hopeful',
+      'neutral', 'tired', 'sad', 'anxious', 'angry'
+    ]);
+    const safeMoods = Array.isArray(moods)
+      ? moods.slice(0, 100).map((entry) => ({
+          mood: typeof entry?.mood === 'string' && allowedMoods.has(entry.mood.toLowerCase())
+            ? entry.mood.toLowerCase()
+            : 'unlisted',
+          created_at: typeof entry?.created_at === 'string' && /^\d{4}-\d{2}-\d{2}/.test(entry.created_at)
+            ? entry.created_at.slice(0, 10)
+            : 'date unavailable'
+        }))
+      : [];
 
-    const journalContext = journals && journals.length > 0
-      ? `Patient's recent journal entries (read these carefully, they contain the patient's real thoughts):\n${journals.map((j, i) => `- Entry ${i+1}: "${j}"`).join('\n')}`
-      : 'No journal entries yet.';
+    const prompt = `You are Humura AI, a supportive wellbeing reflection assistant.
 
-    const moodContext = currentMood
-      ? `The patient just logged they are feeling ${currentMoodEmoji || ''} "${currentMoodLabel || currentMood}" RIGHT NOW.`
-      : `Recent mood pattern: ${JSON.stringify(moods || [])}`;
+Use ONLY this patient's mood check-in labels and dates. Do not request, infer, mention, or invent journal entries, conversation content, activities, diagnoses, causes, risks, treatment, or personal details. Do not make a medical diagnosis or present assumptions as facts. Describe patterns tentatively, and state when there is too little information to notice a pattern. Never describe a change as failure. Offer gentle, optional everyday wellbeing suggestions. Reply in ${languageName}.
 
-    const prompt = `You are Humura AI — a compassionate, bilingual mental health companion serving patients in Rwanda.
+Mood check-ins: ${JSON.stringify(safeMoods)}
 
-CURRENT EMOTIONAL STATE:
-${moodContext}
-
-MOOD HISTORY (last 7 days): ${JSON.stringify(moods || [])}
-
-${journalContext}
-
-Sign Language User: ${isSignLanguage ? 'YES — include visual/video-based tips in English and Kinyarwanda' : 'NO'}
-
-YOUR TASK:
-1. Read the journal entries carefully. Reference specific things the patient wrote to show you truly listened.
-2. Acknowledge the current mood (${currentMoodLabel || currentMood || 'general'}) warmly and by name.
-3. Connect the mood with what they wrote in their journal — find the emotional thread.
-4. Give 3 practical, specific recommendations based on BOTH their mood AND their journal content.
-5. If they wrote about stress, loneliness, or crisis — prioritize coping strategies and support resources.
-6. Keep a warm, human tone — like a trusted counselor, not a robot.
-
-Respond ONLY with this exact JSON (no markdown, no extra text):
+Return ONLY valid JSON in this shape:
 {
   "success": true,
-  "summary": "2-3 sentences in ${languageName} that reference their specific mood and journal content to show you truly heard them",
-  "recommendations": [
-    "specific recommendation 1 in ${languageName}",
-    "specific recommendation 2 in ${languageName}",
-    "specific recommendation 3 in ${languageName}"
-  ]
+  "summary": "One or two warm, non-diagnostic sentences grounded only in the check-ins above.",
+  "recommendations": ["One optional, gentle suggestion.", "A second optional suggestion."]
 }`;
 
     const result = await geminiModel.generateContent(prompt);
@@ -855,11 +844,11 @@ Respond ONLY with this exact JSON (no markdown, no extra text):
     if (!jsonMatch) throw new Error("Gemini returned no JSON");
     const parsed = JSON.parse(jsonMatch[0]);
     
-    // Safety Fallback
+    // Keep an explicit, supportive fallback if the model returns no summary.
     if (!parsed.summary) {
       parsed.summary = lang === 'rw' 
-        ? "Isesengura ryabonetse neza. Komeza ukoreshe porogaramu usangize ibyiyumvo byawe."
-        : "Analysis completed successfully. Continue logging your thoughts to see more insights.";
+        ? "Iyi ni intangiriro yo kureba uko wiyumva. Komeza ku muvuduko wawe."
+        : "This is a starting point for noticing how you feel. Go at your own pace.";
     }
 
     res.json(parsed);
