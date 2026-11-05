@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Calendar,
+  Home,
+  TrendingUp,
   MessageSquare,
   Users,
   Video,
@@ -15,9 +16,7 @@ import {
   Shield,
   X,
   ChevronLeft,
-  ChevronRight,
-  PanelLeftClose,
-  PanelLeftOpen
+  ChevronRight
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -63,8 +62,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const primaryNavItems = [
     {
+      to: '/patient/dashboard',
+      icon: Home,
+      label_en: 'Home',
+      label_rw: 'Ahabanza',
+      isActive: (pathname: string) => pathname === '/patient/dashboard' || pathname === '/patient/dashboards'
+    },
+    {
       to: '/patient/progress',
-      icon: Calendar,
+      icon: TrendingUp,
       label_en: 'Progress',
       label_rw: 'Iterambere',
       isActive: (pathname: string) => pathname === '/patient/progress'
@@ -189,6 +195,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
+        {!isCollapsed && (
+          <div className="mb-2 px-3.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#4E8071]">MAIN</span>
+          </div>
+        )}
+
         {/* Primary Navigation List */}
         <nav className="space-y-1.5 mb-6">
           {primaryNavItems.map((item) => {
@@ -255,28 +267,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom Encouragement Card ("You are not alone.") */}
+      {/* Bottom Support Card */}
       {isCollapsed ? (
-        <div 
-          className="mt-6 flex items-center justify-center p-2 rounded-2xl bg-[#0D3F33]/90 border border-[#165545] text-[#21B48D] cursor-pointer"
-          title={isRw ? 'Ntabwo uri wenyine.' : 'You are not alone.'}
+        <button
+          type="button"
+          onClick={() => navigate('/patient/emergency')}
+          className="mt-6 flex items-center justify-center p-2 rounded-2xl bg-[#0D3F33]/90 border border-[#165545] text-[#21B48D] transition-colors hover:bg-[#124638]"
+          title={isRw ? 'Ukeneye ubufasha?' : 'Need help?'}
+          aria-label={isRw ? 'Ukeneye ubufasha?' : 'Need help?'}
         >
           <Shield size={18} className="fill-current text-[#21B48D]" />
-        </div>
+        </button>
       ) : (
-        <div className="mt-8 bg-[#0D3F33]/90 border border-[#165545] rounded-2xl p-4 text-left animate-in fade-in duration-200">
+        <button
+          type="button"
+          onClick={() => navigate('/patient/emergency')}
+          className="mt-8 w-full bg-[#0D3F33]/90 border border-[#165545] rounded-2xl p-4 text-left transition-colors hover:bg-[#124638] animate-in fade-in duration-200"
+        >
           <div className="w-7 h-7 rounded-full bg-[#185545] flex items-center justify-center text-[#21B48D] mb-2.5">
             <Shield size={14} className="fill-current text-[#21B48D]" />
           </div>
           <h4 className="text-xs sm:text-sm font-extrabold text-white leading-tight">
-            {isRw ? 'Ntabwo uri wenyine.' : 'You are not alone.'}
+            {isRw ? 'Ukeneye ubufasha?' : 'Need Help?'}
           </h4>
           <p className="text-[11px] text-[#78A99B] leading-relaxed mt-1 font-normal">
             {isRw
-              ? 'Turi hano kugira ngo tugufashe kugarura umutuzo mu muryango.'
-              : "We're here to support your mental well-being."}
+              ? 'Turi hano kugira ngo tugufashe.'
+              : 'Reach out whenever you need support.'}
           </p>
-        </div>
+        </button>
       )}
     </aside>
   );
