@@ -72,6 +72,16 @@ const MOOD_DETAILS: Record<string, { label: string; emoji: string; score: number
   angry: { label: 'Angry', emoji: '😣', score: 2 }
 };
 
+function moodNameFromEmoji(emoji: string | null, score: number | null) {
+  if (emoji === '😊' || emoji === '😁') return 'happy';
+  if (emoji === '🙂') return 'calm';
+  if (emoji === '😐') return 'neutral';
+  if (emoji === '😔') return 'sad';
+  if (emoji === '😟') return 'anxious';
+  if (score === null) return 'neutral';
+  return score >= 5 ? 'happy' : score >= 4 ? 'calm' : score >= 3 ? 'neutral' : 'sad';
+}
+
 const cardClass = 'rounded-3xl border border-[#E1ECE6] bg-white shadow-[0_8px_24px_-20px_rgba(8,53,42,0.28)]';
 const buttonClass = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D] focus-visible:ring-offset-2';
 
@@ -249,7 +259,23 @@ export default function ProgressPage() {
 
       if (!active) return;
       if (moodResult.error) {
-        setLoadError('Your mood check-ins could not be loaded. Please refresh to try again.');
+        const clinicalMoodResult = await supabase
+          .from('mood_logs')
+          .select('id, emoji, mood_score, logged_at')
+          .eq('patient_id', id)
+          .order('logged_at', { ascending: false })
+          .limit(500);
+        if (clinicalMoodResult.error) {
+          console.error('Unable to load mood check-ins:', moodResult.error, clinicalMoodResult.error);
+          setLoadError('Your mood check-ins could not be loaded. Please refresh to try again.');
+        } else {
+          setMoods((clinicalMoodResult.data ?? []).map(log => ({
+            id: log.id,
+            mood: moodNameFromEmoji(log.emoji, log.mood_score),
+            score: log.mood_score,
+            created_at: log.logged_at
+          })) as MoodLog[]);
+        }
       } else {
         setMoods((moodResult.data ?? []) as MoodLog[]);
       }

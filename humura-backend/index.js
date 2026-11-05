@@ -264,48 +264,79 @@ app.get('/api/doctor/patients', async (req, res) => {
 
 // 4c. SOS / Crisis Trigger (Parallel Actions < 3s)
 app.post('/api/crisis/trigger', async (req, res) => {
-  const { patientId, type, location, lastMsg, doctorId } = req.body;
+  const { patientId, type, location, lastMsg, doctorId, consentToShare } = req.body;
 
   try {
-    // 1. DB Log + Socket Notification (Critical Path)
-    const [event] = await Promise.all([
-      supabase.from('crisis_events').insert([{
+    const authorization = req.get('authorization') || '';
+    const accessToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+    if (!accessToken) return res.status(401).json({ success: false, error: 'Authentication is required.' });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !user) return res.status(401).json({ success: false, error: 'Authentication is invalid or expired.' });
+    const isAiDetected = type === 'AI_detected';
+    if (!patientId) return res.status(400).json({ success: false, error: 'Missing patientId.' });
+    if (user.id !== patientId) return res.status(403).json({ success: false, error: 'You can only submit a request for your own account.' });
+    if (isAiDetected && consentToShare !== true) {
+      return res.status(403).json({ success: false, error: 'Patient consent is required to share a chat concern.' });
+    }
+    if (!['AI_detected', 'SOS_button'].includes(type || 'SOS_button')) {
+      return res.status(400).json({ success: false, error: 'Unsupported support request type.' });
+    }
+    if (isAiDetected && !doctorId) {
+      return res.status(400).json({ success: false, error: 'An assigned professional is required for this request.' });
+    }
+    if (doctorId) {
+      const { data: patient, error: patientError } = await supabase
+        .from('patients')
+        .select('doctor_id')
+        .eq('id', patientId)
+        .maybeSingle();
+      if (patientError) throw patientError;
+      let assignedDoctorId = patient?.doctor_id;
+      if (!assignedDoctorId) {
+        const { data: caseload, error: caseloadError } = await supabase
+          .from('patient_caseload')
+          .select('doctor_id')
+          .eq('patient_id', patientId)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+        if (caseloadError) throw caseloadError;
+        assignedDoctorId = caseload?.doctor_id;
+      }
+      if (doctorId !== assignedDoctorId) {
+        return res.status(403).json({ success: false, error: 'Requests can only be routed to your assigned professional.' });
+      }
+    }
+
+    const allowedRisk = ['low', 'medium', 'high'].includes(location?.riskLevel)
+      ? location.riskLevel
+      : 'high';
+    const { data: event, error: insertError } = await supabase.from('crisis_events').insert([{
+      patient_id: patientId,
+      trigger_type: type || 'SOS_button',
+      location: location || null,
+      last_message: typeof lastMsg === 'string' ? lastMsg.slice(0, 1000) : null,
+      risk_level: isAiDetected ? allowedRisk : 'high'
+    }]).select('id').single();
+    if (insertError) throw insertError;
+
+    if (doctorId) {
+      io.to(`doctor:${doctorId}`).emit(isAiDetected ? 'patient:ai_struggle_flagged' : 'patient:sos_triggered', {
         patient_id: patientId,
-        trigger_type: type || 'SOS_BUTTON',
-        location: location,
-        last_message: lastMsg,
-        risk_level: 'high'
-      }]).select().single(),
-      
-      // Notify Doctor Room
-      io.to(`doctor:${doctorId}`).emit('patient:sos_triggered', {
-        patient_id: patientId,
-        risk_level: "high",
-        location: location,
-        last_message: lastMsg
-      })
-    ]);
+        title: location?.issueCategory,
+        risk_level: isAiDetected ? allowedRisk : 'high',
+        task: location?.clinicalTask,
+        location: location || null,
+        last_message: typeof lastMsg === 'string' ? lastMsg.slice(0, 1000) : null
+      });
+    }
 
-    // 2. Parallel Mock SMS Alerts
-    console.log(`[Twilio Mock] SMS to Doctor: 🚨 CRISIS — Patient needs help NOW.`);
-    console.log(`[Twilio Mock] SMS to Emergency Contact: Patient requested emergency support. Call 114.`);
-
-    // 3. Async AI Risk Assessment (Non-blocking)
-    const assessRisk = async () => {
-      try {
-        const prompt = `Patient in Rwanda triggered SOS. Last message: "${lastMsg}". 
-        Return JSON only: { "risk_level": "low"|"medium"|"high", "reason": "string" }`;
-        const result = await callGemini(prompt);
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        const assessment = jsonMatch ? JSON.parse(jsonMatch[0]) : { risk_level: 'medium', reason: 'Failed to parse AI response' };
-        
-        await supabase.from('crisis_events').update({ risk_level: assessment.risk_level }).eq('id', event.data.id);
-        io.to(`doctor:${doctorId}`).emit('patient:risk_updated', { patient_id: patientId, risk_level: assessment.risk_level });
-      } catch (err) { console.error("Async Risk Assess Error:", err); }
-    };
-    assessRisk();
-
-    return res.status(200).json({ success: true, eventId: event.data?.id });
+    return res.status(200).json({
+      success: true,
+      eventId: event.id,
+      recorded: true,
+      routedToAssignedProfessional: Boolean(doctorId)
+    });
   } catch (error) {
     return handleApiError(res, error);
   }
@@ -633,7 +664,44 @@ When a patient asks how to use or navigate Humura AI, give exact, step-by-step g
 - Lead with empathy, validation, and warmth.
 - Apply Cognitive Behavioral Therapy (CBT) reflection and grounding techniques.
 - Keep responses concise (under 200 words) and human.
-- For severe distress, suicidal ideation, or crisis, immediately provide the Rwanda 114 hotline.`;
+- For severe distress, suicidal ideation, or crisis, immediately provide the Rwanda 114 hotline.
+
+### CONNECTED WELLBEING COMPANION:
+- Listen first; acknowledge the person's feelings without judgment, then ask one gentle open question when helpful.
+- Offer CBT-informed reflection as an invitation, not a diagnosis: help separate a situation, thought, feeling, and possible next step.
+- Suggest one or two practical next steps relevant to what the person shared. Use Humura AI features when relevant: /patient/progress, /patient/education, /patient/professionals, /patient/centers, /patient/sign-language, /patient/braille, and /patient/translator.
+- If patient-authorized wellbeing context is provided, use only that summary. Describe patterns tentatively and never infer a diagnosis. Do not ask for or reveal private journal entries.
+- A mood check-in is optional. Respect a skip or refusal without repeatedly asking.
+- You are an AI companion, not a replacement for a qualified professional. Do not claim to contact emergency services or a clinician. Never promise that a clinician has received an alert unless the platform confirms it.
+- If there may be immediate danger, respond calmly, ask whether the person is in immediate danger when appropriate, encourage reaching a trusted person and local emergency support, and clearly show Rwanda hotline 114 / emergency 112. Never claim help has been dispatched.`;
+};
+
+const sanitizeWellbeingContext = (context) => {
+  if (!context || typeof context !== 'object') return null;
+
+  const moods = Array.isArray(context.moods)
+    ? context.moods.slice(0, 7).flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return [];
+      const mood = typeof entry.mood === 'string'
+        ? entry.mood.replace(/[^a-zA-Z _-]/g, '').slice(0, 32)
+        : '';
+      const timestamp = typeof entry.createdAt === 'string' && !Number.isNaN(Date.parse(entry.createdAt))
+        ? new Date(entry.createdAt).toISOString()
+        : null;
+      const score = Number.isFinite(entry.score) ? Math.max(1, Math.min(5, Math.round(entry.score))) : null;
+      return mood && timestamp ? [{ mood, score, createdAt: timestamp }] : [];
+    })
+    : [];
+  const goals = Array.isArray(context.goals)
+    ? context.goals.slice(0, 5).filter((goal) => typeof goal === 'string')
+      .map((goal) => goal.replace(/\s+/g, ' ').trim().slice(0, 100))
+      .filter(Boolean)
+    : [];
+  const completedLessons = Number.isFinite(context.completedLessons)
+    ? Math.max(0, Math.min(100, Math.floor(context.completedLessons)))
+    : 0;
+
+  return { moods, completedLessons, goals };
 };
 
 // 4g. Main AI Chat (Gemini 3 Flash)
@@ -641,6 +709,16 @@ app.post('/chat', async (req, res) => {
   try {
     const { message, history, image, lang } = req.body;
     const enteredInBraille = req.body.inputFormat === 'braille';
+    if (req.body.wellbeingContext) {
+      const authorization = req.get('authorization') || '';
+      const accessToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Authentication is required for personalized context.' });
+      const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+      if (authError || !user || user.id !== req.body.userId) {
+        return res.status(403).json({ error: 'Personalized context must belong to the signed-in patient.' });
+      }
+    }
+    const wellbeingContext = sanitizeWellbeingContext(req.body.wellbeingContext);
     if (!message) return res.status(400).json({ error: "No message" });
 
     const isRw = lang && lang.startsWith('rw');
@@ -651,16 +729,8 @@ app.post('/chat', async (req, res) => {
         ? "Ndi Humura AI, umufasha wihariye w'ubuzima bwo mu mutwe n'imitekerereze mu Rwanda. Nshinzwe gusa gufasha mu bibazo byerekeye ubuzima, umutuzo wo mu mutwe, no kukuyobora ku rubuga rwa Humura AI. Sinshobora gusubiza ibibazo bitajyanye n'ubuzima. Mbwira, waba hari ikibazo cy'ubuzima wifuza ko tuganiraho cyangwa ubufasha ku mikorere ya Humura AI?"
         : "I am Humura AI, dedicated exclusively to mental health, emotional wellness, and your healthcare journey. I cannot assist with non-health topics like coding, homework, or general trivia. How are you feeling today, or is there a health concern or question about navigating Humura AI that I can help you with?";
 
-      if (req.body.userId) {
-        await supabase.from('messages').insert([
-          { sender_id: req.body.userId, receiver_id: '00000000-0000-0000-0000-000000000000', content: message },
-          { sender_id: '00000000-0000-0000-0000-000000000000', receiver_id: req.body.userId, content: refusalReply }
-        ]);
-      }
-
       return res.status(200).json({
-        reply: refusalReply,
-        flaggedIssue: null
+        reply: refusalReply
       });
     }
 
@@ -683,7 +753,9 @@ app.post('/chat', async (req, res) => {
     const response = await geminiModel.generateContent({
       systemInstruction: {
         parts: [{
-          text: `${HUMURA_SYSTEM_PROMPT(lang)}${enteredInBraille
+          text: `${HUMURA_SYSTEM_PROMPT(lang)}${wellbeingContext
+            ? `\n\n### PATIENT-AUTHORIZED WELLBEING CONTEXT\nUse this brief summary only to personalize this response. It contains no journal or conversation history. Do not repeat sensitive details unnecessarily. Describe any pattern as tentative and do not diagnose.\n${JSON.stringify(wellbeingContext)}`
+            : ''}${enteredInBraille
             ? '\nThe latest user message was entered in uncontracted English Braille and accurately decoded into plain text. Respond directly to its meaning with supportive health guidance. Do not ask the user to retype or decode it.'
             : ''}`
         }]
@@ -697,101 +769,7 @@ app.post('/chat', async (req, res) => {
 
     const reply = (await response.response).text();
 
-    // Save to Supabase for Clinical Visibility
-    if (req.body.userId) {
-      await supabase.from('messages').insert([
-        { sender_id: req.body.userId, receiver_id: '00000000-0000-0000-0000-000000000000', content: message },
-        { sender_id: '00000000-0000-0000-0000-000000000000', receiver_id: req.body.userId, content: reply }
-      ]);
-    }
-
-    // Clinical Struggle & Crisis Detection Engine
-    const isCrisis = /suicide|kill|harm|die|death|help now|emergency|kwiyahura|gupfa|kwigirira nabi|sinshaka kubaho/i.test(message + reply);
-    const isAnxiety = /panic|can't breathe|hyperventilat|heart (racing|pounding)|chest tightness|terrified|impungenge|ubwoba/i.test(message);
-    const isDepression = /hopeless|worthless|empty inside|crying (all day|every day)|depressed|kwiheba|agahinda gakabije/i.test(message);
-    const isInsomnia = /insomnia|cannot sleep|can't sleep|haven't slept|ibitotsi|sinzira|gusinzira|kubura ibitotsi|sinsinzira/i.test(message);
-    const isTrauma = /trauma|flashback|assault|abuse|ptsd|ihungabana|ibikomere/i.test(message);
-    const isGrief = /lost my|passed away|grieving|grief|gupfusha|uwapfuye|ikiriyo/i.test(message);
-
-    let flaggedIssue = null;
-
-    if (isCrisis || isAnxiety || isDepression || isInsomnia || isTrauma || isGrief) {
-      const risk = isCrisis ? 'high' : 'medium';
-      const category = isCrisis ? 'crisis' : isAnxiety ? 'anxiety' : isDepression ? 'depression' : isInsomnia ? 'insomnia' : isTrauma ? 'trauma' : 'grief';
-      const title = isCrisis ? 'Acute Crisis & Immediate Risk' : isAnxiety ? 'Acute Panic & Anxiety Episode' : isDepression ? 'Depressive State & Hopelessness' : isInsomnia ? 'Sleep Disruption & Insomnia' : isTrauma ? 'Trauma Recall & Shock' : 'Acute Grief & Bereavement';
-      const taskDesc = isCrisis
-        ? 'Urgent Clinical Outreach: Direct contact required to activate crisis stabilization protocol.'
-        : `Clinical Follow-up Task: Review ${category} symptoms with patient and adjust CBT care plan.`;
-
-      if (req.body.userId) {
-        try {
-          // Look up assigned doctor
-          const { data: patientRow } = await supabase.from('patients').select('doctor_id').eq('id', req.body.userId).maybeSingle();
-          let doctorId = patientRow?.doctor_id;
-          let doctorName = 'Care Specialist';
-
-          if (!doctorId) {
-            const { data: docs } = await supabase.from('profiles').select('id, full_name').eq('role', 'doctor').limit(1);
-            if (docs && docs.length > 0) {
-              doctorId = docs[0].id;
-              doctorName = docs[0].full_name || 'Dr. Mutesi Alice';
-            }
-          } else {
-            const { data: docProf } = await supabase.from('profiles').select('full_name').eq('id', doctorId).maybeSingle();
-            if (docProf?.full_name) doctorName = docProf.full_name;
-          }
-
-          // Update patients record
-          await supabase.from('patients').upsert({
-            id: req.body.userId,
-            doctor_id: doctorId,
-            primary_concern: `[AI Flagged] ${title}`,
-            self_harm_flag: isCrisis,
-            status: 'active'
-          });
-
-          if (doctorId) {
-            await supabase.from('patient_caseload').upsert({
-              patient_id: req.body.userId,
-              doctor_id: doctorId,
-              status: 'active'
-            }, { onConflict: 'doctor_id,patient_id' });
-          }
-
-          // Insert into crisis_events
-          await supabase.from('crisis_events').insert([{
-            patient_id: req.body.userId,
-            trigger_type: 'AI_detected',
-            last_message: `[AI Flagged Struggle: ${title}] Patient shared: "${message.slice(0, 160)}". Assigned Task: ${taskDesc}`,
-            risk_level: risk,
-            location: {
-              doctorId,
-              doctorName,
-              issueCategory: category,
-              riskLevel: risk,
-              clinicalTask: taskDesc,
-              patientExcerpt: message.slice(0, 200),
-              timestamp: new Date().toISOString()
-            }
-          }]);
-
-          if (doctorId) {
-            io.to(`doctor:${doctorId}`).emit('patient:ai_struggle_flagged', {
-              patient_id: req.body.userId,
-              title,
-              risk_level: risk,
-              task: taskDesc
-            });
-          }
-
-          flaggedIssue = { detected: true, title, risk, doctorName, task: taskDesc };
-        } catch (dbErr) {
-          console.error("Auto-flagging DB error:", dbErr);
-        }
-      }
-    }
-
-    return res.status(200).json({ success: true, reply, isCrisis, flaggedIssue });
+    return res.status(200).json({ success: true, reply });
 
   } catch (error) {
     console.error("Chat Error:", error.message);

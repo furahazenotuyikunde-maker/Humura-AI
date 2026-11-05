@@ -5,7 +5,8 @@ import {
   ImagePlus, Square, Edit2, X, Trash2,
   CheckCircle, RefreshCcw, ChevronLeft, PhoneCall,
   Smile, Sparkles, HeartHandshake, Wind, Sun, Activity, Copy,
-  ShieldAlert, Stethoscope
+  ShieldAlert, Stethoscope, ArrowRight, BarChart3, BookOpen,
+  MapPin, Hand, Languages, Target
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -23,10 +24,76 @@ interface Message {
     risk: 'low' | 'medium' | 'high';
     task: string;
   };
+  actionIds?: ChatActionId[];
+  clinicalShare?: {
+    title: string;
+    risk: 'low' | 'medium' | 'high';
+    task: string;
+    excerpt: string;
+    status: 'pending' | 'sending' | 'sent' | 'dismissed' | 'error';
+    statusMessage?: string;
+  };
 }
+
+type ChatActionId =
+  | 'breathing'
+  | 'progress'
+  | 'insights'
+  | 'goal'
+  | 'education'
+  | 'professionals'
+  | 'directory'
+  | 'sign-language'
+  | 'braille'
+  | 'translator'
+  | 'continue';
+
+interface WellbeingContext {
+  moods: { mood: string; score: number | null; createdAt: string }[];
+  completedLessons: number;
+  goals: string[];
+}
+
+const CHAT_ACTIONS: Record<ChatActionId, { title: string; description: string; path: string; icon: React.ComponentType<{ size?: number }> }> = {
+  breathing: { title: 'Take a breathing break', description: 'A short guided pause to help you reset.', path: '/patient/chat', icon: Wind },
+  progress: { title: 'View my progress', description: 'See your check-ins and wellbeing activity.', path: '/patient/progress', icon: BarChart3 },
+  insights: { title: 'Explore AI insights', description: 'Review gentle reflections on your recent check-ins.', path: '/patient/progress#insights-heading', icon: Sparkles },
+  goal: { title: 'Set a wellbeing goal', description: 'Choose a small step that feels right for you.', path: '/patient/progress#goals-heading', icon: Target },
+  education: { title: 'Explore wellbeing resources', description: 'Find learning and practical wellbeing exercises.', path: '/patient/education', icon: BookOpen },
+  professionals: { title: 'Find a professional', description: 'Explore options for additional human support.', path: '/patient/professionals', icon: HeartHandshake },
+  directory: { title: 'Explore support services', description: 'Find care and support services in your area.', path: '/patient/centers', icon: MapPin },
+  'sign-language': { title: 'Open sign language support', description: 'Explore accessible communication resources.', path: '/patient/sign-language', icon: Hand },
+  braille: { title: 'Open Braille Generator', description: 'Convert text with Humura AI’s Braille tool.', path: '/patient/braille', icon: BookOpen },
+  translator: { title: 'Open Translator', description: 'Get help with language access.', path: '/patient/translator', icon: Languages },
+  continue: { title: 'Continue talking', description: 'Share more whenever you feel ready.', path: '/patient/chat', icon: HeartHandshake }
+};
+
+const getRecommendedActions = (text: string): ChatActionId[] => {
+  const content = text.toLowerCase();
+  const actions: ChatActionId[] = [];
+
+  if (/(suicid|kill (my)?self|want to die|don't want to live|end my life|self.?harm|kwiyahura|nshaka gupfa|sinshaka kubaho)/i.test(content)) {
+    return ['professionals', 'directory', 'continue'];
+  }
+  if (/(sign language|deaf|hard of hearing|amarenga|utumva)/i.test(content)) actions.push('sign-language');
+  if (/(braille|blind|visually impair|impumyi)/i.test(content)) actions.push('braille');
+  if (/(translate|translator|language|kinyarwanda|english|ururimi|gusemura)/i.test(content)) actions.push('translator');
+  if (/(professional|therapist|counsel|doctor|someone to talk|muganga|inzobere)/i.test(content)) actions.push('professionals');
+  if (/(support service|nearby|clinic|center|directory|service|serivisi|ivuriro)/i.test(content)) actions.push('directory');
+  if (/(progress|pattern|trend|check.?in|goal|journey|insight|iterambere|intego)/i.test(content)) {
+    actions.push('progress', 'insights', 'goal');
+  }
+  if (/(stress|anxious|anxiety|panic|overwhelm|calm|breath|tension|stressed|impungenge|ubwoba)/i.test(content)) {
+    actions.push('breathing', 'education', 'continue');
+  }
+  if (/(learn|understand|resource|education|read about|amakuru|kwiga)/i.test(content)) actions.push('education');
+  if (!actions.length) actions.push('continue', 'breathing', 'professionals');
+  return [...new Set(actions)].slice(0, 3);
+};
 
 interface QuickMood {
   id: string;
+  emoji: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label_en: string;
   label_rw: string;
@@ -38,66 +105,71 @@ interface QuickMood {
 
 const QUICK_MOODS: QuickMood[] = [
   {
-    id: 'calm',
-    icon: Wind,
-    label_en: 'Calm',
-    label_rw: 'Amahoro',
-    score: 4,
-    colorClass: 'text-[#2563EB]',
-    bgClass: 'bg-[#EFF6FF]',
-    borderClass: 'border-[#D6E7FF]'
-  },
-  {
-    id: 'anxious',
-    icon: Activity,
-    label_en: 'Anxious',
-    label_rw: 'Impungenge',
-    score: 1,
-    colorClass: 'text-[#CA8A04]',
-    bgClass: 'bg-[#FEFCE8]',
-    borderClass: 'border-[#FEF08A]'
-  },
-  {
-    id: 'hopeful',
-    icon: Sun,
-    label_en: 'Hopeful',
-    label_rw: 'Ibyiringiro',
-    score: 4,
-    colorClass: 'text-[#7C3AED]',
-    bgClass: 'bg-[#F5F2FF]',
-    borderClass: 'border-[#E4DCFB]'
-  },
-  {
     id: 'happy',
-    icon: Smile,
-    label_en: 'Happy',
-    label_rw: 'Uwishimye',
+    emoji: '😊',
+    icon: Wind,
+    label_en: 'Great',
+    label_rw: 'Neza cyane',
     score: 5,
     colorClass: 'text-[#D97706]',
     bgClass: 'bg-[#FEF8E7]',
     borderClass: 'border-[#FCE9B6]'
   },
   {
-    id: 'grateful',
-    icon: HeartHandshake,
-    label_en: 'Grateful',
-    label_rw: 'Gukenguruka',
-    score: 5,
-    colorClass: 'text-[#059669]',
-    bgClass: 'bg-[#EDF9F3]',
-    borderClass: 'border-[#D1F2E2]'
+    id: 'calm',
+    emoji: '🙂',
+    icon: Smile,
+    label_en: 'Good',
+    label_rw: 'Neza',
+    score: 4,
+    colorClass: 'text-[#2563EB]',
+    bgClass: 'bg-[#EFF6FF]',
+    borderClass: 'border-[#D6E7FF]'
   },
   {
-    id: 'excited',
-    icon: Sparkles,
-    label_en: 'Excited',
-    label_rw: 'Amashyushyu',
-    score: 5,
-    colorClass: 'text-[#DC2626]',
-    bgClass: 'bg-[#FFF0F0]',
-    borderClass: 'border-[#FFD9D9]'
+    id: 'neutral',
+    emoji: '😐',
+    icon: Activity,
+    label_en: 'Okay',
+    label_rw: 'Bisanzwe',
+    score: 3,
+    colorClass: 'text-[#6B7280]',
+    bgClass: 'bg-[#F8F9FA]',
+    borderClass: 'border-[#E5E7EB]'
+  },
+  {
+    id: 'sad',
+    emoji: '😔',
+    icon: HeartHandshake,
+    label_en: 'Low',
+    label_rw: 'Nabi',
+    score: 2,
+    colorClass: 'text-[#7C3AED]',
+    bgClass: 'bg-[#F5F2FF]',
+    borderClass: 'border-[#E4DCFB]'
+  },
+  {
+    id: 'anxious',
+    emoji: '😟',
+    icon: Sun,
+    label_en: 'Stressed',
+    label_rw: 'Impungenge',
+    score: 2,
+    colorClass: 'text-[#CA8A04]',
+    bgClass: 'bg-[#FEFCE8]',
+    borderClass: 'border-[#FEF08A]'
   }
 ];
+
+const moodNameFromEmoji = (emoji: string | null, score: number | null) => {
+  if (emoji === '😊' || emoji === '😁') return 'happy';
+  if (emoji === '🙂') return 'calm';
+  if (emoji === '😐') return 'neutral';
+  if (emoji === '😔') return 'sad';
+  if (emoji === '😟') return 'anxious';
+  if (score === null) return 'unreported';
+  return score >= 5 ? 'happy' : score >= 4 ? 'calm' : score >= 3 ? 'neutral' : 'sad';
+};
 
 const AFFIRMATIONS = [
   "You are worthy of healing. Every small step forward is progress worth celebrating.",
@@ -188,7 +260,16 @@ When a patient asks how to use or navigate Humura AI, give exact, step-by-step g
 - Lead with empathy, validation, and warmth.
 - Apply Cognitive Behavioral Therapy (CBT) reflection and grounding techniques.
 - Keep responses concise (under 200 words) and human.
-- For severe distress, suicidal ideation, or crisis, immediately provide the Rwanda 114 hotline.`;
+- For severe distress, suicidal ideation, or crisis, immediately provide the Rwanda 114 hotline.
+
+### CONNECTED WELLBEING COMPANION:
+- Listen first; acknowledge the person's feelings without judgment, then ask one gentle open question when helpful.
+- Offer CBT-informed reflection as an invitation, not a diagnosis: help separate a situation, thought, feeling, and possible next step.
+- Suggest one or two practical next steps relevant to what the person shared. Use Humura AI features when relevant: /patient/progress, /patient/education, /patient/professionals, /patient/centers, /patient/sign-language, /patient/braille, and /patient/translator.
+- If authorized wellbeing context is provided, use only that summary. Describe patterns as tentative (for example, "your recent check-ins suggest") and never infer a diagnosis. Do not ask for or reveal private journal entries.
+- A mood check-in is optional. Respect a skip or refusal without repeatedly asking.
+- You are an AI companion, not a replacement for a qualified professional. Do not claim to contact emergency services or a clinician. Never promise that a clinician has received an alert unless the platform confirms it.
+- If there may be immediate danger, respond calmly, ask whether the person is in immediate danger when appropriate, encourage reaching a trusted person and local emergency support, and clearly show Rwanda hotline 114 / emergency 112. Never claim help has been dispatched.`;
 };
 
 export default function AIChatPage() {
@@ -208,20 +289,37 @@ export default function AIChatPage() {
   const [affirmation] = useState(() => AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]);
   const [profile, setProfile] = useState<any>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [chatUserId, setChatUserId] = useState<string | null>(null);
+  const [useWellbeingContext, setUseWellbeingContext] = useState(false);
+  const [wellbeingContext, setWellbeingContext] = useState<WellbeingContext | null>(null);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [moodSaveError, setMoodSaveError] = useState<string | null>(null);
+  const [checkInSkipped, setCheckInSkipped] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadHistory();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error) {
+        console.error('Unable to load chat profile:', error);
+        return;
+      }
       if (user) {
+        setChatUserId(user.id);
+        try {
+          setUseWellbeingContext(localStorage.getItem(`humura-chat-context-${user.id}`) === 'true');
+        } catch (storageError) {
+          console.warn('Chat personalization preference could not be loaded:', storageError);
+        }
         supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
           .then(({ data }) => setProfile(data));
       }
-    });
+    }).catch((error: unknown) => console.error('Unable to load chat profile:', error));
 
     // Check if coming from dashboard thought bar with prefilled thought
     const prefilled = sessionStorage.getItem('humura_prefilled_prompt');
@@ -236,6 +334,94 @@ export default function AIChatPage() {
       sessionStorage.removeItem('humura_prefilled_prompt_format');
     }
   }, []);
+
+  useEffect(() => {
+    if (!chatUserId || !useWellbeingContext) {
+      setWellbeingContext(null);
+      return;
+    }
+
+    let active = true;
+    const loadWellbeingContext = async () => {
+      setContextLoading(true);
+      try {
+        let moodRows: any[] = [];
+        const currentSchema = await supabase
+          .from('mood_logs')
+          .select('mood, score, created_at')
+          .eq('user_id', chatUserId)
+          .order('created_at', { ascending: false })
+          .limit(7);
+
+        if (!currentSchema.error) {
+          moodRows = currentSchema.data || [];
+        } else {
+          const clinicalSchema = await supabase
+            .from('mood_logs')
+            .select('emoji, mood_score, logged_at')
+            .eq('patient_id', chatUserId)
+            .order('logged_at', { ascending: false })
+            .limit(7);
+          if (clinicalSchema.error) {
+            console.warn('Mood context is unavailable:', clinicalSchema.error.message);
+          } else {
+            moodRows = (clinicalSchema.data || []).map((row: any) => ({
+              mood: moodNameFromEmoji(row.emoji, row.mood_score),
+              score: row.mood_score,
+              created_at: row.logged_at
+            }));
+          }
+        }
+
+        const lessonsResult = await supabase
+          .from('user_progress')
+          .select('lesson_id')
+          .eq('user_id', chatUserId)
+          .limit(100);
+        if (lessonsResult.error) {
+          console.warn('Learning activity context is unavailable:', lessonsResult.error.message);
+        }
+
+        let goals: string[] = [];
+        try {
+          const savedGoals = localStorage.getItem(`humura-wellbeing-goals-${chatUserId}`);
+          const parsedGoals: unknown = savedGoals ? JSON.parse(savedGoals) : [];
+          if (Array.isArray(parsedGoals)) {
+            goals = parsedGoals
+              .filter((goal): goal is { title: string; progress: number; target: number } =>
+                typeof goal?.title === 'string' &&
+                typeof goal.progress === 'number' &&
+                typeof goal.target === 'number' &&
+                goal.progress < goal.target
+              )
+              .slice(0, 5)
+              .map(goal => goal.title.slice(0, 100));
+          }
+        } catch (error) {
+          console.warn('Personal wellbeing goals are unavailable:', error);
+        }
+
+        if (!active) return;
+        setWellbeingContext({
+          moods: moodRows.map((row: any) => ({
+            mood: typeof row.mood === 'string' ? row.mood : 'unreported',
+            score: typeof row.score === 'number' ? row.score : null,
+            createdAt: row.created_at
+          })),
+          completedLessons: lessonsResult.data?.length || 0,
+          goals
+        });
+      } catch (error) {
+        console.error('Unable to load wellbeing context:', error);
+        if (active) setWellbeingContext(null);
+      } finally {
+        if (active) setContextLoading(false);
+      }
+    };
+
+    void loadWellbeingContext();
+    return () => { active = false; };
+  }, [chatUserId, useWellbeingContext]);
 
   const loadHistory = () => {
     const saved = localStorage.getItem('humura_chat_history_v6');
@@ -371,152 +557,49 @@ export default function AIChatPage() {
     return null;
   };
 
-  const flagIssueAndAssignDoctor = async (
-    struggle: ClinicalAssessment,
-    userText: string
-  ): Promise<{ title: string; doctorName: string; risk: 'low' | 'medium' | 'high'; task: string } | null> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      // 1. Retrieve current patient record
-      const { data: patientRow } = await supabase
-        .from('patients')
-        .select('id, doctor_id, primary_concern')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      let assignedDoctorId = patientRow?.doctor_id;
-      let assignedDoctorName = isRw ? 'Muganga wawe' : 'Assigned Doctor';
-
-      // 2. If no assigned doctor, automatically link with primary available doctor
-      if (!assignedDoctorId) {
-        const { data: doctors } = await supabase
-          .from('profiles')
-          .select('id, full_name, specialty')
-          .eq('role', 'doctor')
-          .limit(1);
-
-        if (doctors && doctors.length > 0) {
-          assignedDoctorId = doctors[0].id;
-          assignedDoctorName = doctors[0].full_name || 'Dr. Mutesi Alice';
-        }
-      } else {
-        const { data: docProfile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', assignedDoctorId)
-          .maybeSingle();
-        if (docProfile?.full_name) {
-          assignedDoctorName = docProfile.full_name;
-        }
-      }
-
-      // 3. Upsert patient profile in patients table
-      const concernTitle = `[AI Flagged] ${struggle.title}`;
-      await supabase
-        .from('patients')
-        .upsert({
-          id: user.id,
-          doctor_id: assignedDoctorId,
-          primary_concern: concernTitle,
-          self_harm_flag: struggle.risk === 'high',
-          status: 'active'
-        });
-
-      // 4. Ensure patient caseload record exists for assigned doctor
-      if (assignedDoctorId) {
-        await supabase
-          .from('patient_caseload')
-          .upsert({
-            patient_id: user.id,
-            doctor_id: assignedDoctorId,
-            status: 'active'
-          }, { onConflict: 'doctor_id,patient_id' });
-      }
-
-      // 5. Dispatch task & alert to crisis_events via backend trigger
-      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
-      const taskText = isRw ? struggle.taskDescription_rw : struggle.taskDescription;
-      
-      const triggerPayload = {
-        patientId: user.id,
-        doctorId: assignedDoctorId,
-        type: 'AI_detected',
-        lastMsg: `[AI Flagged Struggle: ${struggle.title}] Patient shared: "${userText.slice(0, 160)}". Assigned Task: ${taskText}`,
-        location: {
-          doctorId: assignedDoctorId,
-          doctorName: assignedDoctorName,
-          issueCategory: struggle.category,
-          riskLevel: struggle.risk,
-          clinicalTask: taskText,
-          patientExcerpt: userText.slice(0, 200),
-          flaggedAt: new Date().toISOString()
-        }
-      };
-
-      // Call backend trigger with timeout protection
-      const triggerCtrl = new AbortController();
-      const triggerTimeout = setTimeout(() => triggerCtrl.abort(), 4000);
-      try {
-        await fetch(`${baseUrl}/api/crisis/trigger`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: triggerCtrl.signal,
-          body: JSON.stringify(triggerPayload)
-        });
-      } catch (triggerErr) {
-        console.warn('Backend trigger notice:', triggerErr);
-      } finally {
-        clearTimeout(triggerTimeout);
-      }
-
-      // 6. Archive to ai_insights_archive for clinical records
-      await supabase
-        .from('ai_insights_archive')
-        .insert({
-          user_id: user.id,
-          insight_type: 'clinical_flag',
-          summary: struggle.title,
-          recommendations: [taskText],
-          metadata: {
-            doctor_id: assignedDoctorId,
-            doctor_name: assignedDoctorName,
-            risk_level: struggle.risk,
-            category: struggle.category,
-            patient_input: userText.slice(0, 300)
-          }
-        });
-
-      return {
-        title: isRw ? struggle.title_rw : struggle.title,
-        doctorName: assignedDoctorName,
-        risk: struggle.risk,
-        task: taskText
-      };
-    } catch (err) {
-      console.error('Error flagging struggle:', err);
-      return null;
-    }
-  };
-
   const handleSelectQuickMood = async (mood: QuickMood) => {
-    setSelectedMood(mood.id);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('mood_logs').insert({
-          user_id: user.id,
-          mood: mood.id,
-          score: mood.score,
-          created_at: new Date().toISOString()
-        });
-      }
-    } catch (err) {
-      console.error('Mood log error:', err);
+    setMoodSaveError(null);
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Mood check-in requires an authenticated patient:', userError);
+      setMoodSaveError(isRw ? 'Injira muri konti yawe kugira ngo ubike uko wiyumva.' : 'Please sign in to save your check-in.');
+      return;
     }
 
+    const loggedAt = new Date().toISOString();
+    let { error } = await supabase.from('mood_logs').insert({
+      user_id: user.id,
+      mood: mood.id,
+      score: mood.score,
+      created_at: loggedAt
+    });
+
+    if (error) {
+      const currentSchemaError = error;
+      const fallbackResult = await supabase.from('mood_logs').insert({
+        patient_id: user.id,
+        mood_score: mood.score,
+        emoji: mood.emoji,
+        logged_at: loggedAt
+      });
+      error = fallbackResult.error;
+      if (error) console.error('Unable to save mood check-in:', currentSchemaError, error);
+    }
+
+    if (error) {
+      setMoodSaveError(isRw ? 'Ntibyashobotse kubika uko wiyumva. Gerageza nanone.' : 'Your check-in could not be saved. Please try again.');
+      return;
+    }
+
+    setSelectedMood(mood.id);
+    setCheckInSkipped(true);
+    if (useWellbeingContext) {
+      setWellbeingContext((current) => ({
+        moods: [{ mood: mood.id, score: mood.score, createdAt: loggedAt }, ...(current?.moods || [])].slice(0, 7),
+        completedLessons: current?.completedLessons || 0,
+        goals: current?.goals || []
+      }));
+    }
     const content = isRw
       ? `Ubu numva nmeze: ${mood.label_rw}`
       : `My current feeling right now is: ${mood.label_en}`;
@@ -544,9 +627,6 @@ export default function AIChatPage() {
     const controller = new AbortController();
     setAbortController(controller);
 
-    // Detect clinical struggle in background parallel to AI generation
-    const detectedStruggle = detectPatientStruggle(userMsg.content);
-
     // Pre-Analysis Guardrail: Skip strictly non-health questions with gentle redirection
     if (isStrictlyNonHealthQuery(userMsg.content)) {
       setIsLoading(false);
@@ -555,15 +635,23 @@ export default function AIChatPage() {
         ? "Ndi Humura AI, umufasha wihariye w'ubuzima bwo mu mutwe n'imitekerereze mu Rwanda. Nshinzwe gusa gufasha mu bibazo byerekeye ubuzima, umutuzo wo mu mutwe, no kukuyobora ku rubuga rwa Humura AI. Sinshobora gusubiza ibibazo bitajyanye n'ubuzima. Mbwira, waba hari ikibazo cy'ubuzima wifuza ko tuganiraho cyangwa ubufasha ku mikorere ya Humura AI?"
         : "I am Humura AI, dedicated exclusively to mental health, emotional wellness, and your healthcare journey. I cannot assist with non-health topics like coding, homework, or general trivia. How are you feeling today, or is there a health concern or question about navigating Humura AI that I can help you with?";
 
-      addAIMessage(refusalReply, newMessages, null);
+      addAIMessage(refusalReply, newMessages, ['continue']);
       return;
     }
 
     try {
       const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (useWellbeingContext && !session) {
+        throw new Error('Please sign in again before using your progress to personalize chat.');
+      }
       const response = await fetch(`${baseUrl}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
         signal: controller.signal,
         body: JSON.stringify({
           message: userMsg.content,
@@ -571,7 +659,8 @@ export default function AIChatPage() {
           history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
           lang: i18n.language,
           inputFormat: enteredInBraille ? 'braille' : undefined,
-          userId: (await supabase.auth.getSession()).data.session?.user?.id
+          userId: session?.user.id,
+          wellbeingContext: useWellbeingContext ? wellbeingContext : undefined
         })
       });
 
@@ -581,12 +670,7 @@ export default function AIChatPage() {
         throw new Error('Backend rate limited');
       }
 
-      let flagInfo: any = null;
-      if (detectedStruggle) {
-        flagInfo = await flagIssueAndAssignDoctor(detectedStruggle, userMsg.content);
-      }
-
-      addAIMessage(data.reply, newMessages, flagInfo);
+      addAIMessage(data.reply, newMessages);
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       try {
@@ -602,7 +686,9 @@ export default function AIChatPage() {
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{
-                  text: `${HUMURA_SYSTEM_PROMPT(i18n.language)}${enteredInBraille
+                  text: `${HUMURA_SYSTEM_PROMPT(i18n.language)}${useWellbeingContext && wellbeingContext
+                    ? `\n\n### PATIENT-AUTHORIZED WELLBEING CONTEXT\nUse this brief summary only to personalize this response. It contains no journal or conversation history. Do not repeat sensitive details unnecessarily. Describe any pattern as tentative and do not diagnose.\n${JSON.stringify(wellbeingContext)}`
+                    : ''}${enteredInBraille
                     ? '\nThe latest user message was entered in uncontracted English Braille and accurately decoded into plain text. Respond directly to its meaning with supportive health guidance. Do not ask the user to retype or decode it.'
                     : ''}`
                 }]
@@ -628,15 +714,9 @@ export default function AIChatPage() {
         const data = await fallbackRes.json();
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        let flagInfo: any = null;
-        if (detectedStruggle) {
-          flagInfo = await flagIssueAndAssignDoctor(detectedStruggle, userMsg.content);
-        }
-
         addAIMessage(
           reply || (isRw ? "Ndi hano kugutega amatwi. Komeza unsangize." : "I am here with you. Please tell me more."),
-          newMessages,
-          flagInfo
+          newMessages
         );
       } catch (fe: any) {
         if (fe.name !== 'AbortError') {
@@ -656,6 +736,31 @@ export default function AIChatPage() {
 
   const handleSend = () => editingId !== null ? saveEdit() : sendMessage();
   const stopGeneration = () => { abortController?.abort(); setAbortController(null); setIsLoading(false); };
+  const toggleWellbeingContext = () => {
+    const next = !useWellbeingContext;
+    if (chatUserId) {
+      try {
+        localStorage.setItem(`humura-chat-context-${chatUserId}`, String(next));
+      } catch (storageError) {
+        console.warn('Chat personalization preference could not be saved:', storageError);
+      }
+    }
+    setUseWellbeingContext(next);
+  };
+  const handleChatAction = (actionId: ChatActionId) => {
+    if (actionId === 'breathing') {
+      setInput(isRw
+        ? 'Nyobora mu myitozo yo guhumeka ituje y’iminota itatu.'
+        : 'Please guide me through a gentle three-minute breathing exercise.');
+      inputRef.current?.focus();
+      return;
+    }
+    if (actionId === 'continue') {
+      inputRef.current?.focus();
+      return;
+    }
+    navigate(CHAT_ACTIONS[actionId].path);
+  };
   const deleteMessage = (idx: number) => { const u = messages.filter((_, i) => i !== idx); setMessages(u); saveHistory(u); };
   const startEdit = (idx: number) => { setEditingId(idx); setInput(messages[idx].content); };
   
@@ -666,18 +771,121 @@ export default function AIChatPage() {
     setMessages(u); saveHistory(u); setEditingId(null); setInput('');
   };
 
-  const addAIMessage = (content: string, currentMsgs: Message[], clinicalFlag?: any) => {
+  const addAIMessage = (content: string, currentMsgs: Message[], actionIds?: ChatActionId[]) => {
+    const lastUserMessage = [...currentMsgs].reverse().find(message => message.role === 'user');
+    const detectedConcern = lastUserMessage ? detectPatientStruggle(lastUserMessage.content) : null;
     const final = [
       ...currentMsgs, 
       { 
         role: 'model' as const, 
         content, 
         timestamp: new Date(),
-        clinicalFlag: clinicalFlag || undefined
+        clinicalFlag: undefined,
+        actionIds: actionIds || (lastUserMessage ? getRecommendedActions(lastUserMessage.content) : ['continue']),
+        clinicalShare: detectedConcern && lastUserMessage ? {
+          title: isRw ? detectedConcern.title_rw : detectedConcern.title,
+          risk: detectedConcern.risk,
+          task: isRw ? detectedConcern.taskDescription_rw : detectedConcern.taskDescription,
+          excerpt: lastUserMessage.content.slice(0, 300),
+          status: 'pending' as const
+        } : undefined
       }
     ];
     setMessages(final); 
     saveHistory(final);
+  };
+
+  const updateClinicalShare = (messageIndex: number, patch: Partial<NonNullable<Message['clinicalShare']>>) => {
+    setMessages((current) => {
+      const updated = current.map((message, index) => index === messageIndex && message.clinicalShare
+        ? { ...message, clinicalShare: { ...message.clinicalShare, ...patch } }
+        : message);
+      saveHistory(updated);
+      return updated;
+    });
+  };
+
+  const shareClinicalConcern = async (messageIndex: number) => {
+    const concern = messages[messageIndex]?.clinicalShare;
+    if (!concern || concern.status === 'sending' || concern.status === 'sent') return;
+    updateClinicalShare(messageIndex, { status: 'sending', statusMessage: undefined });
+
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('Please sign in again before sharing a support request.');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.');
+
+      const { data: patient, error: patientError } = await supabase
+        .from('patients')
+        .select('doctor_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (patientError) throw patientError;
+      let doctorId = patient?.doctor_id;
+      if (!doctorId) {
+        const { data: caseload, error: caseloadError } = await supabase
+          .from('patient_caseload')
+          .select('doctor_id')
+          .eq('patient_id', user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+        if (caseloadError) throw caseloadError;
+        doctorId = caseload?.doctor_id;
+      }
+      if (!doctorId) {
+        updateClinicalShare(messageIndex, {
+          status: 'error',
+          statusMessage: isRw
+            ? 'Nta nzobere ugenerwa ufite. Ushobora kureba inzobere cyangwa serivisi z’ubutabazi hano hepfo.'
+            : 'You do not have an assigned professional yet. You can explore professionals or support services below.'
+        });
+        return;
+      }
+
+      const baseUrl = (import.meta.env.VITE_RENDER_BACKEND_URL || 'https://humura-ai-1.onrender.com').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/api/crisis/trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          patientId: user.id,
+          doctorId,
+          type: 'AI_detected',
+          consentToShare: true,
+          lastMsg: `Patient consented to share this support request: "${concern.excerpt}"`,
+          location: {
+            issueCategory: concern.title,
+            riskLevel: concern.risk,
+            clinicalTask: concern.task,
+            consentedAt: new Date().toISOString()
+          }
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || result.success !== true || !result.eventId) {
+        throw new Error(result.error || 'The support request could not be recorded.');
+      }
+      updateClinicalShare(messageIndex, {
+        status: 'sent',
+        statusMessage: isRw
+          ? 'Ubusabe bwawe bwanditswe. Ibi ntibihamya ko inzobere yabubonye. Mu kaga kihutirwa, hamagara 114 cyangwa 112.'
+          : 'Your request was recorded. This does not confirm a clinician has seen it. For immediate danger, call 114 or 112.'
+      });
+    } catch (error) {
+      console.error('Unable to share the support request:', error);
+      updateClinicalShare(messageIndex, {
+        status: 'error',
+        statusMessage: isRw
+          ? 'Ntibyashobotse kohereza ubusabe. Ushobora gushaka ubufasha hano hepfo cyangwa guhamagara 114 mu kaga kihutirwa.'
+          : 'We could not submit the request. You can find support below or call 114 in an emergency.'
+      });
+    }
   };
 
   const startRecording = async () => {
@@ -723,22 +931,40 @@ export default function AIChatPage() {
             </button>
 
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#08352A] flex items-center justify-center text-white font-black text-xs shadow-xs">
-                H
+              <div className="w-10 h-10 rounded-2xl bg-[#08352A] flex items-center justify-center text-white font-black text-xs shadow-xs">
+                <Sparkles size={19} className="text-[#9BE0BD]" />
               </div>
               <div>
                 <h1 className="text-sm sm:text-base font-extrabold text-[#08352A] leading-tight">
-                  Humura AI Companion
+                  Humura AI
                 </h1>
-                <p className="text-[10px] font-semibold text-[#21B48D] flex items-center gap-1.5 leading-none mt-0.5">
+                <p className="text-[10px] font-semibold text-[#5E8E81] flex items-center gap-1.5 leading-none mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#21B48D] animate-pulse" />
-                  <span>24/7 AI CBT · Confidential</span>
+                  <span>Your AI-powered wellbeing companion</span>
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {chatUserId && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={useWellbeingContext}
+                aria-label={useWellbeingContext ? 'Stop using my progress data in chat' : 'Allow my progress data to personalize chat'}
+                title="Only your check-ins, completed lessons, and goals are included. Journal entries are never used."
+                onClick={toggleWellbeingContext}
+                className={`hidden md:flex items-center gap-2 rounded-xl border px-3 py-2 text-[10px] font-bold transition-colors md:text-xs ${
+                  useWellbeingContext
+                    ? 'border-[#B9D9C5] bg-[#EDF7F0] text-[#245F43]'
+                    : 'border-[#DCEBE3] bg-white text-[#678173] hover:bg-[#F4F8F6]'
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full ${useWellbeingContext ? 'bg-[#258157]' : 'bg-[#A3B4A8]'}`} />
+                Use my progress
+              </button>
+            )}
             {/* Language Pill Switcher */}
             <div className="flex items-center bg-[#F4F8F6] border border-[#DCEBE3] rounded-full p-0.5">
               {['en', 'rw'].map(lang => (
@@ -763,6 +989,7 @@ export default function AIChatPage() {
                 localStorage.removeItem('humura_chat_history_v6');
                 loadHistory();
                 setSelectedMood(null);
+                setCheckInSkipped(false);
               }}
               className="p-2 text-[#8DB4A8] hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
               title={isRw ? 'Siba ibiganiro byose' : 'Clear chat history'}
@@ -821,42 +1048,125 @@ export default function AIChatPage() {
                     )}
                     <p className="font-normal whitespace-pre-wrap">{msg.content}</p>
 
-                    {/* Care Coordination & Flagged Struggle Indicator */}
+                    {/* Legacy flags are shown with an explicit delivery caveat. */}
                     {msg.clinicalFlag && (
-                      <div className="mt-3.5 p-3 rounded-2xl bg-[#EAF5F0] border border-[#CDE5DA] flex items-start gap-2.5">
-                        <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
-                          msg.clinicalFlag.risk === 'high' 
-                            ? 'bg-red-100 text-red-600' 
-                            : 'bg-[#08352A] text-[#21B48D]'
-                        }`}>
+                      <div className="mt-3.5 flex items-start gap-2.5 rounded-2xl border border-[#CDE5DA] bg-[#EAF5F0] p-3">
+                        <div className="mt-0.5 shrink-0 rounded-lg bg-[#08352A] p-1.5 text-[#21B48D]">
                           <ShieldAlert size={14} />
                         </div>
                         <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-[#08352A] uppercase tracking-wider">
-                              {isRw ? "Ubufasha bw'ubuvuzi" : 'Care Coordination'}
-                            </span>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                              msg.clinicalFlag.risk === 'high'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-emerald-100 text-emerald-700'
-                            }`}>
-                              {msg.clinicalFlag.risk === 'high' ? (isRw ? 'Byihutirwa' : 'High Priority') : (isRw ? 'Gukurikiranwa' : 'Active Care')}
-                            </span>
-                          </div>
-                          <p className="text-xs font-semibold text-[#08352A] mt-1">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-[#08352A]">{isRw ? 'Icyitonderwa ku butumwa bwabanje' : 'Previous support notice'}</p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-[#4F776B]">
                             {isRw
-                              ? `Iki kibazo (${msg.clinicalFlag.title}) cyanditswe kandi kishyikirijwe muganga wawe (${msg.clinicalFlag.doctorName || 'Muganga'}) kugira ngo agukurikirane.`
-                              : `This struggle (${msg.clinicalFlag.title}) has been flagged and assigned to ${msg.clinicalFlag.doctorName || 'your assigned doctor'} for follow-up.`}
-                          </p>
-                          <p className="text-[11px] text-[#4F776B] mt-0.5">
-                            {isRw
-                              ? 'Muganga wawe yakiriye ubu butumwa mu itsinda ry\'ubuvuzi mu ibanga.'
-                              : 'Your care specialist has been briefed so you receive continuous, personalized support.'}
+                              ? `Ikibazo cyamenyekanye (${msg.clinicalFlag.title}), ariko ntidushobora kwemeza ko inzobere yakibonye.`
+                              : `A concern was identified (${msg.clinicalFlag.title}), but we cannot confirm a professional has seen it.`}
                           </p>
                         </div>
                       </div>
                     )}
+
+                    {!isUser && msg.clinicalShare && msg.clinicalShare.status !== 'dismissed' && (
+                      <div className={`mt-4 rounded-2xl border p-3.5 ${
+                        msg.clinicalShare.risk === 'high'
+                          ? 'border-[#F1C9C4] bg-[#FFF7F5]'
+                          : 'border-[#DDE8D9] bg-[#F7FAF5]'
+                      }`}>
+                        <div className="flex items-start gap-2.5">
+                          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                            msg.clinicalShare.risk === 'high' ? 'bg-[#F9E4DF] text-[#A4473C]' : 'bg-[#E7F2E8] text-[#39774D]'
+                          }`}>
+                            {msg.clinicalShare.risk === 'high' ? <ShieldAlert size={16} /> : <Stethoscope size={16} />}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-[#315642]">
+                              {isRw ? 'Wifuza gusangiza inzobere yawe?' : 'Would you like to share this with your professional?'}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-relaxed text-[#667B6D]">
+                              {isRw
+                                ? 'Uhitamo niba wohereza igice cy’ubutumwa n’impamvu y’ubufasha. Nta butumwa bwoherezwa utabyemeye.'
+                                : 'You choose whether to send this message excerpt and support category. Nothing is shared unless you agree.'}
+                            </p>
+                            <blockquote className="mt-2 rounded-xl border-l-2 border-[#A9C9B2] bg-white/80 px-3 py-2 text-[11px] italic leading-relaxed text-[#536C5A]">
+                              “{msg.clinicalShare.excerpt}”
+                            </blockquote>
+                            {msg.clinicalShare.risk === 'high' && (
+                              <p className="mt-2 text-[11px] font-semibold leading-relaxed text-[#8D453D]">
+                                {isRw
+                                  ? 'Niba uri mu kaga ako kanya, hamagara 114 cyangwa 112 cyangwa wegere umuntu wizeye. Humura AI ntiyahamagaye ubutabazi.'
+                                  : 'If you are in immediate danger, call 114 or 112 or reach someone you trust. Humura AI has not contacted emergency services.'}
+                              </p>
+                            )}
+                            {msg.clinicalShare.statusMessage && (
+                              <p role={msg.clinicalShare.status === 'error' ? 'alert' : 'status'} className={`mt-2 text-[11px] font-semibold leading-relaxed ${
+                                msg.clinicalShare.status === 'error' ? 'text-[#9B3F38]' : 'text-[#426A50]'
+                              }`}>
+                                {msg.clinicalShare.statusMessage}
+                              </p>
+                            )}
+                            {msg.clinicalShare.status === 'pending' && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void shareClinicalConcern(idx)}
+                                  className="min-h-10 rounded-xl bg-[#176B4B] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#12583D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D]"
+                                >
+                                  {isRw ? 'Yego, sangiza inzobere yanjye' : 'Yes, share with my professional'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updateClinicalShare(idx, { status: 'dismissed' })}
+                                  className="min-h-10 rounded-xl border border-[#D7E3D9] bg-white px-3 py-2 text-[11px] font-semibold text-[#58705F] transition hover:bg-[#F1F6F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D]"
+                                >
+                                  {isRw ? 'Oya, si ubu' : 'No, not now'}
+                                </button>
+                              </div>
+                            )}
+                            {msg.clinicalShare.status === 'sending' && (
+                              <p role="status" className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#426A50]">
+                                <Loader2 size={13} className="animate-spin" /> {isRw ? 'Turimo kohereza ubusabe…' : 'Submitting your request…'}
+                              </p>
+                            )}
+                            {msg.clinicalShare.status === 'error' && (
+                              <button type="button" onClick={() => void navigate('/patient/professionals')} className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#286D4B] underline underline-offset-2">
+                                {isRw ? 'Shaka inzobere' : 'Explore professionals'} <ArrowRight size={12} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!isUser && msg.actionIds?.length ? (
+                      <div className="mt-4 rounded-2xl border border-[#DDEBE2] bg-[#F7FAF7] p-3">
+                        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#64816E]">
+                          <Sparkles size={13} className="text-[#37966B]" />
+                          {isRw ? 'Intambwe zikurikira ushobora gutera' : 'Recommended next steps'}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {msg.actionIds.map((actionId) => {
+                            const action = CHAT_ACTIONS[actionId];
+                            const ActionIcon = action.icon;
+                            return (
+                              <button
+                                key={actionId}
+                                type="button"
+                                onClick={() => handleChatAction(actionId)}
+                                className="group flex items-center gap-2.5 rounded-xl border border-[#E4ECE6] bg-white p-2.5 text-left transition hover:border-[#AFD1BA] hover:bg-[#F1F8F3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D]"
+                              >
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E8F4EC] text-[#287A52]">
+                                  <ActionIcon size={16} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-[11px] font-bold leading-tight text-[#315642]">{action.title}</span>
+                                  <span className="mt-0.5 block text-[10px] leading-snug text-[#7D9082]">{action.description}</span>
+                                </span>
+                                <ArrowRight size={14} className="shrink-0 text-[#4C8A64] transition-transform group-hover:translate-x-0.5" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
 
                     <p
                       className={`text-[10px] font-semibold mt-2.5 ${
@@ -896,31 +1206,76 @@ export default function AIChatPage() {
           })}
 
           {/* ── QUICK MOOD PILL SELECTORS (LUCIDE ICONS INSTEAD OF EMOJIS) ── */}
-          {messages.length === 1 && !selectedMood && (
+          {messages.length === 1 && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4 ml-11 mt-4"
             >
-              <p className="text-xs font-bold text-[#5E8E81] uppercase tracking-wider">
-                {isRw ? 'Hitamo uko umerewe muri uyu mwanya:' : 'Check in: how are you feeling right now?'}
-              </p>
-
-              <div className="flex flex-wrap gap-2.5">
-                {QUICK_MOODS.map(mood => {
-                  const Icon = mood.icon;
-                  return (
+              <div className="rounded-3xl border border-[#DFEBE5] bg-white p-4 shadow-xs sm:p-5">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#329568]" />
+                  <p className="text-xs font-bold text-[#315B45]">
+                    {isRw ? 'Ndi hano kugutega amatwi. Wahera he?' : 'I’m here to listen. Where would you like to begin?'}
+                  </p>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {(isRw ? [
+                    { label: 'Ndifuza kuvuga uko meze', prompt: 'Ndifuza kuganira ku buryo niyumva.' },
+                    { label: 'Nshaka kwisuzuma', prompt: 'Wamfasha kwisuzuma uko merewe mu mutwe?' },
+                    { label: 'Mfashe gusobanukirwa n’iterambere ryanjye', prompt: 'Mfasha gusobanukirwa n’iterambere ryanjye mu mibereho myiza.' },
+                    { label: 'Nyereka igikorwa cyamfasha', prompt: 'Nyereka igikorwa cyoroheje cyamfasha uyu munsi.' },
+                    { label: 'Mfashe kubona ubufasha', prompt: 'Mfasha kubona inzobere yo kuganira na yo.' }
+                  ] : [
+                    { label: 'I want to talk about how I feel', prompt: 'I want to talk about how I feel.' },
+                    { label: 'Check in with myself', prompt: 'Can we do a gentle wellbeing check-in?' },
+                    { label: 'Help me understand my progress', prompt: 'Help me understand my wellbeing progress.' },
+                    { label: 'Suggest a wellness activity', prompt: 'Suggest a gentle wellness activity for me.' },
+                    { label: 'Help me find support', prompt: 'Help me find professional support.' }
+                  ]).map((prompt) => (
                     <button
-                      key={mood.id}
-                      onClick={() => handleSelectQuickMood(mood)}
-                      className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xs ${mood.bgClass} ${mood.borderClass}`}
+                      key={prompt.label}
+                      type="button"
+                      onClick={() => void sendMessage(prompt.prompt)}
+                      className="flex min-h-10 items-center justify-between gap-2 rounded-xl border border-[#E5EEE7] bg-[#FBFDFC] px-3 py-2 text-left text-[11px] font-semibold text-[#45634F] transition hover:border-[#B9D9C5] hover:bg-[#F0F7F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D]"
                     >
-                      <Icon size={16} className={mood.colorClass} />
-                      <span className={mood.colorClass}>{isRw ? mood.label_rw : mood.label_en}</span>
+                      <span>{prompt.label}</span><ArrowRight size={14} className="shrink-0 text-[#4B8A64]" />
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
+
+              {!selectedMood && !checkInSkipped && (
+                <div className="rounded-3xl border border-[#DFEBE5] bg-white p-4 shadow-xs sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-[#315B45]">
+                      {isRw ? 'Umeze ute uyu munsi? (Si ngombwa)' : 'How are you feeling today? (Optional)'}
+                    </p>
+                    <button type="button" onClick={() => setCheckInSkipped(true)} className="text-[10px] font-semibold text-[#789081] underline-offset-2 hover:underline">
+                      {isRw ? 'Simbuka ubu' : 'Skip for now'}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {QUICK_MOODS.map(mood => {
+                      const Icon = mood.icon;
+                      return (
+                        <button
+                          key={mood.id}
+                          type="button"
+                          onClick={() => void handleSelectQuickMood(mood)}
+                          disabled={isLoading || contextLoading}
+                          className={`flex min-h-10 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold shadow-2xs transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#21B48D] disabled:cursor-wait disabled:opacity-60 ${mood.bgClass} ${mood.borderClass}`}
+                        >
+                          <span role="img" aria-label={isRw ? mood.label_rw : mood.label_en}>{mood.emoji}</span>
+                          <Icon size={14} className={mood.colorClass} />
+                          <span className={mood.colorClass}>{isRw ? mood.label_rw : mood.label_en}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {moodSaveError && <p className="mt-2 text-xs font-semibold text-red-700" role="alert">{moodSaveError}</p>}
+                </div>
+              )}
 
               {/* Affirmation Card */}
               <div className="p-4 rounded-3xl bg-white border border-[#DFEBE5] shadow-xs max-w-lg">
@@ -935,10 +1290,10 @@ export default function AIChatPage() {
           )}
 
           {isLoading && (
-            <div className="flex items-center gap-3 ml-11 text-[#5E8E81]">
+            <div className="ml-11 flex max-w-sm items-center gap-3 rounded-2xl border border-[#DFEBE5] bg-white px-4 py-3 text-[#5E8E81]" role="status" aria-live="polite">
               <Loader2 size={16} className="animate-spin text-[#21B48D]" />
-              <p className="text-xs font-bold text-[#21B48D]">
-                {isRw ? 'Humura AI iri gutegura ubufasha...' : 'Humura AI is responding thoughtfully...'}
+              <p className="text-xs font-semibold text-[#4F7560]">
+                {isRw ? 'Humura AI iragutega amatwi...' : 'Humura AI is listening and preparing a thoughtful response…'}
               </p>
             </div>
           )}
@@ -950,6 +1305,20 @@ export default function AIChatPage() {
       {/* ── BOTTOM INPUT CAPSULE BAR ── */}
       <div className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-[#DFEBE5] px-4 py-3.5 shadow-xs">
         <div className="max-w-3xl mx-auto">
+          {chatUserId && (
+            <div className="mb-2 flex items-start justify-between gap-3 rounded-xl bg-[#F4F8F5] px-3 py-2 md:hidden">
+              <p className="text-[10px] leading-relaxed text-[#6C8373]">
+                {useWellbeingContext
+                  ? contextLoading
+                    ? 'Loading your check-ins and goals…'
+                    : 'Personalized context is on. Only your check-ins, completed lessons, and goals are included — never journal entries.'
+                  : 'Personalized context is off. Your progress data is not used in chat.'}
+              </p>
+              <button type="button" onClick={toggleWellbeingContext} role="switch" aria-checked={useWellbeingContext} className="shrink-0 text-[10px] font-bold text-[#286D4B] underline underline-offset-2">
+                {useWellbeingContext ? 'Turn off' : 'Use my progress'}
+              </button>
+            </div>
+          )}
           {error && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-1.5 mb-2.5">
               <p className="text-red-500 text-xs font-bold flex items-center gap-1.5">
@@ -1002,6 +1371,7 @@ export default function AIChatPage() {
 
             <input
               type="text"
+              ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}

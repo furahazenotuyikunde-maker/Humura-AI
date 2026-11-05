@@ -273,9 +273,15 @@ export default function MeetProfessionalPage() {
       return;
     }
     try {
-      await fetch(`${backendUrl}/api/crisis/trigger`, {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.');
+      const response = await fetch(`${backendUrl}/api/crisis/trigger`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           patientId: currentUser.id,
           doctorId: patientData?.doctor_id,
@@ -283,14 +289,19 @@ export default function MeetProfessionalPage() {
           lastMsg: 'Patient triggered urgent SOS from Clinical Professional Hub'
         })
       });
+      const result = await response.json();
+      if (!response.ok || result.success !== true || !result.eventId) {
+        throw new Error(result.error || 'The emergency request could not be recorded.');
+      }
       showToast(
         isRw
-          ? 'Ubutabazi buraje! Urwego rw\'ubuvuzi rwahise rumenyekanishwa.'
-          : 'Emergency SOS alert dispatched to medical team!',
+          ? 'Ubusabe bwawe bwanditswe. Ntibihamya ko inzobere yabubonye. Mu kaga ako kanya, hamagara 114 cyangwa 112.'
+          : 'Your request was recorded. This does not confirm a clinician has seen it. For immediate danger, call 114 or 112.',
         'success'
       );
       setTimeout(() => navigate('/patient/emergency'), 1600);
     } catch (err) {
+      console.error('Unable to record emergency support request:', err);
       navigate('/patient/emergency');
     }
   };

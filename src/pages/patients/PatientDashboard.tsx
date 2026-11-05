@@ -108,19 +108,31 @@ export default function PatientDashboard() {
     setMoodMessage(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
       if (!session) {
         throw new Error('Your session has expired. Please sign in again to save your check-in.');
       }
 
-      const { error } = await supabase.from('mood_logs').insert({
-        patient_id: session.user.id,
-        mood_score: selectedMoodOption.score,
+      const loggedAt = new Date().toISOString();
+      let { error } = await supabase.from('mood_logs').insert({
+        user_id: session.user.id,
         mood: selectedMoodOption.mood,
-        emoji: selectedMoodOption.emoji,
-        logged_at: new Date().toISOString()
+        score: selectedMoodOption.score,
+        created_at: loggedAt
       });
 
+      if (error) {
+        const legacyError = error;
+        const fallbackResult = await supabase.from('mood_logs').insert({
+          patient_id: session.user.id,
+          mood_score: selectedMoodOption.score,
+          emoji: selectedMoodOption.emoji,
+          logged_at: loggedAt
+        });
+        error = fallbackResult.error;
+        if (error) console.error('Unable to save check-in with either mood log schema:', legacyError, error);
+      }
       if (error) throw error;
       setMoodMessage({ text: `Your ${selectedMoodOption.label.toLowerCase()} check-in is saved.`, error: false });
     } catch (error) {
