@@ -9,6 +9,7 @@ import {
 import {
   CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
+import jsPDF from 'jspdf';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -632,14 +633,70 @@ export default function ProgressPage() {
   };
 
   const downloadReport = () => {
-    const blob = new Blob([buildReport()], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'humura-wellbeing-report.txt';
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice('Your progress report has been downloaded.');
+    const report = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = report.internal.pageSize.getWidth();
+    const pageHeight = report.internal.pageSize.getHeight();
+    const left = 18;
+    const right = 18;
+    const contentWidth = pageWidth - left - right;
+    const bottom = pageHeight - 22;
+    const safeText = (text: string) => text
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[–—]/g, '-')
+      .replace(/[’‘]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/[^\x20-\x7E]/g, '');
+
+    report.setFillColor(21, 60, 50);
+    report.rect(0, 0, pageWidth, 43, 'F');
+    report.setTextColor(255, 255, 255);
+    report.setFont('helvetica', 'bold');
+    report.setFontSize(19);
+    report.text('Your Wellbeing Journey', left, 19);
+    report.setFont('helvetica', 'normal');
+    report.setFontSize(10);
+    report.text('Humura AI  |  Personal progress report', left, 28);
+    report.setTextColor(222, 241, 231);
+    report.text(`Created ${new Date().toLocaleDateString()}`, left, 36);
+
+    let y = 55;
+    const lines = safeText(buildReport()).split('\n');
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        y += 3;
+        return;
+      }
+
+      const isHeading = trimmed.endsWith(':') || trimmed.startsWith('Humura AI');
+      report.setFont('helvetica', isHeading ? 'bold' : 'normal');
+      report.setFontSize(isHeading ? 11 : 10);
+      report.setTextColor(isHeading ? 21 : 61, isHeading ? 60 : 83, isHeading ? 50 : 70);
+      const wrapped = report.splitTextToSize(trimmed, contentWidth) as string[];
+      const lineHeight = isHeading ? 6 : 5;
+      if (y + wrapped.length * lineHeight > bottom) {
+        report.addPage();
+        y = 20;
+      }
+      report.text(wrapped, left, y);
+      y += wrapped.length * lineHeight + (isHeading ? 2 : 1);
+    });
+
+    const pageCount = report.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      report.setPage(page);
+      report.setDrawColor(220, 233, 225);
+      report.line(left, pageHeight - 16, pageWidth - right, pageHeight - 16);
+      report.setFont('helvetica', 'normal');
+      report.setFontSize(8);
+      report.setTextColor(93, 113, 102);
+      report.text('Private reflection - share only when you choose.', left, pageHeight - 10);
+      report.text(`${page} / ${pageCount}`, pageWidth - right, pageHeight - 10, { align: 'right' });
+    }
+
+    report.save('humura-wellbeing-report.pdf');
+    setNotice('Your PDF progress report has been downloaded.');
   };
 
   const shareReport = async () => {
