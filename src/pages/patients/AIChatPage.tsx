@@ -225,11 +225,15 @@ export default function AIChatPage() {
 
     // Check if coming from dashboard thought bar with prefilled thought
     const prefilled = sessionStorage.getItem('humura_prefilled_prompt');
+    const prefilledFormat = sessionStorage.getItem('humura_prefilled_prompt_format');
     if (prefilled) {
       sessionStorage.removeItem('humura_prefilled_prompt');
+      sessionStorage.removeItem('humura_prefilled_prompt_format');
       setTimeout(() => {
-        sendMessage(prefilled);
+        sendMessage(prefilled, prefilledFormat === 'braille');
       }, 300);
+    } else {
+      sessionStorage.removeItem('humura_prefilled_prompt_format');
     }
   }, []);
 
@@ -519,7 +523,7 @@ export default function AIChatPage() {
     await sendMessage(content);
   };
 
-  const sendMessage = async (overrideContent?: string) => {
+  const sendMessage = async (overrideContent?: string, enteredInBraille = false) => {
     const msgContent = overrideContent ?? input;
     if (!msgContent.trim() && !previewImage) return;
     setError(null);
@@ -566,6 +570,7 @@ export default function AIChatPage() {
           image: userMsg.image,
           history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
           lang: i18n.language,
+          inputFormat: enteredInBraille ? 'braille' : undefined,
           userId: (await supabase.auth.getSession()).data.session?.user?.id
         })
       });
@@ -596,7 +601,11 @@ export default function AIChatPage() {
             signal: controller.signal,
             body: JSON.stringify({
               systemInstruction: {
-                parts: [{ text: HUMURA_SYSTEM_PROMPT(i18n.language) }]
+                parts: [{
+                  text: `${HUMURA_SYSTEM_PROMPT(i18n.language)}${enteredInBraille
+                    ? '\nThe latest user message was entered in uncontracted English Braille and accurately decoded into plain text. Respond directly to its meaning with supportive health guidance. Do not ask the user to retype or decode it.'
+                    : ''}`
+                }]
               },
               contents: (() => {
                 const raw = newMessages.slice(-10).map(m => ({

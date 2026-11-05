@@ -640,6 +640,7 @@ When a patient asks how to use or navigate Humura AI, give exact, step-by-step g
 app.post('/chat', async (req, res) => {
   try {
     const { message, history, image, lang } = req.body;
+    const enteredInBraille = req.body.inputFormat === 'braille';
     if (!message) return res.status(400).json({ error: "No message" });
 
     const isRw = lang && lang.startsWith('rw');
@@ -681,7 +682,11 @@ app.post('/chat', async (req, res) => {
 
     const response = await geminiModel.generateContent({
       systemInstruction: {
-        parts: [{ text: HUMURA_SYSTEM_PROMPT(lang) }]
+        parts: [{
+          text: `${HUMURA_SYSTEM_PROMPT(lang)}${enteredInBraille
+            ? '\nThe latest user message was entered in uncontracted English Braille and accurately decoded into plain text. Respond directly to its meaning with supportive health guidance. Do not ask the user to retype or decode it.'
+            : ''}`
+        }]
       },
       contents: (() => {
         const raw = [...chatHistory, { role: "user", parts }];
