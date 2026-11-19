@@ -16,7 +16,11 @@ import {
   Shield,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Activity,
+  Compass
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -76,6 +80,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       isActive: (pathname: string) => pathname === '/patient/progress'
     },
     {
+      to: '/patient/check-in',
+      icon: Activity,
+      label_en: 'Check-In',
+      label_rw: 'Kwisuzuma',
+      isActive: (pathname: string) =>
+        pathname === '/patient/check-in' || pathname === '/patient/checkin' || pathname === '/patient/mood'
+    },
+    {
       to: '/patient/chat',
       icon: MessageSquare,
       label_en: 'AI Chat',
@@ -118,6 +130,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: MapPin,
       label_en: 'Directory',
       label_rw: 'Amavuriro'
+    },
+    {
+      to: '/patient/support-navigator',
+      icon: Compass,
+      label_en: 'Support Navigator',
+      label_rw: 'Ubufasha bw’Abantu'
     },
     {
       to: '/patient/sign-language',

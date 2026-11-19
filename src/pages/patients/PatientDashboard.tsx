@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleCheck,
   Flame,
   Heart,
@@ -20,7 +21,8 @@ import {
   Star,
   TrendingUp,
   Users,
-  Wind
+  Wind,
+  Compass
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
@@ -432,6 +434,49 @@ export default function PatientDashboard() {
               </div>
             </div>
           </section>
+        </div>
+
+        {/* ── ADDITIVE QUICK ACCESS: WELLBEING CHECK-IN & SUPPORT NAVIGATOR ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            onClick={() => navigate('/patient/check-in')}
+            className="bg-white rounded-3xl p-5 border border-[#DFEBE5] shadow-xs cursor-pointer hover:shadow-md hover:border-[#21B48D] transition-all group flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-[#E2F2EC] text-[#08352A] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <Activity size={20} className="text-[#08352A]" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-extrabold text-[#08352A] group-hover:text-[#21B48D] transition-colors">
+                  {isRw ? 'Kwisuzuma ku Bushake' : 'Voluntary Self-Check-In'}
+                </h3>
+                <p className="text-[11px] text-[#5E8E81] mt-0.5">
+                  {isRw ? 'Gukurikirana umutuzo nta gusuzuma indwara' : 'Track wellbeing changes over time'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-[#5E8E81] group-hover:text-[#08352A] group-hover:translate-x-0.5 transition-all" />
+          </div>
+
+          <div
+            onClick={() => navigate('/patient/support-navigator')}
+            className="bg-white rounded-3xl p-5 border border-[#DFEBE5] shadow-xs cursor-pointer hover:shadow-md hover:border-[#21B48D] transition-all group flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-[#08352A] text-[#21B48D] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <Compass size={20} className="text-[#21B48D]" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-extrabold text-[#08352A] group-hover:text-[#21B48D] transition-colors">
+                  {isRw ? 'Ubufasha bw’Abantu' : 'Human Support Navigator'}
+                </h3>
+                <p className="text-[11px] text-[#5E8E81] mt-0.5">
+                  {isRw ? 'Guhuza n’inzobere n’ubufasha bwizewe' : 'Connect with trusted human help'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-[#5E8E81] group-hover:text-[#08352A] group-hover:translate-x-0.5 transition-all" />
+          </div>
         </div>
 
         <section aria-labelledby="quick-access-heading">

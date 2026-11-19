@@ -20,7 +20,9 @@ import {
   SettingsPage,
   SignLanguagePage,
   SupportCentersPage,
-  TranslatorPage
+  TranslatorPage,
+  CheckInPage,
+  SupportNavigatorPage
 } from './pages/patients';
 import { ProfessionalShell } from './components/professional/ProfessionalShell';
 import {
@@ -106,6 +108,10 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="intake" element={<IntakePage />} />
           <Route path="mood" element={<MoodLogPage />} />
+          <Route path="check-in" element={<CheckInPage />} />
+          <Route path="checkin" element={<CheckInPage />} />
+          <Route path="support-navigator" element={<SupportNavigatorPage />} />
+          <Route path="navigator" element={<SupportNavigatorPage />} />
           <Route path="meet-professional" element={<MeetProfessionalPage />} />
           <Route path="community" element={<CommunityPage />} />
         </Route>
@@ -138,6 +144,10 @@ const App: React.FC = () => {
         <Route path="/settings" element={<Navigate to="/patient/settings" replace />} />
         <Route path="/intake" element={<Navigate to="/patient/intake" replace />} />
         <Route path="/mood" element={<Navigate to="/patient/mood" replace />} />
+        <Route path="/check-in" element={<Navigate to="/patient/check-in" replace />} />
+        <Route path="/checkin" element={<Navigate to="/patient/check-in" replace />} />
+        <Route path="/support-navigator" element={<Navigate to="/patient/support-navigator" replace />} />
+        <Route path="/navigator" element={<Navigate to="/patient/support-navigator" replace />} />
         <Route path="/meet-professional" element={<Navigate to="/patient/meet-professional" replace />} />
         <Route path="/community" element={<Navigate to="/patient/community" replace />} />
 

@@ -14,3 +14,5 @@ export { default as SettingsPage } from './SettingsPage';
 export { default as SignLanguagePage } from './SignLanguagePage';
 export { default as SupportCentersPage } from './SupportCentersPage';
 export { default as TranslatorPage } from './TranslatorPage';
+export { default as CheckInPage } from './CheckInPage';
+export { default as SupportNavigatorPage } from './SupportNavigatorPage';
