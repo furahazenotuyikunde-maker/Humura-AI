@@ -45,28 +45,43 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let active = true;
+    let roleRequestId = 0;
 
     const fetchRole = async (userId: string) => {
+      const requestId = ++roleRequestId;
+      let timeoutId: number | undefined;
       setLoading(true);
       setStartupError(null);
       try {
-        const { data, error } = await supabase
+        const roleLookup = Promise.resolve(supabase
           .from('profiles')
           .select('role')
           .eq('id', userId)
-          .maybeSingle();
+          .maybeSingle());
+        const roleTimeout = new Promise<never>((_resolve, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error('Account lookup timed out.')), 12000);
+        });
+        const { data, error } = await Promise.race([roleLookup, roleTimeout]);
         if (error) throw error;
-        if (active) setRole(data?.role || 'patient');
+        if (active && requestId === roleRequestId) setRole(data?.role || 'patient');
       } catch (error) {
         console.error('Unable to load account role:', error);
-        if (active) {
+        if (active && requestId === roleRequestId) {
           setRole(null);
-          setStartupError('We could not load your account. Please refresh the page to try again.');
+          setStartupError('We could not load your account. Check your connection and try again.');
         }
       } finally {
-        if (active) setLoading(false);
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        if (active && requestId === roleRequestId) setLoading(false);
       }
     };
+
+    const sessionTimeoutId = window.setTimeout(() => {
+      if (active) {
+        setStartupError('Account startup is taking longer than expected. Check your connection and try again.');
+        setLoading(false);
+      }
+    }, 15000);
 
     supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
@@ -82,13 +97,21 @@ const App: React.FC = () => {
           setStartupError('We could not verify your session. Please refresh the page to try again.');
           setLoading(false);
         }
+      })
+      .finally(() => {
+        window.clearTimeout(sessionTimeoutId);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
       setSession(nextSession);
-      if (nextSession) void fetchRole(nextSession.user.id);
-      else {
+      if (nextSession) {
+        window.setTimeout(() => {
+          if (active) void fetchRole(nextSession.user.id);
+        }, 0);
+      } else {
+        roleRequestId += 1;
         setRole(null);
         setStartupError(null);
         setLoading(false);
@@ -97,6 +120,7 @@ const App: React.FC = () => {
 
     return () => {
       active = false;
+      roleRequestId += 1;
       subscription.unsubscribe();
     };
   }, []);
