@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
@@ -30,6 +31,7 @@ const modeLabels = {
 const specialties = ['all', 'Anxiety', 'Depression', 'Trauma', 'PTSD', 'Bipolar', 'Youth'];
 
 export default function ProfessionalsPage() {
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
@@ -138,17 +140,21 @@ export default function ProfessionalsPage() {
         return;
       }
 
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/patients/assign-doctor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientId: session.user.id, doctorId: doctor.id })
+      navigate('/patient/meet-professional', {
+        state: {
+          openBookingDoctor: {
+            id: doctor.id,
+            full_name: doctor.name,
+            role: 'doctor',
+            specialty: doctor.specialisations?.[0] || null,
+            location: null,
+            bio: doctor.bio || null,
+            phone: null,
+            language_pref: doctor.languages?.join(', ') || null,
+            avatar_url: doctor.avatar_url || null
+          }
+        }
       });
-      
-      const data = await res.json();
-      if (data.success) {
-        setBooked(doctor.id);
-        setTimeout(() => window.location.href = '/patient/meet-professional', 1500);
-      }
     } catch (err: any) {
       alert(err.message);
     } finally {

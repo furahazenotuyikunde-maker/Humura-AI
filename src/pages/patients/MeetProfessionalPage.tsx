@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Video,
   Calendar,
@@ -65,6 +65,7 @@ export default function MeetProfessionalPage() {
   const lang = i18n.language || 'en';
   const isRw = lang.startsWith('rw');
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Auth & Profile State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -314,6 +315,14 @@ export default function MeetProfessionalPage() {
     setBookingNotes(patientData?.primary_concern ? `Focus: ${patientData.primary_concern}` : '');
   };
 
+  useEffect(() => {
+    const state = location.state as { openBookingDoctor?: DbDoctorProfile } | null;
+    if (state?.openBookingDoctor) {
+      handleOpenBooking(state.openBookingDoctor);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state]);
+
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingDoctor || !currentUser?.id) {
@@ -323,7 +332,14 @@ export default function MeetProfessionalPage() {
 
     setBookingLoading(true);
     try {
-      const scheduledDateTime = new Date(`${bookingDate}T10:00:00Z`).toISOString();
+      const [timePart, meridiem] = bookingTime.split(' ');
+      const [hourText, minuteText] = timePart.split(':');
+      let hour = Number(hourText);
+      if (meridiem === 'PM' && hour !== 12) hour += 12;
+      if (meridiem === 'AM' && hour === 12) hour = 0;
+      const scheduledDateTime = new Date(
+        `${bookingDate}T${String(hour).padStart(2, '0')}:${minuteText}:00`
+      ).toISOString();
       const videoRoom = `https://meet.jit.si/humura-health-${bookingDoctor.id.slice(0, 8)}-${currentUser.id.slice(0, 8)}`;
 
       await supabase.from('sessions').insert({
