@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   ArrowRight,
@@ -53,6 +54,8 @@ const quickLinks = [
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isRw = i18n.language?.startsWith('rw') || false;
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedMood, setSelectedMood] = useState('good');
   const [savingMood, setSavingMood] = useState(false);

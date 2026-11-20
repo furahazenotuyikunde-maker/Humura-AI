@@ -41,33 +41,92 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [startupError, setStartupError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchRole(session.user.id);
-      else setLoading(false);
-    });
+    let active = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchRole(session.user.id);
+    const fetchRole = async (userId: string) => {
+      setLoading(true);
+      setStartupError(null);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) throw error;
+        if (active) setRole(data?.role || 'patient');
+      } catch (error) {
+        console.error('Unable to load account role:', error);
+        if (active) {
+          setRole(null);
+          setStartupError('We could not load your account. Please refresh the page to try again.');
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) throw error;
+        if (!active) return;
+        setSession(session);
+        if (session) void fetchRole(session.user.id);
+        else setLoading(false);
+      })
+      .catch((error: unknown) => {
+        console.error('Unable to verify the current session:', error);
+        if (active) {
+          setStartupError('We could not verify your session. Please refresh the page to try again.');
+          setLoading(false);
+        }
+      });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
+      setSession(nextSession);
+      if (nextSession) void fetchRole(nextSession.user.id);
       else {
         setRole(null);
+        setStartupError(null);
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchRole = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('role').eq('id', userId).single();
-    setRole(data?.role || 'patient');
-    setLoading(false);
-  };
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F5F8F5] px-4 text-[#315343]">
+        <p role="status" className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold shadow-sm">
+          Loading your account…
+        </p>
+      </main>
+    );
+  }
 
-  if (loading) return null;
+  if (startupError) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F5F8F5] px-4 text-center text-[#315343]">
+        <p role="alert" className="max-w-md rounded-2xl bg-white px-6 py-4 text-sm font-semibold shadow-sm">
+          {startupError}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-xl bg-[#176B4B] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#12583D]"
+        >
+          Try again
+        </button>
+      </main>
+    );
+  }
 
   return (
     <BrowserRouter>
