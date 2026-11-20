@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
+import { User, Star, Clock, Phone, Globe, MessageCircle, X, CheckCircle, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 import { io } from 'socket.io-client';
@@ -44,7 +44,6 @@ export default function ProfessionalsPage() {
   // Booking Form State
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
-  const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     fetchDoctors();
@@ -131,35 +130,22 @@ export default function ProfessionalsPage() {
     return dbDoctors.filter(p => p.specialisations.includes(activeFilter));
   }, [activeFilter, dbDoctors]);
 
-  const handleConnect = async (doctor: Professional) => {
-    setBookingLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        window.location.href = '/auth';
-        return;
-      }
-
-      navigate('/patient/meet-professional', {
-        state: {
-          openBookingDoctor: {
-            id: doctor.id,
-            full_name: doctor.name,
-            role: 'doctor',
-            specialty: doctor.specialisations?.[0] || null,
-            location: null,
-            bio: doctor.bio || null,
-            phone: null,
-            language_pref: doctor.languages?.join(', ') || null,
-            avatar_url: doctor.avatar_url || null
-          }
+  const handleConnect = (doctor: Professional) => {
+    navigate('/patient/meet-professional', {
+      state: {
+        openBookingDoctor: {
+          id: doctor.id,
+          full_name: doctor.name,
+          role: 'doctor',
+          specialty: doctor.specialisations?.[0] || null,
+          location: null,
+          bio: doctor.bio || null,
+          phone: null,
+          language_pref: doctor.languages?.join(', ') || null,
+          avatar_url: doctor.avatar_url || null
         }
-      });
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setBookingLoading(false);
-    }
+      }
+    });
   };
 
   return (
@@ -285,10 +271,9 @@ export default function ProfessionalsPage() {
 
                 <button
                   onClick={() => handleConnect(doctor)}
-                  disabled={bookingLoading}
                   className="w-full py-5 rounded-3xl font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2 bg-primary text-white shadow-xl shadow-primary/20 hover:bg-primary-900 cursor-pointer"
                 >
-                  {bookingLoading ? <Loader2 className="animate-spin" /> : (isRw ? 'Fata Gahunda' : 'Get Appointment')}
+                  {isRw ? 'Fata Gahunda' : 'Get Appointment'}
                 </button>
               </motion.div>
             );
