@@ -52,9 +52,51 @@ export default function ProfessionalsPage() {
   const fetchDoctors = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctors/available`);
-      const data = await res.json();
-      setDbDoctors(data);
+      // Try the backend API first
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      let fetched = false;
+      try {
+        const res = await fetch(`${import.meta.env.VITE_RENDER_BACKEND_URL}/api/doctors/available`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setDbDoctors(data);
+            fetched = true;
+          }
+        }
+      } catch {
+        clearTimeout(timeout);
+      }
+
+      // Fallback: fetch directly from Supabase if backend failed or returned empty
+      if (!fetched) {
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'doctor')
+          .order('full_name', { ascending: true });
+
+        if (!error && profiles && profiles.length > 0) {
+          const mapped: Professional[] = profiles.map((p: any) => ({
+            id: p.id,
+            name: p.full_name || 'Specialist',
+            specialisations: p.specialty ? [p.specialty] : ['Mental Health'],
+            languages: p.language_pref ? [p.language_pref] : ['en'],
+            bio: p.bio || '',
+            years_experience: 0,
+            is_available: true,
+            caseload_count: 0,
+            rating_avg: 4.9,
+            session_count: 0,
+            avatar_url: p.avatar_url || undefined,
+          }));
+          setDbDoctors(mapped);
+        }
+      }
     } catch (err) {
       console.error("Error fetching doctors:", err);
     } finally {
@@ -237,14 +279,10 @@ export default function ProfessionalsPage() {
 
                 <button
                   onClick={() => handleConnect(doctor)}
-                  disabled={!doctor.is_available || bookingLoading}
-                  className={`w-full py-5 rounded-3xl font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                    doctor.is_available 
-                      ? 'bg-primary text-white shadow-xl shadow-primary/20 hover:bg-primary-900' 
-                      : 'bg-neutral-100 text-neutral-300 cursor-not-allowed'
-                  }`}
+                  disabled={bookingLoading}
+                  className="w-full py-5 rounded-3xl font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2 bg-primary text-white shadow-xl shadow-primary/20 hover:bg-primary-900 cursor-pointer"
                 >
-                  {bookingLoading ? <Loader2 className="animate-spin" /> : (doctor.is_available ? (isRw ? 'Kuvugana ubu' : 'Connect now') : (isRw ? 'Ntaboneka' : 'Not available'))}
+                  {bookingLoading ? <Loader2 className="animate-spin" /> : (isRw ? 'Fata Gahunda' : 'Get Appointment')}
                 </button>
               </motion.div>
             );
