@@ -46,9 +46,13 @@ const App: React.FC = () => {
   useEffect(() => {
     let active = true;
     let roleRequestId = 0;
+    let pendingRoleUserId: string | null = null;
+    let resolvedRoleUserId: string | null = null;
 
     const fetchRole = async (userId: string) => {
+      if (resolvedRoleUserId === userId || pendingRoleUserId === userId) return;
       const requestId = ++roleRequestId;
+      pendingRoleUserId = userId;
       let timeoutId: number | undefined;
       setLoading(true);
       setStartupError(null);
@@ -63,7 +67,10 @@ const App: React.FC = () => {
         });
         const { data, error } = await Promise.race([roleLookup, roleTimeout]);
         if (error) throw error;
-        if (active && requestId === roleRequestId) setRole(data?.role || 'patient');
+        if (active && requestId === roleRequestId) {
+          resolvedRoleUserId = userId;
+          setRole(data?.role || 'patient');
+        }
       } catch (error) {
         console.error('Unable to load account role:', error);
         if (active && requestId === roleRequestId) {
@@ -72,6 +79,7 @@ const App: React.FC = () => {
         }
       } finally {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        if (pendingRoleUserId === userId) pendingRoleUserId = null;
         if (active && requestId === roleRequestId) setLoading(false);
       }
     };
@@ -112,6 +120,8 @@ const App: React.FC = () => {
         }, 0);
       } else {
         roleRequestId += 1;
+        pendingRoleUserId = null;
+        resolvedRoleUserId = null;
         setRole(null);
         setStartupError(null);
         setLoading(false);
