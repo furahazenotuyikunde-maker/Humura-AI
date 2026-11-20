@@ -132,13 +132,18 @@ export default function SupportNavigatorPage() {
         } else {
           // If urgent crisis, also post to crisis_events for instant doctor escalation
           if (urgencyLevel === 'urgent_crisis') {
-            await supabase.from('crisis_events').insert([{
-              patient_id: user.id,
-              type: 'urgent_human_support_request',
-              last_msg: `[Support Navigator Escalation] Patient requested immediate human intervention (${preferredChannel}). Note: ${notes.slice(0, 150)}`,
-              risk_level: 'high',
-              triggered_at: new Date().toISOString()
-            }]).then(() => {}).catch(() => {});
+            try {
+              const { error: crisisEventError } = await supabase.from('crisis_events').insert([{
+                patient_id: user.id,
+                type: 'urgent_human_support_request',
+                last_msg: `[Support Navigator Escalation] Patient requested immediate human intervention (${preferredChannel}). Note: ${notes.slice(0, 150)}`,
+                risk_level: 'high',
+                triggered_at: new Date().toISOString()
+              }]);
+              if (crisisEventError) console.error('Unable to create support request crisis alert:', crisisEventError);
+            } catch (error) {
+              console.error('Unable to create support request crisis alert:', error);
+            }
           }
           fetchMySupportRequests(user.id);
         }

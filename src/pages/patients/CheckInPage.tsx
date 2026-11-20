@@ -186,22 +186,32 @@ export default function CheckInPage() {
         }
 
         // Also add mood to mood_logs for backwards compatibility with Progress page
-        await supabase.from('mood_logs').insert([{
-          user_id: user.id,
-          mood: selectedFeeling,
-          score: feelingObj.score,
-          created_at: new Date().toISOString()
-        }]).then(() => {}).catch(() => {});
+        try {
+          const { error: moodLogError } = await supabase.from('mood_logs').insert([{
+            user_id: user.id,
+            mood: selectedFeeling,
+            score: feelingObj.score,
+            created_at: new Date().toISOString()
+          }]);
+          if (moodLogError) console.error('Unable to add check-in to mood history:', moodLogError);
+        } catch (error) {
+          console.error('Unable to add check-in to mood history:', error);
+        }
 
         // If crisis detected, seamlessly notify crisis escalation pipeline
         if (isCrisis) {
-          await supabase.from('crisis_events').insert([{
-            patient_id: user.id,
-            type: 'voluntary_checkin_flag',
-            last_msg: `[Voluntary Check-in Alert] Patient reported overwhelming distress. Note excerpt: "${reflectionNote.slice(0, 150)}"`,
-            risk_level: 'high',
-            triggered_at: new Date().toISOString()
-          }]).then(() => {}).catch(() => {});
+          try {
+            const { error: crisisEventError } = await supabase.from('crisis_events').insert([{
+              patient_id: user.id,
+              type: 'voluntary_checkin_flag',
+              last_msg: `[Voluntary Check-in Alert] Patient reported overwhelming distress. Note excerpt: "${reflectionNote.slice(0, 150)}"`,
+              risk_level: 'high',
+              triggered_at: new Date().toISOString()
+            }]);
+            if (crisisEventError) console.error('Unable to create check-in crisis alert:', crisisEventError);
+          } catch (error) {
+            console.error('Unable to create check-in crisis alert:', error);
+          }
         }
 
         fetchCheckIns(user.id);
