@@ -165,20 +165,37 @@ export default function SessionsPage() {
 
     setIsSubmittingSession(true);
     try {
-      const { error } = await supabase
-        .from('sessions')
-        .insert({
-          doctor_id: doctorId,
-          patient_id: selectedPatientId,
-          scheduled_at: new Date(scheduledDateTime).toISOString(),
-          status: 'scheduled',
-          type: sessionType,
-          notes: sessionNotes
-        });
+      const sessionRecord: Record<string, string> = {
+        doctor_id: doctorId,
+        patient_id: selectedPatientId,
+        scheduled_at: new Date(scheduledDateTime).toISOString(),
+        status: 'scheduled',
+        type: sessionType,
+        notes: sessionNotes
+      };
+      const omittedDetails: string[] = [];
 
-      if (error) throw error;
+      while (true) {
+        const { error } = await supabase.from('sessions').insert(sessionRecord);
+        if (!error) break;
 
-      showToast(isRw ? 'Gahunda yashyizweho neza' : 'Consultation successfully scheduled', 'success');
+        const missingColumn = error.code === 'PGRST204'
+          ? error.message.match(/Could not find the '([^']+)' column of 'sessions' in the schema cache/)?.[1]
+          : undefined;
+        if (!missingColumn || !['type', 'notes'].includes(missingColumn)) throw error;
+
+        delete sessionRecord[missingColumn];
+        omittedDetails.push(missingColumn);
+      }
+
+      showToast(
+        omittedDetails.length
+          ? (isRw
+            ? 'Gahunda yashyizweho, ariko ubwoko n\'ibisobanuro ntibyabitswe. Kuvugurura database birakenewe.'
+            : 'Consultation booked, but session type and notes were not saved. Apply the latest database migration to store them.')
+          : (isRw ? 'Gahunda yashyizweho neza' : 'Consultation successfully scheduled'),
+        'success'
+      );
       setShowScheduleModal(false);
       setSelectedPatientId('');
       setScheduledDateTime('');

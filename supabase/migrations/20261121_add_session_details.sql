@@ -1,0 +1,3 @@
+ALTER TABLE public.sessions
+  ADD COLUMN IF NOT EXISTS type TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT;
