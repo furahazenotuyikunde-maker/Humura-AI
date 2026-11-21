@@ -54,8 +54,6 @@ const App: React.FC = () => {
       const requestId = ++roleRequestId;
       pendingRoleUserId = userId;
       let timeoutId: number | undefined;
-      setLoading(true);
-      setStartupError(null);
       try {
         const roleLookup = Promise.resolve(supabase
           .from('profiles')
@@ -74,13 +72,11 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Unable to load account role:', error);
         if (active && requestId === roleRequestId) {
-          setRole(null);
-          setStartupError('We could not load your account. Check your connection and try again.');
+          setRole('patient');
         }
       } finally {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
         if (pendingRoleUserId === userId) pendingRoleUserId = null;
-        if (active && requestId === roleRequestId) setLoading(false);
       }
     };
 
@@ -96,8 +92,9 @@ const App: React.FC = () => {
         if (error) throw error;
         if (!active) return;
         setSession(session);
+        setStartupError(null);
         if (session) void fetchRole(session.user.id);
-        else setLoading(false);
+        setLoading(false);
       })
       .catch((error: unknown) => {
         console.error('Unable to verify the current session:', error);
@@ -115,6 +112,8 @@ const App: React.FC = () => {
       if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
       setSession(nextSession);
       if (nextSession) {
+        setStartupError(null);
+        setLoading(false);
         window.setTimeout(() => {
           if (active) void fetchRole(nextSession.user.id);
         }, 0);
